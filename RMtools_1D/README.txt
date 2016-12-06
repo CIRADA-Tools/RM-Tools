@@ -1,0 +1,47 @@
+#-----------------------------------------------------------------------------#
+#
+# Python scripts to perform RM-synthesis, RM-clean and QU-fitting on
+# polarised radio spectra. The spectra should be in ASCII format as
+# columns in a space-delimited file of format:
+#    [freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy]
+# or
+#    [freq_Hz, Q_Jy, U_Jy, dQ_Jy, dU_Jy]
+#
+# If I data is not present then the RM-synthesis code runs on the raw Q and U
+# values, which may be fractional or absolute.
+#
+# If the I data is absent for the QU-fitting script then the code
+# assumes that the Q and U values are fractional.
+#
+# Use the '-h' flag to show detailed help and usage information.
+#
+# by Cormac R. Purcell
+#
+#-----------------------------------------------------------------------------#
+# INSTRUCTIONS:
+
+# Create a test dataset from parameters in a catalogue file.
+./mk_test_ascii_data.py catalogue.csv
+
+# Perform RM-synthesis on the sources
+./do_RMsynth_1D.py data/Source1.dat -p
+./do_RMsynth_1D.py data/Source2.dat -p
+./do_RMsynth_1D.py data/Source3.dat -p
+./do_RMsynth_1D.py data/Source4.dat -p
+./do_RMsynth_1D.py data/Source5.dat -p
+
+# Perform RM-clean on the sources
+./do_RMclean_1D.py data/Source1.dat -p
+./do_RMclean_1D.py data/Source2.dat -p
+./do_RMclean_1D.py data/Source3.dat -p
+./do_RMclean_1D.py data/Source4.dat -p
+./do_RMclean_1D.py data/Source5.dat -p
+
+# Perform QU-fitting on the sources
+./do_QUfit_1D_auto.py data/Source1.dat -t 7 -m 1 -p -d
+./do_QUfit_1D_auto.py data/Source2.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_auto.py data/Source3.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_auto.py data/Source4.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_auto.py data/Source5.dat -t 7 -m 5 -p -d
+./do_QUfit_1D_auto.py data/Source6.dat -t 7 -m 4 -p -d
+
