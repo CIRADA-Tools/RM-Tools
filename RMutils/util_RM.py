@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 01-Dec-2016 by C.Purcell.                                         #
+# MODIFIED: 11-Jan-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -766,7 +766,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
     phiPeakPIchan = phiArr[indxPeakPIchan]
     dPhiPeakPIchan = fwhmRMSF * dQU / (2.0 * ampPeakPIchan)
     snrPIchan = ampPeakPIchan / dQU
-        
+    dPhi = np.nanmin(np.diff(phiArr))
+    
     # Correct the peak for polarisation bias (POSSUM report 11)
     ampPeakPIchanEff = ampPeakPIchan
     if snrPIchan >= snrDoBiasCorrect:
@@ -816,17 +817,23 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
                                            absFDF[indxPeakPIchan+1])
         
         snrPIfit = ampPeakPIfit / dQU
-        # Error on fitted Faraday depth (RM) from Eqn 21 in Condon 1997
-        dPhiPeakPIfit =  np.sqrt( fwhmRMSF**2.0 /
-                                  ( 4.0 * np.log(2.0) * snrPIfit**2.0))
-        dAmpPeakPIfit = np.sqrt(2.0 * ampPeakPIfit**2.0 / dQU**2.0)
-
+        
+        # Error on fitted Faraday depth (RM) from Eqn 4b in Landman 1982
+        # Parabolic interpolation is approximately equivalent to a Gaussian fit
+        dPhiPeakPIfit = (np.sqrt(fwhmRMSF * dPhi) /
+                         np.power(2.0*np.pi*np.log(2.0), 0.25) / snrPIfit)
+        
+        # Error on fitted peak intensity (PI) from Eqn 4a in Landman 1982
+        dAmpPeakPIfit = (np.power(18.0*np.log(2.0)/(np.pi), 0.25) *
+                         np.sqrt(dPhi) * dQU / np.sqrt(fwhmRMSF))
+        
         # Correct the peak for polarisation bias (POSSUM report 11)
         ampPeakPIfitEff = ampPeakPIfit
         if snrPIfit >= snrDoBiasCorrect:
             ampPeakPIfitEff = np.sqrt(ampPeakPIfit**2.0 - 2.3 * dQU**2.0)
             
-        # Calculate the polarisation angle from the fitted peak        
+        # Calculate the polarisation angle from the fitted peak
+        # Uncertainty from Eqn A.12 in Brentjens & De Bruyn 2005
         indxPeakPIfit = np.interp(phiPeakPIfit, phiArr,
                                   np.arange(phiArr.shape[-1], dtype='f4'))
         peakFDFimagFit = np.interp(phiPeakPIfit, phiArr, FDF.imag)
@@ -836,6 +843,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
         dPolAngleFit_deg = np.degrees(dQU**2.0 / (4.0 * ampPeakPIfit**2.0))
 
         # Calculate the derotated polarisation angle and uncertainty
+        # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = np.degrees(np.radians(polAngleFit_deg) -
                                      phiPeakPIfit * lam0Sq)
         dPolAngle0Fit_rad = \
