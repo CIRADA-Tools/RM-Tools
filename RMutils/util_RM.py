@@ -904,7 +904,7 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
     #pResidArr = np.sqrt(qResidArr**2.0 + uResidArr**2.0)
 
     # DEBUG
-    if doPlots:
+    if False:
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
         from util_plotTk import plot_pqu_vs_lamsq_ax
