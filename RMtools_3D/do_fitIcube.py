@@ -74,7 +74,7 @@ def main():
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-b", dest="buffCols", type=int, default=10,
-                        help="# pixel columns to buffer for disk IO [3].")
+                        help="# pixel columns to buffer for disk IO [10].")
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages [False].")
     args = parser.parse_args()
