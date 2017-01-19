@@ -49,7 +49,7 @@ endFreq_Hz = 1.8e9
 nChans = 1101
 
 # Noise level
-rmsNoise_mJy = 0.5
+rmsNoise_mJy = 0.02
 
 # NOTE: Variations in the noise vs frequency can be specified in an external
 # file. Properties of injected sources are given by an external CSV catalogue
