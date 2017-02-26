@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Make a model Stokes I cube and a noise vector.                    #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 26-Feb-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
