@@ -13,7 +13,7 @@
 #                                                                             #
 #           This version for use with the stand-alone code, not the pipeline. #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 25-Feb-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -103,10 +103,10 @@ def main():
     
     # Help string to be shown using the -h option
     descStr = """
-    Create a new dataset directory and populate it with FITS files containing
-    Stokes I, Q and U images. Each image corresponds to a single frequency
-    channel in a data-cube. There are equal numbers of files for each of the
-    3 Stokes parameters whose names are formatted as e.g.,'CH23_StokesQ.fits'.
+    Create a new dataset directory and populate it with data cubes in FITS 
+    format. Three FITS files are produced, one for each of the Stokes I, Q 
+    and U parameters. A vector of frequency channels is also saved as an
+    ASCII file 'freqs_Hz.dat'.
     
     The data is populated with polarised sources whose properties are given
     in an external CSV-format catalogue file. Two types of model may be 
