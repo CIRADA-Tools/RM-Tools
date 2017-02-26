@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Make a model Stokes I cube and a noise vector.                    #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 26-Feb-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -58,6 +58,12 @@ def main():
     descStr = """
     Create a model Stokes I dataset by fitting a polynomial to emitting regions
     above a cutoff in the Stokes I cube.
+
+    NOTE: This script is very simple and designed to only produce a basic model
+    Stokes I cube and noise spectrum. In production environments you should
+    use a model cube from a full-featured source finder. Treat the output of
+    this script as an example of the data format required by the later 
+    RM-synthesis script.
     """
 
     # Parse the command line options
@@ -127,7 +133,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     if nChan!=len(freqArr_Hz):
         print "Err: frequency vector and axis 3 of cube unequal length."
         sys.exit()
-
+        
     # Measure the RMS spectrum using 2 passes of MAD on each plane
     # Determine which pixels have emission above the cutoff
     print "Measuring the RMS noise and creating an emission mask"
@@ -144,12 +150,14 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
             idxSky = np.where(dataPlane<cutoff)
         else:
             idxSky = np.where(dataPlane)
-
+        
         # Pass 1
         rmsTmp = MAD(dataPlane[idxSky])
-
+        medTmp = np.median(dataPlane[idxSky])
+        
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
-        idxSky = np.where(dataPlane < rmsTmp * 3)
+        idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
+        medSky = np.median(dataPlane[idxSky])
         rmsArr_Jy[i] = MAD(dataPlane[idxSky])
         mskSky[idxSky] +=1
         
@@ -158,7 +166,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         if cutoff>0:
             idxSrc = np.where(dataPlane > cutoff)
         else:
-            idxSrc = np.where(dataPlane > -1 * rmsArr_Jy[i] * cutoff)
+            idxSrc = np.where(dataPlane > medSky -1 * rmsArr_Jy[i] * cutoff)
         mskSrc[idxSrc] +=1
 
         # Clean up
@@ -242,7 +250,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         elif nDim==4:
             IArr = HDULst[0].data[0,:, :, i:i+buffCols]*1e3
         HDULst.close()
-        IModArr = np.zeros_like(IArr)
+        IModArr = np.ones_like(IArr)*medSky
 
         # Fit the spectra in turn
         for yi, xi in srcCoords:

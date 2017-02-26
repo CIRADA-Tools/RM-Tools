@@ -3,13 +3,15 @@
 # and a separate vector of frequencies should be provided in an ASCII
 # file called freqs_Hz.dat.
 #
-# See comments in the individual files for more details. 
+# See comments in the individual files for more details.
 # Instructions below show how generate artificial data and run the scripts.
 #
 # by Cormac R. Purcell
 #
 #
 # INSTRUCTIONS:
+
+# Note: Print detailed help by running each script with a "-h" flag.
 
 # Create a test dataset from parameters in a catalogue file.
 ./mk_test_cube_data.py catalogue.csv
