@@ -58,6 +58,12 @@ def main():
     descStr = """
     Create a model Stokes I dataset by fitting a polynomial to emitting regions
     above a cutoff in the Stokes I cube.
+
+    NOTE: This script is very simple and designed to only produce a basic model
+    Stokes I cube and noise spectrum. In production environments you should
+    use a model cube from a full-featured source finder. Treat the output of
+    this script as an example of the data format required by the later 
+    RM-synthesis script.
     """
 
     # Parse the command line options
