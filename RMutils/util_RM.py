@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 11-Jan-2017 by C.Purcell.                                         #
+# MODIFIED: 22-Mar-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -62,6 +62,8 @@ from scipy.stats import kurtosis
 from scipy.stats import skew
 from scipy.stats import skewtest
 from scipy.stats import kurtosistest
+from scipy.stats import anderson
+from scipy.stats import kstest
 
 from mpfit import mpfit
 from util_misc import progress  
@@ -904,16 +906,16 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
     #pResidArr = np.sqrt(qResidArr**2.0 + uResidArr**2.0)
 
     # DEBUG
-    if False:
+    if True:
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
         from util_plotTk import plot_pqu_vs_lamsq_ax
-        fig = plt.figure(figsize=(18.0, 8))
+        fig = plt.figure(figsize=(12.0, 10.0))
         
         lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
 
         # Plot the Fractional spectra
-        ax1 = fig.add_subplot(131)
+        ax1 = fig.add_subplot(221)
         plot_pqu_vs_lamsq_ax(ax=ax1,
                              lamSqArr_m2 = lamSqArr_m2,
                              qArr        = qArr,
@@ -924,20 +926,62 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
                              uModArr     = uModArr)
 
         # Plot the residual
-        ax2 = fig.add_subplot(132)
+        ax2 = fig.add_subplot(222)
         ax2.errorbar(x=lamSqArr_m2, y=pResidArr/dpArr, mec='k', mfc='k', ms=4,
                 fmt='D', ecolor='k', label='Residual P')
+#        ax2.errorbar(x=freqArr_Hz/1e9, y=pResidArr/dpArr, mec='k', mfc='k',
+#                     ms=4, fmt='D', ecolor='k', label='Residual P')
+        ax2.axhline(0, color='grey')
         ax2.yaxis.set_major_locator(MaxNLocator(4))
         ax2.xaxis.set_major_locator(MaxNLocator(4))
+        ax2.set_xlabel('$\\lambda^2$ (m$^2$)')
+        #ax2.set_xlabel('$\\nu$ (GHz)')
         
         # Plot the distribution of the residual
-        ax3 = fig.add_subplot(133)
-        n, b, p = ax3.hist(pResidArr/dpArr, 50, normed=1, facecolor='green',
+        ax3 = fig.add_subplot(223)
+        n, b, p = ax3.hist(pResidArr/dpArr, 10, normed=1, facecolor='green',
                            alpha=0.75)
         
-        g = gauss1D(amp=0.6, mean=0.0, fwhm=1.00)(b)
-        ax3.step(b, g, color='k', linewidth=5)
+        gfactor = 2.0 * m.sqrt(2.0 * m.log(2.0))
 
+        
+        g = gauss1D(amp=0.6, mean=0.0, fwhm=1.00)(b)
+        ax3.step(b, g, color='k', linewidth=3)
+        ax3.set_ylabel('Normalised Units')
+        ax3.set_xlabel('Fractional Polarisation')
+
+        from scipy.stats import norm
+        def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
+            if xArr is None:
+                x = np.linspace(-6.0*std, 6.0*std, N)
+            else:
+                x = xArr
+            y = norm.cdf(x, loc=mean, scale=std)
+            return x, y
+        
+        # Plot the cumulative distribution function
+        residNorm = np.sort(pResidArr/dpArr)
+        N = len(residNorm)
+        cumArr = np.array(range(N))/float(N)
+        ax4 = fig.add_subplot(224)
+        ax4.step(residNorm, cumArr, color='r')
+        x, y = norm_cdf(mean=0.0, std=1.0, N=1000)
+        ax4.step(x, y, color='k', linestyle="--")
+        ax4.set_ylabel('CDF')
+        ax4.set_xlabel('Normalised Residual')
+
+
+        # Calculate the KS-test
+        z, p = kstest(residNorm, "norm")
+        print "SciPy kstest (z, p): ", z, p
+        
+        # Scipy anderson
+        a2, crit, sig = anderson(residNorm, "norm")
+        print "SciPy Anderson (a): ", a2
+        print crit
+        print sig
+        
+        
         # Calculate the skewness (measure of symmetry)
         skewVal = skew(n)
         print "SKEW:", skewVal
