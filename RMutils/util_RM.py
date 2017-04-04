@@ -886,7 +886,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
 
 #-----------------------------------------------------------------------------#
 def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
-                          psi0_deg, RM_radm2, doPlots=True):
+                          psi0_deg, RM_radm2, doPlots=False, debug=False):
     
     # Fractional polarised intensity
     pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
@@ -906,7 +906,7 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
     #pResidArr = np.sqrt(qResidArr**2.0 + uResidArr**2.0)
 
     # DEBUG
-    if True:
+    if debug:
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
         from util_plotTk import plot_pqu_vs_lamsq_ax
@@ -915,15 +915,26 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
         lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
 
         # Plot the Fractional spectra
+        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+        pModArr, qModArr, uModArr = \
+             create_pqu_spectra_burn(freqArr_Hz   = freqHirArr_Hz,
+                                     fracPolArr   = [fracPol],
+                                     psi0Arr_deg  = [psi0_deg],
+                                     RMArr_radm2  = [RM_radm2])
+        lamSqHirArr_m2 = np.power(C/freqHirArr_Hz, 2.0)
+
+        
+        
         ax1 = fig.add_subplot(221)
         plot_pqu_vs_lamsq_ax(ax=ax1,
                              lamSqArr_m2 = lamSqArr_m2,
                              qArr        = qArr,
                              uArr        = uArr,
                              dqArr       = dqArr,
-                             duArr       = duArr,
+                             duArr       = duArr,                             
                              qModArr     = qModArr,
-                             uModArr     = uModArr)
+                             uModArr     = uModArr,
+                             lamSqHirArr_m2 = lamSqHirArr_m2)
 
         # Plot the residual
         ax2 = fig.add_subplot(222)
@@ -1016,7 +1027,8 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
         """
         
         fig.show()
-        raw_input()
+        if not doPlots:
+            raw_input()
 
 
 

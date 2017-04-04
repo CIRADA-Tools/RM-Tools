@@ -58,8 +58,8 @@ runParmDict = {"runMode": "auto",
                "nStableCycles":20,
                "likeStdLim": 1.2,
                "likeMedLim": 0.3,
-               "parmStdLim": 1.2,
-               "parmMedLim": 0.2}
+               "parmStdLim": 1.1,
+               "parmMedLim": 0.1}
 
 
 #-----------------------------------------------------------------------------#
