@@ -94,3 +94,4 @@ ENV/
 
 # Data directory
 data/*
+dataJen/*
