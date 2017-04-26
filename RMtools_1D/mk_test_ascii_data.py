@@ -46,7 +46,7 @@
 # Frequency parameters
 startFreq_Hz = 0.7e9
 endFreq_Hz = 1.8e9
-nChans = 1101
+nChans = 110
 
 # Noise level
 rmsNoise_mJy = 0.02

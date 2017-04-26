@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 11-Jan-2017 by C.Purcell.                                         #
+# MODIFIED: 26-Apr-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -20,6 +20,10 @@
 #  gauss1D             ... return a function to evaluate a 1D Gaussian        #
 #  detect_peak         ... detect the extent of a peak in a 1D array          #
 #  measure_FDF_parms   ... measure parameters of a Faraday dispersion func    #
+#  norm_cdf            ... calculate the CDF of a Normal distribution         #
+#  cdf_percentile      ... return the value at the given percentile of a CDF  #
+#  calc_sigma_add      ... calculate most likely additional scatter           #
+#  calc_normal_tests   ... calculate metrics measuring deviation from normal  #
 #  measure_qu_complexity  ... measure the complexity of a q & u spectrum      #
 #  measure_fdf_complexity  ... measure the complexity of a clean FDF spectrum #
 #                                                                             #
@@ -28,6 +32,7 @@
 #  do_rmsynth          ... perform RM-synthesis on Q & U data by spectrum     #
 #  get_RMSF            ... calculate the RMSF for a 1D wavelength^2 array     #
 #  do_rmclean          ... perform Hogbom RM-clean on a dirty FDF             #
+#  plot_complexity     ... plot the residual, PDF and CDF (deprecated)        #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -62,6 +67,9 @@ from scipy.stats import kurtosis
 from scipy.stats import skew
 from scipy.stats import skewtest
 from scipy.stats import kurtosistest
+from scipy.stats import anderson
+from scipy.stats import kstest
+from scipy.stats import norm
 
 from mpfit import mpfit
 from util_misc import progress  
@@ -69,6 +77,7 @@ from util_misc import toscalar
 from util_misc import calc_parabola_vertex
 from util_misc import create_pqu_spectra_burn
 from util_misc import calc_mom2_FDF
+from util_misc import MAD
 
 # Constants
 C = 2.99792458e8
@@ -883,8 +892,207 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
 
 
 #-----------------------------------------------------------------------------#
+def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
+    """Return the CDF of a normal distribution between -6 and 6 sigma, or at
+    the values of an input array."""
+    
+    if xArr is None:
+        x = np.linspace(-6.0*std, 6.0*std, N)
+    else:
+        x = xArr
+    y = norm.cdf(x, loc=mean, scale=std)
+    
+    return x, y
+
+
+#-----------------------------------------------------------------------------#
+def cdf_percentile(x, p, q=50.0):
+    """Return the value at a given percentile of a cumulative distribution
+    function."""
+
+    i = np.where(p>q/100.0)[0][0]
+
+    # Return the limiting values
+    if i==0 or i==len(x):
+        return x[i]
+
+    # or interpolate between two points
+    else:
+        m = (p[i]-p[i-1])/(x[i]-x[i-1])
+        c = p[i] - m*x[i]
+        return (q/100.0-c)/m
+    
+
+#-----------------------------------------------------------------------------#
+def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
+                   debug=False):
+    """Calculate the most likely value of additional scatter, assuming the
+    input data is drawn from a normal distribution. The total uncertainty on
+    each data point Y_i is modelled as dYtot_i**2 = dY_i**2 + dYadd**2."""
+    
+    # Measure the median and MADFM of the input data if not provided
+    if yMed is None:
+        yMed = np.median(yArr)
+    if noise is None:
+        noise = MAD(yArr)
+        
+    # Sample the PDF of the additional noise term from a limit near zero to
+    # a limit of the range of the data, including error bars
+    yRng = np.max(yArr+dyArr) - np.min(yArr-dyArr)
+    sigmaAddArr = np.linspace(yRng/nSamp, yRng, nSamp)
+    
+    # Model deviation from Gaussian as an additional noise term.
+    # Loop through the range of i additional noise samples and calculate
+    # chi-squared and sum(ln(sigma_total)), used later to calculate likelihood.
+    nData = len(xArr)
+    chiSqArr = np.zeros_like(sigmaAddArr)
+    lnSigmaSumArr = np.zeros_like(sigmaAddArr)
+    for i, sigmaAdd in enumerate(sigmaAddArr):
+        sigmaSqTot = dyArr**2.0 + sigmaAdd**2.0
+        lnSigmaSumArr[i] = np.sum(np.log(np.sqrt(sigmaSqTot)))
+        chiSqArr[i] = np.nansum((yArr-yMed)**2.0/sigmaSqTot)
+    dof = nData-1
+    chiSqRedArr = chiSqArr/dof
+
+    # Calculate the PDF and normalise the peak to 1
+    lnProbArr = (-np.log(sigmaAddArr) -nData * np.log(2.0*np.pi)/2.0
+                 -lnSigmaSumArr -chiSqArr/2.0)
+    lnProbArr -= np.max(lnProbArr)
+    probArr = np.exp(lnProbArr)
+
+    # Calculate the cumulative PDF
+    CPDF = np.cumsum(probArr)/np.sum(probArr)
+
+    # Calculate the mean of the distribution and the +/- 1-sigma limits
+    sigmaAdd = cdf_percentile(x=sigmaAddArr, p=CPDF, q=50.0)
+    sigmaAddMinus = cdf_percentile(x=sigmaAddArr, p=CPDF, q=15.72)
+    sigmaAddPlus = cdf_percentile(x=sigmaAddArr, p=CPDF, q=84.27)
+    mDict = {"sigmaAdd":  toscalar(sigmaAdd),
+             "sigmaAddMinus": toscalar(sigmaAddMinus),
+             "sigmaAddPlus": toscalar(sigmaAddPlus)}
+
+    # Show the complexity plots
+    if debug:
+
+        # Setup for the figure
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(18.0, 10.0))
+        
+        # Plot the data and the +/- 1-sigma levels
+        ax1 = fig.add_subplot(231)
+        ax1.errorbar(x=xArr, y=yArr, yerr=dyArr, ms=4, fmt='o')
+        ax1.axhline(yMed, color='grey', zorder=10)
+        ax1.axhline(yMed+noise, color='r', linestyle="--", zorder=10)
+        ax1.axhline(yMed-noise, color='r', linestyle="--", zorder=10)
+        ax1.set_title(r'Input Data')
+        ax1.set_xlabel(r'X')
+        ax1.set_ylabel('Amplitude')
+
+        # Plot the histogram of the data overlaid by the normal distribution
+        H = 1.0/ np.sqrt(2.0 * np.pi * noise**2.0)
+        xNorm = np.linspace(yMed-3*noise, yMed+3*noise, 1000)
+        yNorm = H * np.exp(-0.5 * ((xNorm-yMed)/noise)**2.0)
+        fwhm = noise * (2.0 * np.sqrt(2.0 * np.log(2.0)))
+        ax2 = fig.add_subplot(232)
+        nBins = 15
+        n, b, p = ax2.hist(yArr, nBins, normed=1, histtype='step')
+        ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=2)
+        ax2.axvline(yMed, color='grey', zorder=11)
+        ax2.axvline(yMed+fwhm/2.0, color='r', linestyle="--", zorder=11)
+        ax2.axvline(yMed-fwhm/2.0, color='r', linestyle="--", zorder=11)
+        ax2.set_title(r'Distribution of Data Compared to Normal')
+        ax2.set_xlabel(r'Amplitude')
+        ax2.set_ylabel(r'Normalised Counts')
+    
+        # Plot the ECDF versus by a normal CDF
+        ecdfArr = np.array(range(nData))/float(nData)
+        ySrtArr = np.sort(yArr)
+        ax3 = fig.add_subplot(233)
+        ax3.step(ySrtArr, ecdfArr, where="mid")
+        x, y = norm_cdf(mean=yMed, std=noise, N=1000)
+        ax3.plot(x, y, color='k', linewidth=2, linestyle="--", zorder=1)
+        ax3.set_title(r'CDF of Data Compared to Normal')
+        ax3.set_xlabel(r'Amplitude')
+        ax3.set_ylabel(r'Normalised Counts')
+
+        # Plot reduced chi-squared
+        ax4 = fig.add_subplot(234)
+        ax4.step(x=sigmaAddArr, y=chiSqRedArr, linewidth=1.5, where="mid")
+        ax4.axhline(1.0, color='r', linestyle="--")
+        ax4.set_title(r'$\chi^2_{\rm reduced}$ vs $\sigma_{\rm additional}$')
+        ax4.set_xlabel(r'$\sigma_{\rm additional}$')
+        ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
+
+        # Plot the probability distribution function
+        ax5 = fig.add_subplot(235)
+        ax5.step(x=sigmaAddArr, y=probArr, linewidth=1.5, where="mid")
+        ax5.set_ylim(0, 1.05)
+        ax5.axvline(sigmaAdd, color='grey', linestyle="-", linewidth=1.5)
+        ax5.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
+        ax5.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
+        ax5.set_title('Relative Likelihood')
+        ax5.set_xlabel(r"$\sigma_{\rm additional}$")
+        ax5.set_ylabel(r"P($\sigma_{\rm additional}$|data)")
+
+        # Plot the CPDF
+        ax6 = fig.add_subplot(236)
+        ax6.step(x=sigmaAddArr, y=CPDF, linewidth=1.5, where="mid")
+        ax6.set_ylim(0, 1.05)
+        ax6.axvline(sigmaAdd, color='grey', linestyle="-", linewidth=1.5)
+        ax6.axhline(0.5, color='grey', linestyle="-", linewidth=1.5)
+        ax6.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
+        ax6.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
+        ax6.set_title('Cumulative Likelihood')
+        ax6.set_xlabel(r"$\sigma_{\rm additional}$")
+        ax6.set_ylabel(r"Cumulative Likelihood")
+        
+        # Show the figure
+        fig.subplots_adjust(left=0.07, bottom=0.07, right=0.97, top=0.94,
+                            wspace=0.25, hspace=0.25)
+        fig.show()
+        
+    return mDict
+
+
+#-----------------------------------------------------------------------------#
+def calc_normal_tests(inArr):
+    """Calculate metrics measuring deviation of an array from Normal."""
+
+    # Perfrorm the KS-test
+    KS_z, KS_p = kstest(inArr, "norm")
+        
+    # Calculate the Anderson test
+    AD_z, AD_crit, AD_p = anderson(inArr, "norm")
+    
+    # Calculate the skewness (measure of symmetry)
+    # abs(skewness) < 0.5 =  approx symmetric
+    skewVal = skew(inArr)
+    SK_z, SK_p = skewtest(inArr)
+    
+    # Calculate the kurtosis (tails compared to a normal distribution)
+    kurtosisVal = kurtosis(inArr)
+    KUR_z, KUR_p = kurtosistest(inArr)
+
+    # Return dictionary
+    mDict = {"KS_z":  toscalar(KS_z),
+             "KS_p":  toscalar(KS_p),
+             "AD_z": toscalar(AD_z),
+             "AD_crit": toscalar(AD_crit),
+             "AD_p": toscalar(AD_p),
+             "skewVal": toscalar(skewVal),
+             "SK_z": toscalar(SK_z),
+             "SK_p": toscalar(SK_p),
+             "kurtosisVal": toscalar(kurtosisVal),
+             "KUR_z": toscalar(KUR_z),
+             "KUR_p": toscalar(KUR_p)
+    }
+        
+    return mDict
+
+
+#-----------------------------------------------------------------------------#
 def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
-                          psi0_deg, RM_radm2, doPlots=True):
+                          psi0_deg, RM_radm2, doPlots=False, debug=False):
     
     # Fractional polarised intensity
     pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
@@ -896,104 +1104,47 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
                                      fracPolArr   = [fracPol],
                                      psi0Arr_deg  = [psi0_deg],
                                      RMArr_radm2  = [RM_radm2])
-
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    
     # Subtract the RM-thin model to create a residual q & u
     qResidArr = qArr - qModArr
     uResidArr = uArr - uModArr
     pResidArr = pArr - pModArr
-    #pResidArr = np.sqrt(qResidArr**2.0 + uResidArr**2.0)
-
-    # DEBUG
-    if False:
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import MaxNLocator
-        from util_plotTk import plot_pqu_vs_lamsq_ax
-        fig = plt.figure(figsize=(18.0, 8))
-        
-        lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
-
-        # Plot the Fractional spectra
-        ax1 = fig.add_subplot(131)
-        plot_pqu_vs_lamsq_ax(ax=ax1,
-                             lamSqArr_m2 = lamSqArr_m2,
-                             qArr        = qArr,
-                             uArr        = uArr,
-                             dqArr       = dqArr,
-                             duArr       = duArr,
-                             qModArr     = qModArr,
-                             uModArr     = uModArr)
-
-        # Plot the residual
-        ax2 = fig.add_subplot(132)
-        ax2.errorbar(x=lamSqArr_m2, y=pResidArr/dpArr, mec='k', mfc='k', ms=4,
-                fmt='D', ecolor='k', label='Residual P')
-        ax2.yaxis.set_major_locator(MaxNLocator(4))
-        ax2.xaxis.set_major_locator(MaxNLocator(4))
-        
-        # Plot the distribution of the residual
-        ax3 = fig.add_subplot(133)
-        n, b, p = ax3.hist(pResidArr/dpArr, 50, normed=1, facecolor='green',
-                           alpha=0.75)
-        
-        g = gauss1D(amp=0.6, mean=0.0, fwhm=1.00)(b)
-        ax3.step(b, g, color='k', linewidth=5)
-
-        # Calculate the skewness (measure of symmetry)
-        skewVal = skew(n)
-        print "SKEW:", skewVal
-#        skewTestVal = skewtest(pResidArr/dpArr)
-#        print "SKEWTEST:", skewTestVal
-
-
-        # Calculate the kurtosis (tails compared to a normal distribution)
-        kurtosisVal = kurtosis(n)
-        print "KURTOSIS:", kurtosisVal
-#        kurtosisTestVal = kurtosistest(pResidArr/dpArr)
-#        print "KURTOSISTEST:", kurtosisTestVal
-        
-
-
-        
-        """
-        pSrtArr = np.sort(pResidArr)
-        N = len(pSrtArr)
-        pCum = np.array(range(N))/float(N)
-        
-        g = gauss1D(amp=1.0, mean=0.0, fwhm=0.05)(pSrtArr)
-        gSrtArr = np.sort(g)
-        N = len(gSrtArr)
-        gCum = np.array(range(N))/float(N)
-
-
-
-        ax3 = fig.add_subplot(133)
-        ax3.plot(pSrtArr, pCum)
-        ax3.plot(gSrtArr, gCum)
-        """
-        
-        fig.show()
-        raw_input()
-
-
-
-    # Complexity metric 1
-    M1 = ( np.nansum(np.power(pResidArr, 2.0) / np.power(dpArr, 2))
-           / (len(pResidArr)-1) )
     
-    # Complexity metric 2
-    #M2 = (np.sum(np.power(qResidArr, 2.0) + np.power(uResidArr, 2.0))
-    #      /(len(pModArr)-1) )
-    M2 = ( np.nansum(np.power(qResidArr, 2.0) / np.power(qArr, 2) +
-                     np.power(uResidArr, 2.0) / np.power(qArr, 2))
-           / 2*(len(qResidArr)-2) )
+
+    # Calculate the most likely value of the additional scatter term
+    ndata = len(lamSqArr_m2)
+    f = 1
+    mSAq = calc_sigma_add(xArr=lamSqArr_m2[:ndata/f],
+                          yArr=(qResidArr/dqArr)[:ndata/f],
+                          dyArr=(dqArr/dqArr)[:ndata/f],
+                          yMed=0.0,
+                          debug=debug)
+    mSAu = calc_sigma_add(xArr=lamSqArr_m2[:ndata/f],
+                          yArr=(uResidArr/duArr)[:ndata/f],
+                          dyArr=(duArr/duArr)[:ndata/f],
+                          yMed=0.0,
+                          debug=debug)
     
-#    M2 = ( np.nansum(np.power(qResidArr, 2.0) + np.power(uResidArr, 2.0))
-#          / 2*(len(pModArr)-2) )
-            
-            
-    return M1, M2
+    # Calculate the deviations statistics
+    mDictq = calc_normal_tests(qResidArr/dqArr)
+    mDictu = calc_normal_tests(uResidArr/duArr)
     
-    
+    # Feedback to user
+    if debug:
+        print("sigma_add(q) = %.4g (+%3g, -%3g)" %
+              (mSAq["sigmaAdd"], mSAq["sigmaAddPlus"]-mSAq["sigmaAdd"],
+               mSAq["sigmaAdd"]-mSAq["sigmaAddMinus"]))
+        print("sigma_add(u) = %.4g (+%3g, -%3g)" %
+              (mSAu["sigmaAdd"], mSAu["sigmaAddPlus"]-mSAu["sigmaAdd"],
+               mSAu["sigmaAdd"]-mSAu["sigmaAddMinus"]))
+
+        if not doPlots:
+            raw_input()
+        
+    return mSAq["sigmaAdd"], mSAu["sigmaAdd"]
+
+
 #-----------------------------------------------------------------------------#
 def measure_fdf_complexity(phiArr, ccFDF):
 
@@ -1385,3 +1536,96 @@ def do_rmclean(dirtyFDF, phiArr, lamSqArr, cutoff, maxIter=1000, gain=0.1,
 
     return cleanFDF, ccArr, fwhmRMSF, iterCount
 
+
+#-----------------------------------------------------------------------------#
+def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
+                    RM_radm2):
+    
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
+    from util_plotTk import plot_pqu_vs_lamsq_ax
+    
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+
+    # Create a RM-thin model to subtract
+    pModArr, qModArr, uModArr = \
+             create_pqu_spectra_burn(freqArr_Hz   = freqArr_Hz,
+                                     fracPolArr   = [fracPol],
+                                     psi0Arr_deg  = [psi0_deg],
+                                     RMArr_radm2  = [RM_radm2])
+        
+    # Subtract the RM-thin model to create a residual q & u
+    qResidArr = qArr - qModArr
+    uResidArr = uArr - uModArr
+    qResidNorm = qResidArr/dqArr
+    uResidNorm = uResidArr/duArr
+    
+    # High resolution models
+    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000) 
+    lamSqHirArr_m2 = np.power(C/freqHirArr_Hz, 2.0)
+    pModArr, qModArr, uModArr = \
+             create_pqu_spectra_burn(freqArr_Hz   = freqHirArr_Hz,
+                                     fracPolArr   = [fracPol],
+                                     psi0Arr_deg  = [psi0_deg],
+                                     RMArr_radm2  = [RM_radm2])
+    
+    # Plot the fractional spectra
+    fig = plt.figure(figsize=(12.0, 10.0))        
+    ax1 = fig.add_subplot(221)
+    plot_pqu_vs_lamsq_ax(ax=ax1,
+                         lamSqArr_m2 = lamSqArr_m2,
+                         qArr        = qArr,
+                         uArr        = uArr,
+                         dqArr       = dqArr,
+                         duArr       = duArr,                             
+                         qModArr     = qModArr,
+                         uModArr     = uModArr,
+                         lamSqHirArr_m2 = lamSqHirArr_m2)
+    
+    # Plot the residual in lambda-sq space
+    ax2 = fig.add_subplot(222)
+    ax2.errorbar(x=lamSqArr_m2, y=qResidArr, mec='none', mfc='b', ms=4,
+                 fmt='o', label='q Residual')
+    ax2.errorbar(x=lamSqArr_m2, y=uResidArr, mec='none', mfc='r', ms=4,
+                 fmt='o', label='u Residual')
+    ax2.axhline(0, color='grey')
+    ax2.yaxis.set_major_locator(MaxNLocator(4))
+    ax2.xaxis.set_major_locator(MaxNLocator(4))
+    ax2.set_xlabel('$\\lambda^2$ (m$^2$)')
+    #ax2.set_ylabel('Residual ($\sigma$)')
+    ax2.set_ylabel('Residual (fractional polarisation)')
+
+    # Plot the distribution of the residual
+    ax3 = fig.add_subplot(223)
+    nBins = 30
+    n, b, p = ax3.hist(qResidNorm, nBins, normed=1, edgecolor="b",
+                       histtype='step', linewidth=1.0, zorder=2)
+    n, b, p = ax3.hist(uResidNorm, nBins, normed=1, edgecolor="r",
+                       histtype='step', linewidth=1.0, zorder=2)
+    
+    # Overlay a Gaussian
+    H = 1.0/m.sqrt(2.0*m.pi)                  # Normalised height
+    FWHM = 2.0 * m.sqrt(2.0 * m.log(2.0))     # 1-sigma
+    
+    x = np.linspace(b[0], b[-1], 1000)
+    g = gauss1D(amp=H, mean=0.0, fwhm=FWHM)(x)
+    ax3.plot(x, g, color='k', linewidth=2, linestyle="--", zorder=1)
+    ax3.set_ylabel('Normalised Units')
+    ax3.set_xlabel('Residual ($\sigma$)')
+
+    # Plot the cumulative distribution function
+    N = len(qResidNorm)
+    cumArr = np.array(range(N))/float(N)
+    qResidNormSrt = np.sort(qResidNorm)
+    uResidNormSrt = np.sort(uResidNorm)
+    ax4 = fig.add_subplot(224)
+    ax4.step(qResidNormSrt, cumArr, color='b')
+    ax4.step(uResidNormSrt, cumArr, color='r')
+    x, y = norm_cdf(mean=0.0, std=1.0, N=1000)
+    ax4.step(x, y, color='k', linewidth=2, linestyle="--", zorder=1)
+    ax4.set_ylabel('CDF')
+    ax4.set_xlabel('Residual ($\sigma$)')
+
+    return fig
+
+    

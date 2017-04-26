@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 17-May-2016 by C. Purcell                                         #
+# MODIFIED: 07-Apr-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -318,12 +318,11 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                    duArr      = duArr,
                                    fracPol    = mDict["fracPol"],
                                    psi0_deg   = mDict["polAngle0Fit_deg"],
-                                   RM_radm2   = mDict["phiPeakPIfit_rm2"])
+                                   RM_radm2   = mDict["phiPeakPIfit_rm2"],
+                                   doPlots    = showPlots,
+                                   debug      = debug)
     mDict["c1"] = M1
     mDict["c2"] = M2
-    print 
-    print "M1, M2:", M1, M2
-    print 
     
     # Save the  dirty FDF, RMSF and weight array to ASCII files
     print "Saving the dirty FDF, RMSF weight arrays to ASCII files."

@@ -373,13 +373,13 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     # Plot p, q, u versus lambda^2
 #    """
     ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='b', mfc='none', ms=4,
-                fmt='D', ecolor='b', alpha=0.3, elinewidth=1.0, capsize=2,
+                fmt='D', ecolor='b', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes q')
     ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='r', mfc='none', ms=4,
-                fmt='D', ecolor='r', alpha=0.3, elinewidth=1.0, capsize=2,
+                fmt='D', ecolor='r', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes u')
     ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='none', ms=4,
-                fmt='D', ecolor='k', alpha=0.3, elinewidth=1.0, capsize=2,
+                fmt='D', ecolor='k', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Intensity p')
     """
     ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='r', ms=4,
@@ -397,12 +397,12 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     
     # Plot the models
     if qModArr is not None:
-        ax.plot(lamSqHirArr_m2, qModArr, color='b', lw=2.5, label='Model q')
+        ax.plot(lamSqHirArr_m2, qModArr, color='b', alpha=0.5, lw=1.5, label='Model q')
     if uModArr is not None:
-        ax.plot(lamSqHirArr_m2, uModArr, color='r', lw=2.5, label='Model u')
+        ax.plot(lamSqHirArr_m2, uModArr, color='r', alpha=0.5, lw=1.5, label='Model u')
     if qModArr is not None and uModArr is not None:
         pModArr = np.sqrt(qModArr**2.0 + uModArr**2.0 )
-        ax.plot(lamSqHirArr_m2, pModArr, color='k', lw=2.5, label='Model p')
+        ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=0.5, lw=1.5, label='Model p')
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
