@@ -925,12 +925,13 @@ def cdf_percentile(x, p, q=50.0):
 
 #-----------------------------------------------------------------------------#
 def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
-                   debug=False):
+                   suffix="", debug=False):
     """Calculate the most likely value of additional scatter, assuming the
     input data is drawn from a normal distribution. The total uncertainty on
     each data point Y_i is modelled as dYtot_i**2 = dY_i**2 + dYadd**2."""
     
-    # Measure the median and MADFM of the input data if not provided
+    # Measure the median and MADFM of the input data if not provided.
+    # Used to overplot a normal distribution when debugging.
     if yMed is None:
         yMed = np.median(yArr)
     if noise is None:
@@ -967,9 +968,9 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
     sigmaAdd = cdf_percentile(x=sigmaAddArr, p=CPDF, q=50.0)
     sigmaAddMinus = cdf_percentile(x=sigmaAddArr, p=CPDF, q=15.72)
     sigmaAddPlus = cdf_percentile(x=sigmaAddArr, p=CPDF, q=84.27)
-    mDict = {"sigmaAdd":  toscalar(sigmaAdd),
-             "sigmaAddMinus": toscalar(sigmaAddMinus),
-             "sigmaAddPlus": toscalar(sigmaAddPlus)}
+    mDict = {"sigmaAdd" + suffix:  toscalar(sigmaAdd),
+             "dSigmaAddMinus" + suffix: toscalar(sigmaAdd - sigmaAddMinus),
+             "dSigmaAddPlus" + suffix: toscalar(sigmaAddPlus - sigmaAdd)}
 
     # Show the complexity plots
     if debug:
@@ -1055,14 +1056,14 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
 
 
 #-----------------------------------------------------------------------------#
-def calc_normal_tests(inArr):
+def calc_normal_tests(inArr, suffix=""):
     """Calculate metrics measuring deviation of an array from Normal."""
 
     # Perfrorm the KS-test
     KS_z, KS_p = kstest(inArr, "norm")
         
     # Calculate the Anderson test
-    AD_z, AD_crit, AD_p = anderson(inArr, "norm")
+    AD_z, AD_crit, AD_sig = anderson(inArr, "norm")
     
     # Calculate the skewness (measure of symmetry)
     # abs(skewness) < 0.5 =  approx symmetric
@@ -1074,29 +1075,27 @@ def calc_normal_tests(inArr):
     KUR_z, KUR_p = kurtosistest(inArr)
 
     # Return dictionary
-    mDict = {"KS_z":  toscalar(KS_z),
-             "KS_p":  toscalar(KS_p),
-             "AD_z": toscalar(AD_z),
-             "AD_crit": toscalar(AD_crit),
-             "AD_p": toscalar(AD_p),
-             "skewVal": toscalar(skewVal),
-             "SK_z": toscalar(SK_z),
-             "SK_p": toscalar(SK_p),
-             "kurtosisVal": toscalar(kurtosisVal),
-             "KUR_z": toscalar(KUR_z),
-             "KUR_p": toscalar(KUR_p)
+    mDict = {"KSz" + suffix:  toscalar(KS_z),
+             "KSp" + suffix:  toscalar(KS_p),
+             #"ADz" + suffix: toscalar(AD_z),
+             #"ADcrit" + suffix: toscalar(AD_crit),
+             #"ADsig" + suffix: toscalar(AD_sig),
+             "skewVal" + suffix: toscalar(skewVal),
+             "SKz" + suffix: toscalar(SK_z),
+             "SKp" + suffix: toscalar(SK_p),
+             "kurtosisVal" + suffix: toscalar(kurtosisVal),
+             "KURz" + suffix: toscalar(KUR_z),
+             "KURp" + suffix: toscalar(KUR_p)
     }
-        
+
+    print mDict
     return mDict
 
 
 #-----------------------------------------------------------------------------#
 def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
-                          psi0_deg, RM_radm2, doPlots=False, debug=False):
-    
-    # Fractional polarised intensity
-    pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
-    dpArr = np.sqrt(dqArr**2.0 + duArr**2.0 )
+                          psi0_deg, RM_radm2, specF=1, doPlots=False,
+                          debug=False):
     
     # Create a RM-thin model to subtract
     pModArr, qModArr, uModArr = \
@@ -1105,44 +1104,44 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
                                      psi0Arr_deg  = [psi0_deg],
                                      RMArr_radm2  = [RM_radm2])
     lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    ndata = len(lamSqArr_m2)
     
     # Subtract the RM-thin model to create a residual q & u
     qResidArr = qArr - qModArr
     uResidArr = uArr - uModArr
-    pResidArr = pArr - pModArr
-    
 
-    # Calculate the most likely value of the additional scatter term
-    ndata = len(lamSqArr_m2)
-    f = 1
-    mSAq = calc_sigma_add(xArr=lamSqArr_m2[:ndata/f],
-                          yArr=(qResidArr/dqArr)[:ndata/f],
-                          dyArr=(dqArr/dqArr)[:ndata/f],
-                          yMed=0.0,
-                          debug=debug)
-    mSAu = calc_sigma_add(xArr=lamSqArr_m2[:ndata/f],
-                          yArr=(uResidArr/duArr)[:ndata/f],
-                          dyArr=(duArr/duArr)[:ndata/f],
-                          yMed=0.0,
-                          debug=debug)
+    # Calculate value of additional scatter term for q & u (max likelihood)
+    mDict = {}
+    mDict.update( calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
+                                 yArr=(qResidArr/dqArr)[:ndata/specF],
+                                 dyArr=(dqArr/dqArr)[:ndata/specF],
+                                 yMed=0.0,
+                                 suffix="Q",
+                                 debug=debug) )
+    mDict.update( calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
+                                 yArr=(uResidArr/duArr)[:ndata/specF],
+                                 dyArr=(duArr/duArr)[:ndata/specF],
+                                 yMed=0.0,
+                                 suffix="U",
+                                 debug=debug) )
     
     # Calculate the deviations statistics
-    mDictq = calc_normal_tests(qResidArr/dqArr)
-    mDictu = calc_normal_tests(uResidArr/duArr)
-    
+    mDict.update( calc_normal_tests(qResidArr/dqArr, suffix="Q") )
+    mDict.update( calc_normal_tests(uResidArr/duArr, suffix="U") )
+
     # Feedback to user
     if debug:
         print("sigma_add(q) = %.4g (+%3g, -%3g)" %
-              (mSAq["sigmaAdd"], mSAq["sigmaAddPlus"]-mSAq["sigmaAdd"],
-               mSAq["sigmaAdd"]-mSAq["sigmaAddMinus"]))
+              (mDict["sigmaAddQ"], mDict["dSigmaAddPlusQ"],
+               mDict["dSigmaAddMinusQ"]))
         print("sigma_add(u) = %.4g (+%3g, -%3g)" %
-              (mSAu["sigmaAdd"], mSAu["sigmaAddPlus"]-mSAu["sigmaAdd"],
-               mSAu["sigmaAdd"]-mSAu["sigmaAddMinus"]))
+              (mDict["sigmaAddU"], mDict["dSigmaAddPlusU"],
+               mDict["dSigmaAddMinusU"]))
 
         if not doPlots:
             raw_input()
         
-    return mSAq["sigmaAdd"], mSAu["sigmaAdd"]
+    return mDict
 
 
 #-----------------------------------------------------------------------------#

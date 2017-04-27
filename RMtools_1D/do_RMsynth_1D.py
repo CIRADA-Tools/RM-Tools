@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 07-Apr-2017 by C. Purcell                                         #
+# MODIFIED: 27-Apr-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -311,18 +311,16 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
-    M1, M2 = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
-                                   qArr       = qArr,
-                                   uArr       = uArr,
-                                   dqArr      = dqArr,
-                                   duArr      = duArr,
-                                   fracPol    = mDict["fracPol"],
-                                   psi0_deg   = mDict["polAngle0Fit_deg"],
-                                   RM_radm2   = mDict["phiPeakPIfit_rm2"],
-                                   doPlots    = showPlots,
-                                   debug      = debug)
-    mDict["c1"] = M1
-    mDict["c2"] = M2
+    mDict.update( measure_qu_complexity(freqArr_Hz = freqArr_Hz,
+                                        qArr       = qArr,
+                                        uArr       = uArr,
+                                        dqArr      = dqArr,
+                                        duArr      = duArr,
+                                        fracPol    = mDict["fracPol"],
+                                        psi0_deg   = mDict["polAngle0Fit_deg"],
+                                        RM_radm2   = mDict["phiPeakPIfit_rm2"],
+                                        doPlots    = showPlots,
+                                        debug      = debug) )
     
     # Save the  dirty FDF, RMSF and weight array to ASCII files
     print "Saving the dirty FDF, RMSF weight arrays to ASCII files."
