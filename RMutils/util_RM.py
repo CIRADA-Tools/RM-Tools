@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 26-Apr-2017 by C.Purcell.                                         #
+# MODIFIED: 28-Apr-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -986,7 +986,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax1.axhline(yMed+noise, color='r', linestyle="--", zorder=10)
         ax1.axhline(yMed-noise, color='r', linestyle="--", zorder=10)
         ax1.set_title(r'Input Data')
-        ax1.set_xlabel(r'X')
+        ax1.set_xlabel(r'$\lambda^2$')
         ax1.set_ylabel('Amplitude')
 
         # Plot the histogram of the data overlaid by the normal distribution
@@ -1088,7 +1088,6 @@ def calc_normal_tests(inArr, suffix=""):
              "KURp" + suffix: toscalar(KUR_p)
     }
 
-    print mDict
     return mDict
 
 
