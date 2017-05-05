@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 27-Apr-2017 by C. Purcell                                         #
+# MODIFIED: 03-May-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -54,6 +54,7 @@ from RMutils.util_misc import create_frac_spectra
 from RMutils.util_misc import poly5
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import plot_rmsf_fdf_fig
+from RMutils.util_plotTk import plot_complexity_fig
 from RMutils.util_plotTk import CustomNavbar
 
 C = 2.997924538e8 # Speed of light [m/s]
@@ -311,16 +312,34 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
-    mDict.update( measure_qu_complexity(freqArr_Hz = freqArr_Hz,
-                                        qArr       = qArr,
-                                        uArr       = uArr,
-                                        dqArr      = dqArr,
-                                        duArr      = duArr,
-                                        fracPol    = mDict["fracPol"],
-                                        psi0_deg   = mDict["polAngle0Fit_deg"],
-                                        RM_radm2   = mDict["phiPeakPIfit_rm2"],
-                                        doPlots    = showPlots,
-                                        debug      = debug) )
+    mD, pD = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
+                                   qArr       = qArr,
+                                   uArr       = uArr,
+                                   dqArr      = dqArr,
+                                   duArr      = duArr,
+                                   fracPol    = mDict["fracPol"],
+                                   psi0_deg   = mDict["polAngle0Fit_deg"],
+                                   RM_radm2   = mDict["phiPeakPIfit_rm2"])
+    mDict.update(mD)
+    
+    # Debugging plots for complexity measure
+    if debug:
+        tmpFig = plot_complexity_fig(xArr=pD["xArrQ"],
+                                     qArr=pD["yArrQ"],
+                                     dqArr=pD["dyArrQ"],
+                                     sigmaAddqArr=pD["sigmaAddArrQ"],
+                                     chiSqRedqArr=pD["chiSqRedArrQ"],
+                                     probqArr=pD["probArrQ"],
+                                     uArr=pD["yArrU"],
+                                     duArr=pD["dyArrU"],
+                                     sigmaAdduArr=pD["sigmaAddArrU"],
+                                     chiSqReduArr=pD["chiSqRedArrU"],
+                                     probuArr=pD["probArrU"],
+                                     mDict=mDict)
+        tmpFig.show()
+        if not showPlots:
+            print  "Press <RETURN> to continue ...",
+            raw_input()
     
     # Save the  dirty FDF, RMSF and weight array to ASCII files
     print "Saving the dirty FDF, RMSF weight arrays to ASCII files."

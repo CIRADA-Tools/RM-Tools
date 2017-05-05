@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 26-Apr-2017 by C.Purcell.                                         #
+# MODIFIED: 05-May-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -457,7 +457,6 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         leg.get_frame().set_alpha(0.5)
         ax2.autoscale_view(True,True,True)
         plt.draw()
-        
 
     if doAnimate:
         doPlots = True
@@ -910,13 +909,14 @@ def cdf_percentile(x, p, q=50.0):
     """Return the value at a given percentile of a cumulative distribution
     function."""
 
+    # Determin index where cumulative percentage is achieved
     i = np.where(p>q/100.0)[0][0]
 
-    # Return the limiting values
+    # If at extremes of the distribution, return the limiting value
     if i==0 or i==len(x):
         return x[i]
 
-    # or interpolate between two points
+    # or interpolate between the two bracketing values in the CDF
     else:
         m = (p[i]-p[i-1])/(x[i]-x[i-1])
         c = p[i] - m*x[i]
@@ -925,7 +925,7 @@ def cdf_percentile(x, p, q=50.0):
 
 #-----------------------------------------------------------------------------#
 def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
-                   suffix="", debug=False):
+                   suffix=""):
     """Calculate the most likely value of additional scatter, assuming the
     input data is drawn from a normal distribution. The total uncertainty on
     each data point Y_i is modelled as dYtot_i**2 = dY_i**2 + dYadd**2."""
@@ -955,12 +955,16 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
     dof = nData-1
     chiSqRedArr = chiSqArr/dof
 
-    # Calculate the PDF and normalise the peak to 1
+    # Calculate the PDF in log space and normalise the peak to 1
     lnProbArr = (-np.log(sigmaAddArr) -nData * np.log(2.0*np.pi)/2.0
                  -lnSigmaSumArr -chiSqArr/2.0)
     lnProbArr -= np.max(lnProbArr)
     probArr = np.exp(lnProbArr)
 
+    # Normalise the area under the PDF to be 1
+    A = np.sum(probArr * np.diff(sigmaAddArr)[0])
+    probArr /= A
+    
     # Calculate the cumulative PDF
     CPDF = np.cumsum(probArr)/np.sum(probArr)
 
@@ -972,8 +976,16 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
              "dSigmaAddMinus" + suffix: toscalar(sigmaAdd - sigmaAddMinus),
              "dSigmaAddPlus" + suffix: toscalar(sigmaAddPlus - sigmaAdd)}
 
-    # Show the complexity plots
-    if debug:
+    # Return the curves to be plotted in a separate dictionary
+    pltDict = {"sigmaAddArr" + suffix: sigmaAddArr,
+               "chiSqRedArr" + suffix: chiSqRedArr,
+               "probArr" + suffix: probArr,
+               "xArr" + suffix: xArr,
+               "yArr" + suffix: yArr,
+               "dyArr" + suffix: dyArr}
+    
+    # DEBUG PLOTS
+    if False:
 
         # Setup for the figure
         import matplotlib.pyplot as plt
@@ -986,7 +998,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax1.axhline(yMed+noise, color='r', linestyle="--", zorder=10)
         ax1.axhline(yMed-noise, color='r', linestyle="--", zorder=10)
         ax1.set_title(r'Input Data')
-        ax1.set_xlabel(r'X')
+        ax1.set_xlabel(r'$\lambda^2$')
         ax1.set_ylabel('Amplitude')
 
         # Plot the histogram of the data overlaid by the normal distribution
@@ -1005,7 +1017,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax2.set_xlabel(r'Amplitude')
         ax2.set_ylabel(r'Normalised Counts')
     
-        # Plot the ECDF versus by a normal CDF
+        # Plot the ECDF versus a normal CDF
         ecdfArr = np.array(range(nData))/float(nData)
         ySrtArr = np.sort(yArr)
         ax3 = fig.add_subplot(233)
@@ -1027,7 +1039,6 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         # Plot the probability distribution function
         ax5 = fig.add_subplot(235)
         ax5.step(x=sigmaAddArr, y=probArr, linewidth=1.5, where="mid")
-        ax5.set_ylim(0, 1.05)
         ax5.axvline(sigmaAdd, color='grey', linestyle="-", linewidth=1.5)
         ax5.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
         ax5.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
@@ -1046,13 +1057,26 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax6.set_title('Cumulative Likelihood')
         ax6.set_xlabel(r"$\sigma_{\rm additional}$")
         ax6.set_ylabel(r"Cumulative Likelihood")
+
+        # Zoom in
+        ax5.set_xlim(0, sigmaAdd + (sigmaAddPlus-sigmaAdd)*4.0)
+        ax6.set_xlim(0, sigmaAdd + (sigmaAddPlus-sigmaAdd)*4.0)
         
         # Show the figure
         fig.subplots_adjust(left=0.07, bottom=0.07, right=0.97, top=0.94,
                             wspace=0.25, hspace=0.25)
         fig.show()
         
-    return mDict
+        # Feedback to user
+        print("sigma_add(q) = %.4g (+%3g, -%3g)" %
+              (mDict["sigmaAddQ"], mDict["dSigmaAddPlusQ"],
+               mDict["dSigmaAddMinusQ"]))
+        print("sigma_add(u) = %.4g (+%3g, -%3g)" %
+              (mDict["sigmaAddU"], mDict["dSigmaAddPlusU"],
+               mDict["dSigmaAddMinusU"]))
+        raw_input()
+            
+    return mDict, pltDict
 
 
 #-----------------------------------------------------------------------------#
@@ -1088,14 +1112,12 @@ def calc_normal_tests(inArr, suffix=""):
              "KURp" + suffix: toscalar(KUR_p)
     }
 
-    print mDict
     return mDict
 
 
 #-----------------------------------------------------------------------------#
 def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
-                          psi0_deg, RM_radm2, specF=1, doPlots=False,
-                          debug=False):
+                          psi0_deg, RM_radm2, specF=1):
     
     # Create a RM-thin model to subtract
     pModArr, qModArr, uModArr = \
@@ -1112,36 +1134,30 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
 
     # Calculate value of additional scatter term for q & u (max likelihood)
     mDict = {}
-    mDict.update( calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
-                                 yArr=(qResidArr/dqArr)[:ndata/specF],
-                                 dyArr=(dqArr/dqArr)[:ndata/specF],
-                                 yMed=0.0,
-                                 suffix="Q",
-                                 debug=debug) )
-    mDict.update( calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
-                                 yArr=(uResidArr/duArr)[:ndata/specF],
-                                 dyArr=(duArr/duArr)[:ndata/specF],
-                                 yMed=0.0,
-                                 suffix="U",
-                                 debug=debug) )
+    pDict = {}
+    m1D, p1D = calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
+                              yArr=(qResidArr/dqArr)[:ndata/specF],
+                              dyArr=(dqArr/dqArr)[:ndata/specF],
+                              yMed=0.0,
+                              noise=1.0,
+                              suffix="Q")
+    mDict.update(m1D)
+    pDict.update(p1D)    
+    m2D, p2D = calc_sigma_add(xArr=lamSqArr_m2[:ndata/specF],
+                              yArr=(uResidArr/duArr)[:ndata/specF],
+                              dyArr=(duArr/duArr)[:ndata/specF],
+                              yMed=0.0,
+                              noise=1.0,
+                              suffix="U")
+    mDict.update(m2D)
+    pDict.update(p2D)
     
     # Calculate the deviations statistics
     mDict.update( calc_normal_tests(qResidArr/dqArr, suffix="Q") )
     mDict.update( calc_normal_tests(uResidArr/duArr, suffix="U") )
 
-    # Feedback to user
-    if debug:
-        print("sigma_add(q) = %.4g (+%3g, -%3g)" %
-              (mDict["sigmaAddQ"], mDict["dSigmaAddPlusQ"],
-               mDict["dSigmaAddMinusQ"]))
-        print("sigma_add(u) = %.4g (+%3g, -%3g)" %
-              (mDict["sigmaAddU"], mDict["dSigmaAddPlusU"],
-               mDict["dSigmaAddMinusU"]))
-
-        if not doPlots:
-            raw_input()
         
-    return mDict
+    return mDict, pDict
 
 
 #-----------------------------------------------------------------------------#

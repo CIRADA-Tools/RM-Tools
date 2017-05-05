@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires numpy and astropy.                                       #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 05-May-2017 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -39,6 +39,7 @@
 #  create_IQU_spectra_RMthin ... return IQU spectra for a thin source         #
 #  create_pqu_resid_RMthin ... return fractional spectra - a thin component   #
 #  xfloat               ... convert to float, default to None on fail         #
+#  norm_cdf             ... calculate the CDF of a Normal distribution        #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -76,6 +77,7 @@ import math as m
 import numpy as np
 import numpy.ma as ma
 import scipy.ndimage as ndi
+from scipy.stats import norm
 import ConfigParser
 import sqlite3
 import csv
@@ -783,3 +785,17 @@ def xfloat(x, default=None):
         return float(x)
     except Exception:
         return default
+
+    
+#-----------------------------------------------------------------------------#
+def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
+    """Return the CDF of a normal distribution between -6 and 6 sigma, or at
+    the values of an input array."""
+    
+    if xArr is None:
+        x = np.linspace(-6.0*std, 6.0*std, N)
+    else:
+        x = xArr
+    y = norm.cdf(x, loc=mean, scale=std)
+    
+    return x, y

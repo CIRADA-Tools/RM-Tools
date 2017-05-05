@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Plotting functions for the POSSUM pipeline Tk interface.          #
 #                                                                             #
-# MODIFIED: 15-Sep-2016 by C. Purcell                                         #
+# MODIFIED: 05-May-2016 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -44,6 +44,9 @@
 # plotStampI                                                                  #
 # plotStampP                                                                  #
 # plotSctHstQuery                                                             #
+# mk_hist_poly                                                                #
+# label_format_exp                                                            #
+# plot_complexity_fig                                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -89,6 +92,7 @@ import ttk
 
 from util_plotFITS import plot_fits_map
 from util_misc import xfloat
+from util_misc import norm_cdf
 from normalize import APLpyNormalize
 
 # Alter the default linewidths etc.
@@ -1320,7 +1324,8 @@ def plot_Ipqu_spectra_fig(freqArr_Hz, IArr_mJy, qArr, uArr, dIArr_mJy=None,
     # Adjust subplot spacing
     fig.subplots_adjust(left=0.1, bottom=0.08, right=0.90, top=0.92,
                         wspace=0.08, hspace=0.08)
-    
+
+    return fig
 
 #-----------------------------------------------------------------------------#
 def plotPolsummary(dataMan, indx, io="fig"):
@@ -1480,6 +1485,9 @@ def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, fwhmRMSF=None,
                      gaussParm  = gaussParm,
                      vLine      = vLine,
                      doTitle    = True)
+
+    return fig
+
     
 #-----------------------------------------------------------------------------#
 def plotRMSF(dataMan, indx, io="fig"):
@@ -1617,6 +1625,7 @@ def plot_cleanFDF_fig(phiArr, cleanFDFArr_Jy, ccFDFArr_Jy=None,
                      cutoff_mJy      = cutoff_Jy,
                      showComplex=False)
 
+    return fig
 
 #-----------------------------------------------------------------------------#
 def plotStampI(dataMan, indx, io="fig"):
@@ -1839,6 +1848,128 @@ def label_format_exp(switchExp=3.0):
             return r"$%s10^{%i}$" % (sign, m.log10(absNum))
         else:
             return  r"$%s%g$" % (sign, absNum)
+        
     return rfunc
 
 
+#-----------------------------------------------------------------------------#
+def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
+                        probqArr, uArr, duArr, sigmaAdduArr, chiSqReduArr,
+                        probuArr, mDict, med=0.0, noise=1.0, fig=None):
+    """Create the residual Stokes q and u complexity plots."""
+
+    # Default to a pyplot figure
+    if fig==None:
+        fig = plt.figure(figsize=(16.0, 8.0))
+    
+    # Plot the data and the +/- 1-sigma levels
+    ax1 = fig.add_subplot(231)
+    ax1.xaxis.tick_top()
+    ax1.xaxis.set_label_position("top")
+    ax1.xaxis.set_major_locator(MaxNLocator(7))
+    ax1.errorbar(x=xArr, y=qArr, yerr=dqArr, ms=3, color="b", fmt='o',
+                 alpha=0.5, capsize=0 )
+    ax1.errorbar(x=xArr, y=uArr, yerr=duArr, ms=3, color="r", fmt='o',
+                 alpha=0.5, capsize=0)
+    ax1.axhline(med, color='grey', zorder=10)
+    ax1.axhline(1.0, color='k', linestyle="--", zorder=10)
+    ax1.axhline(-1.0, color='k', linestyle="--", zorder=10)
+    ax1.set_xlabel(r'$\lambda^2$')
+    ax1.set_ylabel('Normalised Residual')
+
+    # Plot the histogram of the data overlaid by the normal distribution
+    H = 1.0/ np.sqrt(2.0 * np.pi * noise**2.0)
+    xNorm = np.linspace(med-3*noise, med+3*noise, 1000)
+    yNorm = H * np.exp(-0.5 * ((xNorm-med)/noise)**2.0)
+    fwhm = noise * (2.0 * np.sqrt(2.0 * np.log(2.0)))
+    ax2 = fig.add_subplot(232)
+    ax2.tick_params(labelbottom='off')    
+    nBins = 15
+    yMin = np.min([np.min(qArr), np.min(uArr)])
+    yMax = np.max([np.max(qArr), np.max(uArr)])
+    n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), normed=1,
+                       histtype='step', color='b', linewidth=1.0)
+    ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=1.5)
+    n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), normed=1,
+                       histtype='step', color='r', linewidth=1.0)
+    ax2.axvline(med, color='grey', zorder=11)
+    ax2.set_title(r'Distribution of Data vs Normal')
+    ax2.set_ylabel(r'Normalised Counts')
+    
+    # Plot the ECDF versus a normal CDF
+    nData = len(xArr)
+    ecdfArr = np.array(range(nData))/float(nData)
+    qSrtArr = np.sort(qArr)
+    uSrtArr = np.sort(uArr)
+    ax3 = fig.add_subplot(235, sharex=ax2)
+    ax3.step(qSrtArr, ecdfArr, where="mid", color='b')
+    ax3.step(uSrtArr, ecdfArr, where="mid", color='r')
+    x, y = norm_cdf(mean=med, std=noise, N=1000)
+    ax3.plot(x, y, color='k', linewidth=1.5, linestyle="--", zorder=1)
+    ax3.set_ylim(0, 1.05)
+    ax3.axvline(med, color='grey', zorder=11)
+    ax3.set_xlabel(r'Normalised Residual')
+    ax3.set_ylabel(r'Normalised Counts')
+
+    # Plot reduced chi-squared
+    ax4 = fig.add_subplot(234)
+    ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='b', linewidth=1.0,
+             where="mid")
+    ax4.axhline(1.0, color='k', linestyle="--")
+    ax4.set_xlabel(r'$\sigma_{\rm additional}$')
+    ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
+    
+    # Plot the probability distribution function
+    ax5 = fig.add_subplot(233)
+    ax5.tick_params(labelbottom='off')  
+    ax5.step(x=sigmaAddqArr, y=probqArr, linewidth=1.0, where="mid", color="b",
+             alpha=0.5)
+    ax5.step(x=sigmaAdduArr, y=probuArr, linewidth=1.0, where="mid", color="r",
+             alpha=0.5)
+    ax5.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
+    ax5.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+                linestyle="--", linewidth=1.0)
+    ax5.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+                linestyle="--", linewidth=1.0)
+    ax5.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
+    ax5.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+                linestyle="--", linewidth=1.0)
+    ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+                linestyle="--", linewidth=1.0)
+    ax5.set_title('Likelihood Distribution')
+    ax5.set_ylabel(r"P($\sigma_{\rm additional}$|data)")
+    
+    # Plot the CPDF
+    CPDFq = np.cumsum(probqArr)/np.sum(probqArr)
+    CPDFu = np.cumsum(probuArr)/np.sum(probuArr)
+    ax6 = fig.add_subplot(236, sharex=ax5)
+    ax6.step(x=sigmaAddqArr, y=CPDFq, linewidth=1.0, where="mid", color="b")
+    ax6.step(x=sigmaAdduArr, y=CPDFu, linewidth=1.0, where="mid", color="r")
+    ax6.set_ylim(0, 1.05)
+    ax6.axhline(0.5, color='grey', linestyle="-", linewidth=1.5)
+    ax6.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
+    ax6.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+                linestyle="--", linewidth=1.0)
+    ax6.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+                linestyle="--", linewidth=1.0)
+    ax6.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
+    ax6.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+                linestyle="--", linewidth=1.0)
+    ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+                linestyle="--", linewidth=1.0)
+    ax6.set_xlabel(r"$\sigma_{\rm additional}$")
+    ax6.set_ylabel(r"Cumulative Likelihood")
+    
+    # Zoom in
+    xLim1 = np.min( [mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"]*4.0, 
+                     mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"]*4.0] )
+    xLim1 = max(0.0, xLim1)
+    xLim2 = np.max( [mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"]*4.0, 
+                     mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"]*4.0] )
+    ax6.set_xlim(xLim1, xLim2)
+    
+    # Show the figure
+    fig.subplots_adjust(left=0.07, bottom=0.09, right=0.97, top=0.92,
+                    wspace=0.25, hspace=0.05)
+
+    return fig
