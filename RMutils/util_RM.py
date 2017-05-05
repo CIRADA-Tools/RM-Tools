@@ -853,7 +853,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = np.degrees(np.radians(polAngleFit_deg) -
-                                     phiPeakPIfit * lam0Sq)
+                                      phiPeakPIfit * lam0Sq)
         dPolAngle0Fit_rad = \
             np.sqrt( dQU**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )

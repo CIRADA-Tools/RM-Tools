@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 03-May-2017 by C. Purcell                                         #
+# MODIFIED: 05-May-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -172,7 +172,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     dIArr_mJy = dIArr_Jy * 1e3
     dQArr_mJy = dQArr_Jy * 1e3
     dUArr_mJy = dUArr_Jy * 1e3
-    dQUArr_mJy = np.sqrt(np.power(dQArr_mJy, 2) + np.power(dUArr_mJy, 2))
+    dQUArr_mJy = (dQArr_mJy + dUArr_mJy)/2.0
     dQUArr_Jy = dQUArr_mJy / 1e3
  
     # Fit the Stokes I spectrum and create the fractional spectra
@@ -379,10 +379,10 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     print 'I freq0 = %.4g mJy/beam' % (mDict["Ifreq0_mJybm"])
     print 'Peak PI = %.4g (+/-%3g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
                                                mDict["dAmpPeakPIfit_Jybm"]*1e3)
-    print 'RMS Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)
-    
+    print 'RMS Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)    
     print 'SNR = %.4g ' % (mDict["snrPIfit"])
-    
+    print 'sigma_add(q) = %.2g ' % (mDict["sigmaAddQ"])
+    print 'sigma_add(u) = %.2g ' % (mDict["sigmaAddU"])
     print
     print '-'*80
 
