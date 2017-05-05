@@ -93,5 +93,4 @@ ENV/
 *.pyc
 
 # Data directory
-data/*
-dataJen/*
+data*

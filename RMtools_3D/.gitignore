@@ -93,4 +93,4 @@ ENV/
 *.pyc
 
 # Data directory
-data/*
+data*
