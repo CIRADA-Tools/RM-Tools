@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-clean on a dirty Faraday dispersion function.              #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 16-May-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -195,9 +195,8 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
     mDict["nIter"] = int(iterCountArr)
 
     # Measure the complexity of the clean component spectrum
-    M3 = measure_fdf_complexity(phiArr = phiArr_radm2,
-                                ccFDF = ccArr)
-    print "M3:", M3
+    mDict["mom2CCFDF"] = measure_fdf_complexity(phiArr = phiArr_radm2,
+                                                ccFDF = ccArr)
     
     # Save the deconvolved FDF and CC model to ASCII files
     print "Saving the clean FDF and component model to ASCII files."

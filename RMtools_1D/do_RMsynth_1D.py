@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 05-May-2017 by C. Purcell                                         #
+# MODIFIED: 16-May-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -48,6 +48,7 @@ from RMutils.util_RM import do_rmsynth_planes
 from RMutils.util_RM import get_rmsf_planes
 from RMutils.util_RM import measure_FDF_parms
 from RMutils.util_RM import measure_qu_complexity
+from RMutils.util_RM import measure_fdf_complexity
 from RMutils.util_misc import nanmedian
 from RMutils.util_misc import toscalar
 from RMutils.util_misc import create_frac_spectra
@@ -322,7 +323,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                    RM_radm2   = mDict["phiPeakPIfit_rm2"])
     mDict.update(mD)
     
-    # Debugging plots for complexity measure
+    # Debugging plots for spectral complexity measure
     if debug:
         tmpFig = plot_complexity_fig(xArr=pD["xArrQ"],
                                      qArr=pD["yArrQ"],
@@ -369,22 +370,27 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     print
     print '-'*80
     print 'RESULTS:\n'
-    print 'Pol Angle = %.4g (+/-%3g) deg' % (mDict["polAngleFit_deg"],
-                                                 mDict["dPolAngleFit_deg"])
-    print 'Pol Angle 0 = %.4g (+/-%3g) deg' % (mDict["polAngle0Fit_deg"],
-                                                 mDict["dPolAngle0Fit_deg"])
-    print 'Peak FD = %.4g (+/-%3g) rad/m^2' % (mDict["phiPeakPIfit_rm2"],
-                                                   mDict["dPhiPeakPIfit_rm2"])
+    print 'Pol Angle = %.4g (+/-%.4g) deg' % (mDict["polAngleFit_deg"],
+                                              mDict["dPolAngleFit_deg"])
+    print 'Pol Angle 0 = %.4g (+/-%.4g) deg' % (mDict["polAngle0Fit_deg"],
+                                                mDict["dPolAngle0Fit_deg"])
+    print 'Peak FD = %.4g (+/-%.4g) rad/m^2' % (mDict["phiPeakPIfit_rm2"],
+                                                mDict["dPhiPeakPIfit_rm2"])
     print 'freq0_GHz = %.4g ' % (mDict["freq0_Hz"]/1e9)
     print 'I freq0 = %.4g mJy/beam' % (mDict["Ifreq0_mJybm"])
-    print 'Peak PI = %.4g (+/-%3g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
-                                               mDict["dAmpPeakPIfit_Jybm"]*1e3)
+    print 'Peak PI = %.4g (+/-%.4g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
+                                                mDict["dAmpPeakPIfit_Jybm"]*1e3)
     print 'RMS Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)    
     print 'SNR = %.4g ' % (mDict["snrPIfit"])
-    print 'sigma_add(q) = %.2g ' % (mDict["sigmaAddQ"])
-    print 'sigma_add(u) = %.2g ' % (mDict["sigmaAddU"])
+    print 'sigma_add(q) = %.3g (+%.3g, -%.3g)' % (mDict["sigmaAddQ"],
+                                            mDict["dSigmaAddPlusQ"],
+                                            mDict["dSigmaAddMinusQ"])
+    print 'sigma_add(u) = %.3g (+%.3g, -%.3g)' % (mDict["sigmaAddU"],
+                                            mDict["dSigmaAddPlusU"],
+                                            mDict["dSigmaAddMinusU"])
     print
     print '-'*80
+    
 
     # Plot the RM Spread Function and dirty FDF
     if showPlots:

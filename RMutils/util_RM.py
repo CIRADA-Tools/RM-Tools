@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 05-May-2017 by C.Purcell.                                         #
+# MODIFIED: 16-May-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -1161,12 +1161,12 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
 
 
 #-----------------------------------------------------------------------------#
-def measure_fdf_complexity(phiArr, ccFDF):
+def measure_fdf_complexity(phiArr, FDF):
 
     # Second moment of clean component spectrum
-    M3 = calc_mom2_FDF(ccFDF, phiArr)
+    mom2FDF = calc_mom2_FDF(FDF, phiArr)
 
-    return M3
+    return toscalar(mom2FDF)
 
 
 #=============================================================================#
