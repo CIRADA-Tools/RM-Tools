@@ -265,15 +265,16 @@ def progress(width, percent):
 
 
 #-----------------------------------------------------------------------------#
-def calc_mom2_FDF(ccFDF, phiArr):
+def calc_mom2_FDF(FDF, phiArr):
     """
-    Calculate the 2nd moment of the clean component spectrum.
+    Calculate the 2nd moment of the polarised intensity FDF. Can be applied to
+    a clean component spectrum or a standard FDF
     """
     
-    K = np.sum( np.abs(ccFDF) )
-    phiMean = np.sum( phiArr * np.abs(ccFDF) ) / K
+    K = np.sum( np.abs(FDF) )
+    phiMean = np.sum( phiArr * np.abs(FDF) ) / K
     phiMom2 = np.sqrt( np.sum( np.power((phiArr - phiMean), 2.0) *
-                                np.abs(ccFDF) ) / K )
+                                np.abs(FDF) ) / K )
     
     return phiMom2
 

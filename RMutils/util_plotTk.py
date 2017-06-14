@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Plotting functions for the POSSUM pipeline Tk interface.          #
 #                                                                             #
-# MODIFIED: 05-May-2016 by C. Purcell                                         #
+# MODIFIED: 16-May-2017 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -1915,8 +1915,10 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax4 = fig.add_subplot(234)
     ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='b', linewidth=1.0,
              where="mid")
+    ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='r', linewidth=1.0,
+             where="mid")
     ax4.axhline(1.0, color='k', linestyle="--")
-    ax4.set_xlabel(r'$\sigma_{\rm additional}$')
+    ax4.set_xlabel(r'$\sigma_{\rm add}$')
     ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
     
     # Plot the probability distribution function
@@ -1937,7 +1939,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
                 linestyle="--", linewidth=1.0)
     ax5.set_title('Likelihood Distribution')
-    ax5.set_ylabel(r"P($\sigma_{\rm additional}$|data)")
+    ax5.set_ylabel(r"P($\sigma_{\rm add}$|data)")
     
     # Plot the CPDF
     CPDFq = np.cumsum(probqArr)/np.sum(probqArr)
@@ -1957,7 +1959,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
                 linestyle="--", linewidth=1.0)
     ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
                 linestyle="--", linewidth=1.0)
-    ax6.set_xlabel(r"$\sigma_{\rm additional}$")
+    ax6.set_xlabel(r"$\sigma_{\rm add}$")
     ax6.set_ylabel(r"Cumulative Likelihood")
     
     # Zoom in
