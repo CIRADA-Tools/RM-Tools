@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-clean on a dirty Faraday dispersion function.              #
 #                                                                             #
-# MODIFIED: 16-May-2017 by C. Purcell                                         #
+# MODIFIED: 16-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -139,11 +139,16 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
     # Read the RM-synthesis parameters from the JSON file
     mDict = json.load(open(rmSynthFile, "r"))
 
+    
     # If the cutoff is negative, assume it is a sigma level
+    print "Measured RMS noise (dQU_Jybm) = %.3g"  % mDict["dQU_Jybm"]
     if cutoff<0:
         print "Using a sigma cutoff of %.1f." % (-1 * cutoff),
         cutoff = -1 * mDict["dQU_Jybm"] * cutoff
         print "Absolute value = %.3g" % cutoff
+    else:
+        print "Using an absolute cutoff of %.3g (%.1f x RMS)." % \
+            (cutoff, cutoff/mDict["dQU_Jybm"])
 
     startTime = time.time()
     
@@ -196,7 +201,7 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
 
     # Measure the complexity of the clean component spectrum
     mDict["mom2CCFDF"] = measure_fdf_complexity(phiArr = phiArr_radm2,
-                                                ccFDF = ccArr)
+                                                FDF = ccArr)
     
     # Save the deconvolved FDF and CC model to ASCII files
     print "Saving the clean FDF and component model to ASCII files."
