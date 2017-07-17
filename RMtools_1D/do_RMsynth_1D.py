@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 16-May-2017 by C. Purcell                                         #
+# MODIFIED: 16-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -57,6 +57,7 @@ from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import plot_rmsf_fdf_fig
 from RMutils.util_plotTk import plot_complexity_fig
 from RMutils.util_plotTk import CustomNavbar
+from RMutils.util_plotTk import plot_rmsIQU_vs_nu_ax
 
 C = 2.997924538e8 # Speed of light [m/s]
 
@@ -216,6 +217,25 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         # Display the figure
         specFig.show()
 
+        # DEBUG (plot the Q, U and average RMS spectrum)
+        if False:
+            rmsFig = plt.figure(figsize=(12.0, 8))
+            ax = rmsFig.add_subplot(111)
+            ax.plot(freqArr_Hz/1e9, dQUArr_mJy, marker='o', color='k', lw=0.5,
+                    label='rms <QU>')
+            ax.plot(freqArr_Hz/1e9, dQArr_mJy, marker='o', color='b', lw=0.5,
+                    label='rms Q')
+            ax.plot(freqArr_Hz/1e9, dUArr_mJy, marker='o', color='r', lw=0.5,
+                    label='rms U')
+            xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
+            ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
+                         np.max(freqArr_Hz)/1e9 + xRange*0.05)
+            ax.set_xlabel('$\\nu$ (GHz)')
+            ax.set_ylabel('RMS (mJy bm$^{-1}$)')
+            rmsFig.show()
+        
+        
+        
     #-------------------------------------------------------------------------#
 
     # Calculate some wavelength parameters
