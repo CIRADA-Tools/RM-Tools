@@ -218,7 +218,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         specFig.show()
 
         # DEBUG (plot the Q, U and average RMS spectrum)
-        if True:
+        if False:
             rmsFig = plt.figure(figsize=(12.0, 8))
             ax = rmsFig.add_subplot(111)
             ax.plot(freqArr_Hz/1e9, dQUArr_mJy, marker='o', color='k', lw=0.5,
