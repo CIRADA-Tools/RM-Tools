@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 16-May-2017 by C.Purcell.                                         #
+# MODIFIED: 19-Jul-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -759,7 +759,7 @@ def detect_peak(a, thresh=0.3):
 
 
 #-----------------------------------------------------------------------------#
-def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
+def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF, lamSqArr_m2=None,
                       lam0Sq=None, snrDoBiasCorrect=5.0):
     """
     Measure standard parameters from a complex Faraday Dispersion Function.
@@ -772,21 +772,21 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
     ampPeakPIchan = np.nanmax(absFDF)
     indxPeakPIchan = np.nanargmax(absFDF)
     phiPeakPIchan = phiArr[indxPeakPIchan]
-    dPhiPeakPIchan = fwhmRMSF * dQU / (2.0 * ampPeakPIchan)
-    snrPIchan = ampPeakPIchan / dQU
+    dPhiPeakPIchan = fwhmRMSF * dFDF / (2.0 * ampPeakPIchan)
+    snrPIchan = ampPeakPIchan / dFDF
     dPhi = np.nanmin(np.diff(phiArr))
     
     # Correct the peak for polarisation bias (POSSUM report 11)
     ampPeakPIchanEff = ampPeakPIchan
     if snrPIchan >= snrDoBiasCorrect:
-        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dQU**2.0)
+        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dFDF**2.0)
 
     # Calculate the polarisation angle from the channel
     peakFDFimagChan = FDF.imag[indxPeakPIchan]
     peakFDFrealChan = FDF.real[indxPeakPIchan]
     polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
                                          peakFDFrealChan))
-    dPolAngleChan_deg = np.degrees(dQU**2.0 / (4.0 * ampPeakPIchan**2.0))
+    dPolAngleChan_deg = np.degrees(dFDF**2.0 / (4.0 * ampPeakPIchan**2.0))
 
     # Calculate the derotated polarisation angle and uncertainty
     polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
@@ -795,7 +795,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
     dPolAngle0Chan_rad = \
-        np.sqrt( dQU**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
+        np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
                  ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
     dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
 
@@ -824,7 +824,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
                                            phiArr[indxPeakPIchan+1],
                                            absFDF[indxPeakPIchan+1])
         
-        snrPIfit = ampPeakPIfit / dQU
+        snrPIfit = ampPeakPIfit / dFDF
         
         # Error on fitted Faraday depth (RM) from Eqn 4b in Landman 1982
         # Parabolic interpolation is approximately equivalent to a Gaussian fit
@@ -833,12 +833,12 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
         
         # Error on fitted peak intensity (PI) from Eqn 4a in Landman 1982
         dAmpPeakPIfit = (np.power(18.0*np.log(2.0)/(np.pi), 0.25) *
-                         np.sqrt(dPhi) * dQU / np.sqrt(fwhmRMSF))
+                         np.sqrt(dPhi) * dFDF / np.sqrt(fwhmRMSF))
         
         # Correct the peak for polarisation bias (POSSUM report 11)
         ampPeakPIfitEff = ampPeakPIfit
         if snrPIfit >= snrDoBiasCorrect:
-            ampPeakPIfitEff = np.sqrt(ampPeakPIfit**2.0 - 2.3 * dQU**2.0)
+            ampPeakPIfitEff = np.sqrt(ampPeakPIfit**2.0 - 2.3 * dFDF**2.0)
             
         # Calculate the polarisation angle from the fitted peak
         # Uncertainty from Eqn A.12 in Brentjens & De Bruyn 2005
@@ -848,14 +848,14 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
         peakFDFrealFit = np.interp(phiPeakPIfit, phiArr, FDF.real)
         polAngleFit_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagFit,
                                                   peakFDFrealFit))
-        dPolAngleFit_deg = np.degrees(dQU**2.0 / (4.0 * ampPeakPIfit**2.0))
+        dPolAngleFit_deg = np.degrees(dFDF**2.0 / (4.0 * ampPeakPIfit**2.0))
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = np.degrees(np.radians(polAngleFit_deg) -
                                       phiPeakPIfit * lam0Sq)
         dPolAngle0Fit_rad = \
-            np.sqrt( dQU**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
+            np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
@@ -864,7 +864,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
              'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
              'ampPeakPIchan_Jybm':    toscalar(ampPeakPIchan),
              'ampPeakPIchanEff_Jybm': toscalar(ampPeakPIchanEff),
-             'dAmpPeakPIchan_Jybm':   toscalar(dQU),
+             'dAmpPeakPIchan_Jybm':   toscalar(dFDF),
              'snrPIchan':             toscalar(snrPIchan),
              'indxPeakPIchan':        toscalar(indxPeakPIchan),
              'peakFDFimagChan':       toscalar(peakFDFimagChan),
@@ -877,7 +877,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dQU, lamSqArr_m2=None,
              'dPhiPeakPIfit_rm2':     toscalar(dPhiPeakPIfit),
              'ampPeakPIfit_Jybm':     toscalar(ampPeakPIfit),
              'ampPeakPIfitEff_Jybm':  toscalar(ampPeakPIfitEff),
-             'dAmpPeakPIfit_Jybm':    toscalar(dQU),
+             'dAmpPeakPIfit_Jybm':    toscalar(dAmpPeakPIfit),
              'snrPIfit':              toscalar(snrPIfit),
              'indxPeakPIfit':         toscalar(indxPeakPIfit),
              'peakFDFimagFit':        toscalar(peakFDFimagFit),

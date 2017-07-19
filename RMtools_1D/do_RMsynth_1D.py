@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 16-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -314,14 +314,17 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
     Ifreq0_mJybm = poly5(fitDict["p"])(freq0_Hz/1e9)
     dirtyFDF *= (Ifreq0_mJybm / 1e3)    # FDF is in Jy 
+
+    # Calculate the theoretical noise in the FDF
+    dFDFexpt_Jybm = np.sqrt(1./np.sum(1./dQUArr_Jy**2.)) 
     
     # Measure the parameters of the dirty FDF
     mDict = measure_FDF_parms(FDF         = dirtyFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = fwhmRMSF,
+                              dFDF        = dFDFexpt_Jybm,
                               lamSqArr_m2 = lambdaSqArr_m2,
-                              lam0Sq      = lam0Sq_m2,
-                              dQU         = nanmedian(dQUArr_Jy))
+                              lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0_mJybm"] = toscalar(Ifreq0_mJybm)
     mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
     mDict["IfitStat"] = fitDict["fitStatus"]
@@ -330,6 +333,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU_Jybm"] = toscalar(nanmedian(dQUArr_Jy))
+    mDict["dFDFexpt_Jybm"] = toscalar(dFDFexpt_Jybm)
 
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
@@ -400,8 +404,9 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     print 'I freq0 = %.4g mJy/beam' % (mDict["Ifreq0_mJybm"])
     print 'Peak PI = %.4g (+/-%.4g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
                                                 mDict["dAmpPeakPIfit_Jybm"]*1e3)
-    print 'RMS Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)    
-    print 'SNR = %.4g ' % (mDict["snrPIfit"])
+    print 'QU Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)
+    print 'FDF Noise = %.4g mJy/beam' % (mDict["dFDFexpt_Jybm"]*1e3)    
+    print 'FDF SNR = %.4g ' % (mDict["snrPIfit"])
     print 'sigma_add(q) = %.3g (+%.3g, -%.3g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],
                                             mDict["dSigmaAddMinusQ"])
