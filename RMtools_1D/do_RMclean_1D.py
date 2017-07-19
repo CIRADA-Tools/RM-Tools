@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-clean on a dirty Faraday dispersion function.              #
 #                                                                             #
-# MODIFIED: 16-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -69,8 +69,8 @@ def main():
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
                         help="ASCII file containing original spectra.")
-    parser.add_argument("-c", dest="cutoff", type=float, default=-1,
-                       help="CLEAN cutoff (+ve = absolute, -ve = sigma) [-1].")
+    parser.add_argument("-c", dest="cutoff", type=float, default=-3,
+                        help="CLEAN cutoff (+ve = absolute, -ve = sigma) [-3].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
@@ -141,14 +141,14 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
 
     
     # If the cutoff is negative, assume it is a sigma level
-    print "Measured RMS noise (dQU_Jybm) = %.3g"  % mDict["dQU_Jybm"]
+    print "Expected RMS noise (dFDFexpt_Jybm) = %.3g"  % mDict["dFDFexpt_Jybm"]
     if cutoff<0:
         print "Using a sigma cutoff of %.1f." % (-1 * cutoff),
-        cutoff = -1 * mDict["dQU_Jybm"] * cutoff
+        cutoff = -1 * mDict["dFDFexpt_Jybm"] * cutoff
         print "Absolute value = %.3g" % cutoff
     else:
-        print "Using an absolute cutoff of %.3g (%.1f x RMS)." % \
-            (cutoff, cutoff/mDict["dQU_Jybm"])
+        print "Using an absolute cutoff of %.3g (%.1f x expected RMS)." % \
+            (cutoff, cutoff/mDict["dFDFexpt_Jybm"])
 
     startTime = time.time()
     
@@ -193,9 +193,9 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
     mDict = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = mDict["fwhmRMSF"],
+                              dFDF        = mDict["dFDFexpt_Jybm"],
                               lamSqArr_m2 = lambdaSqArr_m2,
-                              lam0Sq      = mDict["lam0Sq_m2"],
-                              dQU         = mDict["dQU_Jybm"])
+                              lam0Sq      = mDict["lam0Sq_m2"])
     mDict["cleanCutoff"] = cutoff
     mDict["nIter"] = int(iterCountArr)
 
