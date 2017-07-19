@@ -13,7 +13,7 @@
 #                                                                             #
 #           This version for use with the stand-alone code, not the pipeline. #
 #                                                                             #
-# MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -40,16 +40,6 @@
 # DEALINGS IN THE SOFTWARE.                                                   #
 #                                                                             #
 #=============================================================================#
-
-# START USER EDITS -----------------------------------------------------------#
-
-# Frequency parameters
-startFreq_Hz = 0.7e9
-endFreq_Hz = 1.8e9
-nChans = 110
-
-# Noise level
-rmsNoise_mJy = 0.02
 
 # NOTE: Variations in the noise vs frequency can be specified in an external
 # file. Properties of injected sources are given by an external CSV catalogue
@@ -174,13 +164,25 @@ def main():
     parser.add_argument("dataPath", metavar="PATH/TO/DATA",
                         default="data/", nargs="?",
                         help="Path to new data directory [data/]")
-    parser.add_argument('-n', dest='noiseTmpFile', metavar="NOISE.TXT",
+    parser.add_argument('-f', nargs=2, metavar="X", type=float,
+                        dest='freqRng_MHz', default=[700.0, 1800.0],
+                        help='Frequency range [700 1800] (MHz)')
+    parser.add_argument("-c", dest="nChans", type=int, default=110,
+                        help="Number of channels in output spectra [110].")
+    parser.add_argument("-n", dest="rmsNoise_mJy", type=float, default=0.02,
+                        help="RMS noise of the output spectra [0.02 mJy].")
+    parser.add_argument('-t', dest='noiseTmpFile', metavar="NOISE.TXT",
                         help="File providing a template noise curve [freq amp]")
-    parser.add_argument('-f', dest='flagFreqStr', metavar='f1,f2,f1,f2,...',
+    parser.add_argument('-l', dest='flagFreqStr', metavar='f1,f2,f1,f2,...',
                         default="", help="Frequency ranges to flag out")
     args = parser.parse_args()
+    print args
     inCatFile = args.inCatFile[0]
     dataPath = args.dataPath
+    startFreq_Hz = args.freqRng_MHz[0] * 1e6
+    endFreq_Hz = args.freqRng_MHz[1] * 1e6
+    nChans = args.nChans
+    rmsNoise_mJy = args.rmsNoise_mJy
     noiseTmpFile = args.noiseTmpFile
     flagRanges_Hz = []
     if len(args.flagFreqStr)>0:
@@ -226,11 +228,12 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
                 freqArr_Hz[i]=np.nan
 
     # Create normalised noise array from a template or assume all ones.
+    print "Input RMS noise is %.3g" % rmsNoise_mJy
     if noiseTmpArr is None:
         print "Assuming flat noise versus frequency curve."
         noiseArr = np.ones(freqArr_Hz.shape, dtype="f8")
     else:
-        print "Scaling noise curve by external template."
+        print "Scaling noise by external template curve."
         xp = noiseTmpArr[0]
         yp = noiseTmpArr[1]
         mDict = calc_stats(yp)
