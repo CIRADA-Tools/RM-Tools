@@ -13,7 +13,7 @@
 #                                                                             #
 #           This version for use with the stand-alone code, not the pipeline. #
 #                                                                             #
-# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 20-Jul-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -45,11 +45,6 @@
 # file. Properties of injected sources are given by an external CSV catalogue
 # file. Two types of model may be specified, assuming a common flux & spectral
 # index. Execute "./0_mk_test_ascii_data.py -h" to print detailed information.
-
-# Frequency at which the flux is specified in the catalogue
-freq0_Hz = startFreq_Hz
-
-# END USER EDITS -------------------------------------------------------------#
 
 import os
 import sys
@@ -85,7 +80,7 @@ def main():
     specified in the file, assuming a total flux & spectral index:
 
         # MODEL TYPE 1: One or more components affected by Burn depolarisation.
-        #
+        # (see e.g., Equation 5 Tribble 1991, Burn 1966).
         # Column  |  Description
         #---------------------------------------------------
         # [0]     |  Model type [1]
@@ -135,10 +130,11 @@ def main():
         # [14]    |  ...
         #---------------------------------------------------
 
-    Properties of the data (frequency sampling, noise level) are given at the
-    top of this script, including an optional template for the shape of the
-    noise curve and an optional list of frequency ranges to flag out.
-
+    Properties of the data (frequency sampling, noise level) are given by
+    command line arguments, including an optional template for the shape of
+    the noise curve [frequency, Tsys] and an optional list of frequency
+    ranges to flag out.
+    
     In addition to the ASCII files containing spectra, this script outputs a
     simple ASCII catalogue and a SQL description of that catalogue. The
     catalogue file is used to drive the pipeline and the SQL descripton file
@@ -167,6 +163,8 @@ def main():
     parser.add_argument('-f', nargs=2, metavar="X", type=float,
                         dest='freqRng_MHz', default=[700.0, 1800.0],
                         help='Frequency range [700 1800] (MHz)')
+    parser.add_argument("-f0", dest="freq0_MHz", type=float, default=0,
+                        help="Frequency of catalogue flux [start frequency].")
     parser.add_argument("-c", dest="nChans", type=int, default=110,
                         help="Number of channels in output spectra [110].")
     parser.add_argument("-n", dest="rmsNoise_mJy", type=float, default=0.02,
@@ -181,6 +179,10 @@ def main():
     dataPath = args.dataPath
     startFreq_Hz = args.freqRng_MHz[0] * 1e6
     endFreq_Hz = args.freqRng_MHz[1] * 1e6
+    if args.freq0_MHz==0.0:
+        freq0_Hz = None
+    else:
+        freq0_Hz = args.freq0_MHz * 1e6
     nChans = args.nChans
     rmsNoise_mJy = args.rmsNoise_mJy
     noiseTmpFile = args.noiseTmpFile
@@ -202,17 +204,18 @@ def main():
     # Call the function to create the ASCII data files on disk
     nSrc = create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz,
                                  endFreq_Hz, nChans, rmsNoise_mJy,
-                                 noiseTmpArr, flagRanges_Hz)
+                                 noiseTmpArr, flagRanges_Hz, freq0_Hz)
 
     
 #-----------------------------------------------------------------------------#
 def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, 
                           nChans, rmsNoise_mJy, noiseTmpArr=None,
-                          flagRanges_Hz=[]):
+                          flagRanges_Hz=[], freq0_Hz=None):
     """
     Create a set of ASCII files containing Stokes I Q & U spectra.
     """
 
+    
     # Sample frequency space
     freqArr_Hz = np.linspace(startFreq_Hz, endFreq_Hz, nChans)
     freqNoFlgArr_Hz = freqArr_Hz.copy()
@@ -228,7 +231,7 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
                 freqArr_Hz[i]=np.nan
 
     # Create normalised noise array from a template or assume all ones.
-    print "Input RMS noise is %.3g" % rmsNoise_mJy
+    print "Input RMS noise is %.3g mJy" % rmsNoise_mJy
     if noiseTmpArr is None:
         print "Assuming flat noise versus frequency curve."
         noiseArr = np.ones(freqArr_Hz.shape, dtype="f8")
@@ -247,6 +250,11 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
     catInLst = csv_read_to_list(inCatFile, doFloat=True)
     print "Found %d entries in the catalogue." % len(catInLst)
 
+    # Default frequency at which the catalogue flux is defined
+    if freq0_Hz is None:
+        freq0_Hz = startFreq_Hz
+    print "Catalogue flux defined at %.3f MHz" % (freq0_Hz/1e6)
+    
     # Create the output directory path
     dataPath = dataPath.rstrip("/")
     print "Creating test dataset in '%s/'" % dataPath
