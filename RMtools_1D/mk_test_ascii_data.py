@@ -13,7 +13,7 @@
 #                                                                             #
 #           This version for use with the stand-alone code, not the pipeline. #
 #                                                                             #
-# MODIFIED: 20-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 22-Sep-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -130,17 +130,10 @@ def main():
         # [14]    |  ...
         #---------------------------------------------------
 
-    Properties of the data (frequency sampling, noise level) are given by
-    command line arguments, including an optional template for the shape of
-    the noise curve [frequency, Tsys] and an optional list of frequency
-    ranges to flag out.
-    
-    In addition to the ASCII files containing spectra, this script outputs a
-    simple ASCII catalogue and a SQL description of that catalogue. The
-    catalogue file is used to drive the pipeline and the SQL descripton file
-    tells the pipeline the format of the catalogue. This allows the user to
-    define additional columns in the input catalogue, which are then
-    incorporated into the results database.
+    Global properties of the data (e.g., frequency sampling, noise level) are
+    set by arguments to this script, including an optional template for the
+    shape of the noise curve and an optional list of frequency ranges to flag.
+    See below for a list and default values in square brackets.
 
     Examples:
 
@@ -163,14 +156,14 @@ def main():
     parser.add_argument('-f', nargs=2, metavar="X", type=float,
                         dest='freqRng_MHz', default=[700.0, 1800.0],
                         help='Frequency range [700 1800] (MHz)')
-    parser.add_argument("-f0", dest="freq0_MHz", type=float, default=0,
-                        help="Frequency of catalogue flux [start frequency].")
+    parser.add_argument("-f0", dest="freq0_MHz", type=float, default=0.0,
+                        help="Frequency of catalogue flux [1st channel] (MHz).")
     parser.add_argument("-c", dest="nChans", type=int, default=110,
                         help="Number of channels in output spectra [110].")
     parser.add_argument("-n", dest="rmsNoise_mJy", type=float, default=0.02,
                         help="RMS noise of the output spectra [0.02 mJy].")
     parser.add_argument('-t', dest='noiseTmpFile', metavar="NOISE.TXT",
-                        help="File providing a template noise curve [freq amp]")
+                        help="ASCII file providing a template noise curve (freq amp)")
     parser.add_argument('-l', dest='flagFreqStr', metavar='f1,f2,f1,f2,...',
                         default="", help="Frequency ranges to flag out")
     args = parser.parse_args()
@@ -179,9 +172,8 @@ def main():
     dataPath = args.dataPath
     startFreq_Hz = args.freqRng_MHz[0] * 1e6
     endFreq_Hz = args.freqRng_MHz[1] * 1e6
-    if args.freq0_MHz==0.0:
-        freq0_Hz = None
-    else:
+    freq0_Hz = None
+    if args.freq0_MHz>0.0:
         freq0_Hz = args.freq0_MHz * 1e6
     nChans = args.nChans
     rmsNoise_mJy = args.rmsNoise_mJy
@@ -250,10 +242,10 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
     catInLst = csv_read_to_list(inCatFile, doFloat=True)
     print "Found %d entries in the catalogue." % len(catInLst)
 
-    # Default frequency at which the catalogue flux is defined
+    # Set the frequency at which the flux has been defined
     if freq0_Hz is None:
         freq0_Hz = startFreq_Hz
-    print "Catalogue flux defined at %.3f MHz" % (freq0_Hz/1e6)
+    print "Catalogue flux is defined at %.3f MHz" % (freq0_Hz/1e6)
     
     # Create the output directory path
     dataPath = dataPath.rstrip("/")

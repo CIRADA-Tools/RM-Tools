@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 19-Jul-2017 by C.Purcell.                                         #
+# MODIFIED: 22-Sep-2017 by C.Purcell.                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -1153,10 +1153,10 @@ def measure_qu_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol,
     pDict.update(p2D)
     
     # Calculate the deviations statistics
-    mDict.update( calc_normal_tests(qResidArr/dqArr, suffix="Q") )
-    mDict.update( calc_normal_tests(uResidArr/duArr, suffix="U") )
-
-        
+    # Done as a test for the paper, not usually offered to user.
+    #mDict.update( calc_normal_tests(qResidArr/dqArr, suffix="Q") )
+    #mDict.update( calc_normal_tests(uResidArr/duArr, suffix="U") )
+    
     return mDict, pDict
 
 
