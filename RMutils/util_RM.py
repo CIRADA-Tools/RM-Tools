@@ -78,6 +78,7 @@ from util_misc import calc_parabola_vertex
 from util_misc import create_pqu_spectra_burn
 from util_misc import calc_mom2_FDF
 from util_misc import MAD
+from util_misc import nanstd
 
 # Constants
 C = 2.99792458e8
@@ -760,22 +761,40 @@ def detect_peak(a, thresh=0.3):
 
 
 #-----------------------------------------------------------------------------#
-def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF, lamSqArr_m2=None,
+def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
                       lam0Sq=None, snrDoBiasCorrect=5.0):
     """
     Measure standard parameters from a complex Faraday Dispersion Function.
     Currently this function assumes that the noise levels in the Stokes Q
     and U spectra are the same.
     """
-    
-    # Determine the peak channel in the FDF, its amplitude and RM
+   
+    # Determine the peak channel in the FDF, its amplitude and index
     absFDF = np.abs(FDF)
     ampPeakPIchan = np.nanmax(absFDF)
     indxPeakPIchan = np.nanargmax(absFDF)
+
+    # Measure the RMS noise in the spectrum after masking the peak
+    dPhi = np.nanmin(np.diff(phiArr))
+    fwhmRMSF_chan = np.ceil(fwhmRMSF/dPhi)
+    iL = int(max(0, indxPeakPIchan-fwhmRMSF_chan*2))
+    iR = int(min(len(absFDF), indxPeakPIchan+fwhmRMSF_chan*2))
+    absFDFmsked = absFDF.copy()
+    absFDFmsked[iL:iR] = np.nan
+    absFDFmsked = absFDFmsked[np.where(absFDFmsked==absFDFmsked)]
+    if float(len(absFDFmsked))/len(absFDF)<0.3:
+        dFDFms_Jybm = MAD(absFDF)
+    else:
+        dFDFms_Jybm = MAD(absFDFmsked)
+
+    # Default to using the measured FDF if a noise value has not been provided
+    if dFDF is None:
+        dFDF = dFDFms_Jybm
+    
+    # Measure the RM of the peak channel
     phiPeakPIchan = phiArr[indxPeakPIchan]
     dPhiPeakPIchan = fwhmRMSF * dFDF / (2.0 * ampPeakPIchan)
     snrPIchan = ampPeakPIchan / dFDF
-    dPhi = np.nanmin(np.diff(phiArr))
     
     # Correct the peak for polarisation bias (POSSUM report 11)
     ampPeakPIchanEff = ampPeakPIchan
@@ -799,7 +818,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF, lamSqArr_m2=None,
         np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
                  ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
     dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
-
+    
     # Determine the peak in the FDF, its amplitude and Phi using a
     # 3-point parabolic interpolation
     phiPeakPIfit = None
@@ -815,7 +834,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF, lamSqArr_m2=None,
     dPolAngleFit_deg = None
     polAngle0Fit_deg = None
     dPolAngle0Fit_deg = None
-    
+
+    # Only do the 3-point fit if peak is 1-channel from either edge
     if indxPeakPIchan > 0 and indxPeakPIchan < len(FDF)-1:
         phiPeakPIfit, ampPeakPIfit = \
                       calc_parabola_vertex(phiArr[indxPeakPIchan-1],
@@ -861,7 +881,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF, lamSqArr_m2=None,
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
     # Store the measurements in a dictionary and return
-    mDict = {'phiPeakPIchan_rm2':     toscalar(phiPeakPIchan),
+    mDict = {'dFDFms_Jybm':           toscalar(dFDFms_Jybm),
+             'phiPeakPIchan_rm2':     toscalar(phiPeakPIchan),
              'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
              'ampPeakPIchan_Jybm':    toscalar(ampPeakPIchan),
              'ampPeakPIchanEff_Jybm': toscalar(ampPeakPIchanEff),
