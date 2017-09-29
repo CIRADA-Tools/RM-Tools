@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 29-Sep-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -53,6 +53,7 @@ from RMutils.util_misc import nanmedian
 from RMutils.util_misc import toscalar
 from RMutils.util_misc import create_frac_spectra
 from RMutils.util_misc import poly5
+from RMutils.util_misc import MAD
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import plot_rmsf_fdf_fig
 from RMutils.util_plotTk import plot_complexity_fig
@@ -94,10 +95,14 @@ def main():
                         help="polynomial order to fit to I spectrum [2].")
     parser.add_argument("-i", dest="noStokesI", action="store_true",
                         help="ignore the Stokes I spectrum [False].")
+    parser.add_argument("-n", dest="phiNoise_radm2", type=float, default=1e6,
+                        help="FD at which to measure the noise [1e6].")
+    parser.add_argument("-b", dest="bit64", action="store_true",
+                        help="use 64-bit floating point precision [False]")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
     parser.add_argument("-D", dest="debug", action="store_true",
-                        help="turn on debugging messages [False].")
+                        help="turn on debugging messages & plots [False].")
     args = parser.parse_args()
     
     # Sanity checks
@@ -106,24 +111,31 @@ def main():
         sys.exit()
     dataDir, dummy = os.path.split(args.dataFile[0])
 
+    # Set the floating point precision
+    nBits = 32
+    if args.bit64:
+        nBits = 64
+    
     # Run RM-synthesis on the spectra
-    run_rmsynth(dataFile     = args.dataFile[0],
-                polyOrd      = args.polyOrd,
-                phiMax_radm2 = args.phiMax_radm2,
-                dPhi_radm2   = args.dPhi_radm2,
-                nSamples     = args.nSamples,
-                weightType   = args.weightType,
-                fitRMSF      = args.fitRMSF,
-                noStokesI    = args.noStokesI,
-                nBits        = 32,
-                showPlots    = args.showPlots,
-                debug        = args.debug)
+    run_rmsynth(dataFile       = args.dataFile[0],
+                polyOrd        = args.polyOrd,
+                phiMax_radm2   = args.phiMax_radm2,
+                dPhi_radm2     = args.dPhi_radm2,
+                nSamples       = args.nSamples,
+                weightType     = args.weightType,
+                fitRMSF        = args.fitRMSF,
+                noStokesI      = args.noStokesI,
+                phiNoise_radm2 = args.phiNoise_radm2,
+                nBits          = nBits,
+                showPlots      = args.showPlots,
+                debug          = args.debug)
 
     
 #-----------------------------------------------------------------------------#
 def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None, 
                 nSamples=10.0, weightType="variance", fitRMSF=False,
-                noStokesI=False, nBits=32, showPlots=False, debug=False):
+                noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
+                debug=False):
     """
     Read the I, Q & U data from the ASCII file and run RM-synthesis.
     """
@@ -218,7 +230,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         specFig.show()
 
         # DEBUG (plot the Q, U and average RMS spectrum)
-        if False:
+        if debug:
             rmsFig = plt.figure(figsize=(12.0, 8))
             ax = rmsFig.add_subplot(111)
             ax.plot(freqArr_Hz/1e9, dQUArr_mJy, marker='o', color='k', lw=0.5,
@@ -232,9 +244,8 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                          np.max(freqArr_Hz)/1e9 + xRange*0.05)
             ax.set_xlabel('$\\nu$ (GHz)')
             ax.set_ylabel('RMS (mJy bm$^{-1}$)')
+            ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
             rmsFig.show()
-        
-        
         
     #-------------------------------------------------------------------------#
 
@@ -261,9 +272,18 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
     phiArr_radm2 = phiArr_radm2.astype(dtFloat)
     print "PhiArr = %.2f to %.2f by %.2f (%d chans)." % (phiArr_radm2[0],
-                                                        phiArr_radm2[-1],
-                                                        float(dPhi_radm2),
-                                                        nChanRM)
+                                                         phiArr_radm2[-1],
+                                                         float(dPhi_radm2),
+                                                         nChanRM)
+    
+    # FD noise sampling window: +/-100 x 2 x RMSF width @ 1e6 rad/m^2
+    # Channels should be > FWHM to avoid noise correlation
+    phiRMSarr_radm2 = np.linspace(phiNoise_radm2-fwhmRMSF_radm2*25,
+                                  phiNoise_radm2+fwhmRMSF_radm2*25,
+                                  200)
+    print "NoiseWindow = %.2f to %.2f by %f (%d chans)." % \
+        (phiRMSarr_radm2[0], phiRMSarr_radm2[-1], np.diff(phiRMSarr_radm2)[0],
+         len(phiRMSarr_radm2))
     
     # Calculate the weighting as 1/sigma^2 or all 1s (natural)
     if weightType=="variance":
@@ -281,9 +301,18 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                             lambdaSqArr_m2  = lambdaSqArr_m2, 
                                             phiArr_radm2    = phiArr_radm2, 
                                             weightArr       = weightArr,
-                                            nBits           = 32,
+                                            nBits           = nBits,
                                             verbose         = True)
     
+    # Perform RM-synthesis for the high-FD noise window
+    noiseFDF, dummy = do_rmsynth_planes(dataQ           = qArr,
+                                        dataU           = uArr,
+                                        lambdaSqArr_m2  = lambdaSqArr_m2, 
+                                        phiArr_radm2    = phiRMSarr_radm2,
+                                        weightArr       = weightArr,
+                                        nBits           = nBits,
+                                        verbose         = True)
+
     # Calculate the Rotation Measure Spread Function
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = \
         get_rmsf_planes(lambdaSqArr_m2  = lambdaSqArr_m2,
@@ -294,7 +323,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                         double          = True, 
                         fitRMSF         = fitRMSF, 
                         fitRMSFreal     = False, 
-                        nBits           = 32,
+                        nBits           = nBits,
                         verbose         = True)
     fwhmRMSF = float(fwhmRMSFArr)
     
@@ -314,15 +343,34 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
     Ifreq0_mJybm = poly5(fitDict["p"])(freq0_Hz/1e9)
     dirtyFDF *= (Ifreq0_mJybm / 1e3)    # FDF is in Jy 
+    noiseFDF *= (Ifreq0_mJybm / 1e3)
 
     # Calculate the theoretical noise in the FDF
-    dFDFexpt_Jybm = np.sqrt(1./np.sum(1./dQUArr_Jy**2.)) 
+    dFDFth_Jybm = np.sqrt(1./np.sum(1./dQUArr_Jy**2.)) 
+
+    # Measure the noise in the FDF at high RM
+    dFDFms_Jybm = MAD(np.abs(noiseFDF))
+
+    # DEBUG (plot the noise FDF)
+    if debug:
+        noiseFig =  plt.figure(figsize=(12.0, 8))
+        ax = noiseFig.add_subplot(111)
+        ax.step(phiRMSarr_radm2-phiNoise_radm2, noiseFDF.real*1e3, where='mid',
+                color='r', lw=0.5)
+        ax.step(phiRMSarr_radm2-phiNoise_radm2, noiseFDF.imag*1e3, where='mid',
+                color='b', lw=0.5)
+        ax.step(phiRMSarr_radm2-phiNoise_radm2, np.abs(noiseFDF)*1e3,
+                where='mid', color='k', lw=2.5)
+        ax.set_xlabel('$\\phi - \\phi_{high}$ (rad/m$^2$)')
+        ax.set_ylabel('Flux Density (mJy)')
+        ax.set_title("FDF in the high-$\\phi$ window")
+        noiseFig.show()
     
     # Measure the parameters of the dirty FDF
     mDict = measure_FDF_parms(FDF         = dirtyFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = fwhmRMSF,
-                              dFDF        = dFDFexpt_Jybm,
+                              dFDF        = dFDFms_Jybm,
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0_mJybm"] = toscalar(Ifreq0_mJybm)
@@ -333,7 +381,8 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU_Jybm"] = toscalar(nanmedian(dQUArr_Jy))
-    mDict["dFDFexpt_Jybm"] = toscalar(dFDFexpt_Jybm)
+    mDict["dFDFth_Jybm"] = toscalar(dFDFth_Jybm)
+    mDict["dFDFms_Jybm"] = toscalar(dFDFms_Jybm)
 
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
@@ -362,9 +411,6 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
         tmpFig.show()
-        if not showPlots:
-            print  "Press <RETURN> to continue ...",
-            raw_input()
     
     # Save the  dirty FDF, RMSF and weight array to ASCII files
     print "Saving the dirty FDF, RMSF weight arrays to ASCII files."
@@ -394,6 +440,8 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     print
     print '-'*80
     print 'RESULTS:\n'
+    print 'FWHM RMSF = %.4g rad/m^2' % (mDict["fwhmRMSF"])
+    
     print 'Pol Angle = %.4g (+/-%.4g) deg' % (mDict["polAngleFit_deg"],
                                               mDict["dPolAngleFit_deg"])
     print 'Pol Angle 0 = %.4g (+/-%.4g) deg' % (mDict["polAngle0Fit_deg"],
@@ -405,17 +453,17 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     print 'Peak PI = %.4g (+/-%.4g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
                                                 mDict["dAmpPeakPIfit_Jybm"]*1e3)
     print 'QU Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)
-    print 'FDF Noise = %.4g mJy/beam' % (mDict["dFDFexpt_Jybm"]*1e3)    
+    print 'FDF Noise (theory)   = %.4g mJy/beam' % (mDict["dFDFth_Jybm"]*1e3)
+    print 'FDF Noise (measured) = %.4g mJy/beam' % (mDict["dFDFms_Jybm"]*1e3)
     print 'FDF SNR = %.4g ' % (mDict["snrPIfit"])
-    print 'sigma_add(q) = %.3g (+%.3g, -%.3g)' % (mDict["sigmaAddQ"],
+    print 'sigma_add(q) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],
                                             mDict["dSigmaAddMinusQ"])
-    print 'sigma_add(u) = %.3g (+%.3g, -%.3g)' % (mDict["sigmaAddU"],
+    print 'sigma_add(u) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddU"],
                                             mDict["dSigmaAddPlusU"],
                                             mDict["dSigmaAddMinusU"])
     print
     print '-'*80
-    
 
     # Plot the RM Spread Function and dirty FDF
     if showPlots:
@@ -434,9 +482,12 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
             CustomNavbar(fdfFig.canvas, fdfFig.canvas.toolbar.window)
         except Exception:
             pass
-
+        
         # Display the figure
         fdfFig.show()
+
+    # Pause if plotting enabled
+    if showPlots or debug:        
         print "Press <RETURN> to exit ...",
         raw_input()
 

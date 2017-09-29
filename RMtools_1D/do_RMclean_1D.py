@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Run RM-clean on a dirty Faraday dispersion function.              #
 #                                                                             #
-# MODIFIED: 19-Jul-2017 by C. Purcell                                         #
+# MODIFIED: 29-Sep-2017 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -141,14 +141,14 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
 
     
     # If the cutoff is negative, assume it is a sigma level
-    print "Expected RMS noise (dFDFexpt_Jybm) = %.3g"  % mDict["dFDFexpt_Jybm"]
+    print "Expected RMS noise (dFDFth_Jybm) = %.3g"  % mDict["dFDFth_Jybm"]
     if cutoff<0:
         print "Using a sigma cutoff of %.1f." % (-1 * cutoff),
-        cutoff = -1 * mDict["dFDFexpt_Jybm"] * cutoff
+        cutoff = -1 * mDict["dFDFth_Jybm"] * cutoff
         print "Absolute value = %.3g" % cutoff
     else:
         print "Using an absolute cutoff of %.3g (%.1f x expected RMS)." % \
-            (cutoff, cutoff/mDict["dFDFexpt_Jybm"])
+            (cutoff, cutoff/mDict["dFDFth_Jybm"])
 
     startTime = time.time()
     
@@ -193,7 +193,7 @@ def run_rmclean(fdfFile, rmsfFile, weightFile, rmSynthFile, cutoff,
     mDict = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = mDict["fwhmRMSF"],
-                              dFDF        = mDict["dFDFexpt_Jybm"],
+                              dFDF        = mDict["dFDFth_Jybm"],
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = mDict["lam0Sq_m2"])
     mDict["cleanCutoff"] = cutoff

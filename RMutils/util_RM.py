@@ -7,8 +7,8 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 22-Sep-2017 by C.Purcell.                                         #
-#                                                                             #
+# MODIFIED: 29-Sep-2017 by C.Purcell.                                         #
+#                                                                            #
 # CONTENTS:                                                                   #
 #                                                                             #
 #  do_rmsynth_planes   ... perform RM-synthesis on Q & U data cubes           #
@@ -85,7 +85,7 @@ C = 2.99792458e8
 
 #-----------------------------------------------------------------------------#
 def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2, 
-                      weightArr=None, nBits=32, verbose=False):
+                      weightArr=None, lam0Sq_m2=None, nBits=32, verbose=False):
     """Perform RM-synthesis on Stokes Q and U cubes (1,2 or 3D). This version
     of the routine loops through spectral planes and is faster than the pixel-
     by-pixel code. This version also correctly deals with isolated clumps of
@@ -159,7 +159,8 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     # lam0Sq_m2 is the weighted mean of lambda^2 distribution (B&dB Eqn. 32)
     # Calculate a global lam0Sq_m2 value, ignoring isolated flagged voxels
     K = 1.0 / np.sum(weightArr)
-    lam0Sq_m2 = K * np.sum(weightArr * lambdaSqArr_m2)
+    if lam0Sq_m2 is None:
+        lam0Sq_m2 = K * np.sum(weightArr * lambdaSqArr_m2)
     
     # The K value used to scale each FDF spectrum must take into account
     # flagged voxels data in the datacube and can be position dependent
