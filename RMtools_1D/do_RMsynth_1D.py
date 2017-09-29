@@ -95,8 +95,6 @@ def main():
                         help="polynomial order to fit to I spectrum [2].")
     parser.add_argument("-i", dest="noStokesI", action="store_true",
                         help="ignore the Stokes I spectrum [False].")
-    parser.add_argument("-n", dest="phiNoise_radm2", type=float, default=1e6,
-                        help="FD at which to measure the noise [1e6].")
     parser.add_argument("-b", dest="bit64", action="store_true",
                         help="use 64-bit floating point precision [False]")
     parser.add_argument("-p", dest="showPlots", action="store_true",
@@ -125,7 +123,6 @@ def main():
                 weightType     = args.weightType,
                 fitRMSF        = args.fitRMSF,
                 noStokesI      = args.noStokesI,
-                phiNoise_radm2 = args.phiNoise_radm2,
                 nBits          = nBits,
                 showPlots      = args.showPlots,
                 debug          = args.debug)
@@ -276,15 +273,6 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                                          float(dPhi_radm2),
                                                          nChanRM)
     
-    # FD noise sampling window: +/-100 x 2 x RMSF width @ 1e6 rad/m^2
-    # Channels should be > FWHM to avoid noise correlation
-    phiRMSarr_radm2 = np.linspace(phiNoise_radm2-fwhmRMSF_radm2*25,
-                                  phiNoise_radm2+fwhmRMSF_radm2*25,
-                                  200)
-    print "NoiseWindow = %.2f to %.2f by %f (%d chans)." % \
-        (phiRMSarr_radm2[0], phiRMSarr_radm2[-1], np.diff(phiRMSarr_radm2)[0],
-         len(phiRMSarr_radm2))
-    
     # Calculate the weighting as 1/sigma^2 or all 1s (natural)
     if weightType=="variance":
         weightArr = 1.0 / np.power(dQUArr_mJy, 2.0)
@@ -303,15 +291,6 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                             weightArr       = weightArr,
                                             nBits           = nBits,
                                             verbose         = True)
-    
-    # Perform RM-synthesis for the high-FD noise window
-    noiseFDF, dummy = do_rmsynth_planes(dataQ           = qArr,
-                                        dataU           = uArr,
-                                        lambdaSqArr_m2  = lambdaSqArr_m2, 
-                                        phiArr_radm2    = phiRMSarr_radm2,
-                                        weightArr       = weightArr,
-                                        nBits           = nBits,
-                                        verbose         = True)
 
     # Calculate the Rotation Measure Spread Function
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = \
@@ -343,34 +322,16 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
     Ifreq0_mJybm = poly5(fitDict["p"])(freq0_Hz/1e9)
     dirtyFDF *= (Ifreq0_mJybm / 1e3)    # FDF is in Jy 
-    noiseFDF *= (Ifreq0_mJybm / 1e3)
 
     # Calculate the theoretical noise in the FDF
     dFDFth_Jybm = np.sqrt(1./np.sum(1./dQUArr_Jy**2.)) 
-
-    # Measure the noise in the FDF at high RM
-    dFDFms_Jybm = MAD(np.abs(noiseFDF))
-
-    # DEBUG (plot the noise FDF)
-    if debug:
-        noiseFig =  plt.figure(figsize=(12.0, 8))
-        ax = noiseFig.add_subplot(111)
-        ax.step(phiRMSarr_radm2-phiNoise_radm2, noiseFDF.real*1e3, where='mid',
-                color='r', lw=0.5)
-        ax.step(phiRMSarr_radm2-phiNoise_radm2, noiseFDF.imag*1e3, where='mid',
-                color='b', lw=0.5)
-        ax.step(phiRMSarr_radm2-phiNoise_radm2, np.abs(noiseFDF)*1e3,
-                where='mid', color='k', lw=2.5)
-        ax.set_xlabel('$\\phi - \\phi_{high}$ (rad/m$^2$)')
-        ax.set_ylabel('Flux Density (mJy)')
-        ax.set_title("FDF in the high-$\\phi$ window")
-        noiseFig.show()
     
     # Measure the parameters of the dirty FDF
+    # Use the theoretical noise to calculate uncertainties
     mDict = measure_FDF_parms(FDF         = dirtyFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = fwhmRMSF,
-                              dFDF        = dFDFms_Jybm,
+                              dFDF        = dFDFth_Jybm,
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0_mJybm"] = toscalar(Ifreq0_mJybm)
@@ -382,7 +343,6 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU_Jybm"] = toscalar(nanmedian(dQUArr_Jy))
     mDict["dFDFth_Jybm"] = toscalar(dFDFth_Jybm)
-    mDict["dFDFms_Jybm"] = toscalar(dFDFms_Jybm)
 
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
@@ -454,7 +414,6 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                                 mDict["dAmpPeakPIfit_Jybm"]*1e3)
     print 'QU Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3)
     print 'FDF Noise (theory)   = %.4g mJy/beam' % (mDict["dFDFth_Jybm"]*1e3)
-    print 'FDF Noise (measured) = %.4g mJy/beam' % (mDict["dFDFms_Jybm"]*1e3)
     print 'FDF SNR = %.4g ' % (mDict["snrPIfit"])
     print 'sigma_add(q) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],
