@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires numpy and astropy.                                       #
 #                                                                             #
-# MODIFIED: 05-May-2017 by C. Purcell                                         #
+# MODIFIED: 29-Sep-2017 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -25,7 +25,8 @@
 #  poly5                ... function to evaluate a 5th order polynomial       #
 #  nanmedian            ... np.median ignoring NaNs                           #
 #  nanmean              ... np.mean ignoring NaNs                             #
-#  extrap               ... interpolate & extrapolate a Numpy array
+#  nanstd               ... np.std ignoring NaNs                              #
+#  extrap               ... interpolate & extrapolate a Numpy array           #
 #  toscalar             ... return a scalar version of a Numpy object         #
 #  MAD                  ... calculate the madfm                               #
 #  calc_stats           ... calculate the statistics of an array              #
@@ -454,6 +455,13 @@ def nanmean(arr, **kwargs):
     
     return ma.mean( ma.masked_where(arr!=arr, arr), **kwargs )
 
+#-----------------------------------------------------------------------------#
+def nanstd(arr, **kwargs):
+    """
+    Returns standard deviation ignoring NaNs.
+    """
+    
+    return ma.std( ma.masked_where(arr!=arr, arr), **kwargs )
 
 #-----------------------------------------------------------------------------#
 def extrap(x, xp, yp):
