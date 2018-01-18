@@ -21,7 +21,7 @@
 # INSTRUCTIONS:
 
 # Create a test dataset from parameters in a catalogue file.
-./mk_test_ascii_data.py catalogue.csv
+./mk_test_ascii_data.py cats/catalogue.csv
 
 # Perform RM-synthesis on the sources
 ./do_RMsynth_1D.py data/Source1.dat -p
