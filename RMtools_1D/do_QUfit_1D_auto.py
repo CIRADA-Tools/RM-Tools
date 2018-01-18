@@ -6,7 +6,7 @@
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 23-Nov-2016 by C. Purcell                                         #
+# MODIFIED: 03-Oct-2017 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -897,6 +897,8 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
         best, errPlus, errMinus = g(np.percentile(fChain, [15.72, 50, 84.27]))
         pBest.append(best)
         ip.inParms[ip.fxi[i]]['value'] = best
+        ip.inParms[ip.fxi[i]]['errPlus'] = errPlus
+        ip.inParms[ip.fxi[i]]['errMinus'] = errMinus
         print '%s = %.4g (+%3g, -%3g)' % (ip.inParms[ip.fxi[i]]['parname'],
                                           best, errPlus, errMinus)
     

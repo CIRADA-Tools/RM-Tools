@@ -24,7 +24,7 @@ def model(inParms, lamSqArr_m2):
     quArr = (pArr * np.exp( 2j * (np.radians(kwargs["psi0_deg"]) +
                                   kwargs["RM_radm2"] * lamSqArr_m2))
              * np.exp(-2.0 * kwargs["sigmaRM_radm2"]**2.0 
-                      * lamSqArr_m2**4.0))
+                      * lamSqArr_m2**2.0))
     
     return quArr
 

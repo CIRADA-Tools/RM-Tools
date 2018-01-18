@@ -31,7 +31,7 @@ def model(inParms, lamSqArr_m2):
                                    kwargs["RM3_radm2"] * lamSqArr_m2))
     quArr = ((quArr1 + quArr2 + quArr3)
              * np.exp(-2.0 * kwargs["sigmaRM_radm2"]**2.0 
-                      * lamSqArr_m2**4.0))
+                      * lamSqArr_m2**2.0))
 
     return quArr
 

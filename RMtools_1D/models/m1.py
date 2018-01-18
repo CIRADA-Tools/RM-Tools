@@ -92,6 +92,6 @@ inParms = [
      "value": 0.0,
      "error": 0.0,
      "fixed": False,
-     "seedrng": [-100.0, 100.1],
-     "bounds": [-10000.0, 10000.0]}
+     "seedrng": [-500.0, 500.1],
+     "bounds": [-1100.0, 1100.0]}
 ]
