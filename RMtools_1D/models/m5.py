@@ -34,7 +34,9 @@ def model(inParms, lamSqArr_m2):
                               * lamSqArr_m2**2.0)
               * np.sinc(kwargs["DeltaRM2_radm2"]/np.pi))
     quArr3 = (pArr3 * np.exp( 2j * (np.radians(kwargs["psi03_deg"]) +
-                                    kwargs["RM3_radm2"] * lamSqArr_m2))
+                                    kwargs["RM3_radm2"] * lamSqArr_m2) -
+                              2.0 * kwargs["sigmaRM3_radm2"]**2.0 
+                              * lamSqArr_m2**2.0)
               * np.sinc(kwargs["DeltaRM3_radm2"]/np.pi))
     quArr = (quArr1 + quArr2 + quArr3)
     

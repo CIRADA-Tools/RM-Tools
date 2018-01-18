@@ -80,7 +80,7 @@ def main():
     specified in the file, assuming a total flux & spectral index:
 
         # MODEL TYPE 1: One or more components affected by Burn depolarisation.
-        #
+        # (see e.g., Equation 5 Tribble 1991, Burn 1966).
         # Column  |  Description
         #---------------------------------------------------
         # [0]     |  Model type [1]
@@ -134,13 +134,6 @@ def main():
     set by arguments to this script, including an optional template for the
     shape of the noise curve and an optional list of frequency ranges to flag.
     See below for a list and default values in square brackets.
-
-    In addition to the ASCII files containing spectra, this script outputs a
-    simple ASCII catalogue and a SQL description of that catalogue. The
-    catalogue file is used to drive the pipeline and the SQL descripton file
-    tells the pipeline the format of the catalogue. This allows the user to
-    define additional columns in the input catalogue, which are then
-    incorporated into the results database.
 
     Examples:
 
@@ -214,6 +207,7 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
     Create a set of ASCII files containing Stokes I Q & U spectra.
     """
 
+    
     # Sample frequency space
     freqArr_Hz = np.linspace(startFreq_Hz, endFreq_Hz, nChans)
     freqNoFlgArr_Hz = freqArr_Hz.copy()
@@ -229,7 +223,7 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
                 freqArr_Hz[i]=np.nan
 
     # Create normalised noise array from a template or assume all ones.
-    print "Input RMS noise is %.3g" % rmsNoise_mJy
+    print "Input RMS noise is %.3g mJy" % rmsNoise_mJy
     if noiseTmpArr is None:
         print "Assuming flat noise versus frequency curve."
         noiseArr = np.ones(freqArr_Hz.shape, dtype="f8")
