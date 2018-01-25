@@ -38,11 +38,11 @@
 ./do_RMclean_1D.py data/Source5.dat -p
 
 # Perform QU-fitting on the sources
-./do_QUfit_1D_auto.py data/Source1.dat -t 7 -m 1 -p -d
-./do_QUfit_1D_auto.py data/Source2.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_auto.py data/Source3.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_auto.py data/Source4.dat -t 7 -m 4 -p -d
-./do_QUfit_1D_auto.py data/Source5.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_auto.py data/Source6.dat -t 7 -m 5 -p -d
-./do_QUfit_1D_auto.py data/Source7.dat -t 7 -m 4 -p -d
+./do_QUfit_1D_emcee.py data/Source1.dat -t 7 -m 1 -p -d
+./do_QUfit_1D_emcee.py data/Source2.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_emcee.py data/Source3.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_emcee.py data/Source4.dat -t 7 -m 4 -p -d
+./do_QUfit_1D_emcee.py data/Source5.dat -t 7 -m 3 -p -d
+./do_QUfit_1D_emcee.py data/Source6.dat -t 7 -m 5 -p -d
+./do_QUfit_1D_emcee.py data/Source7.dat -t 7 -m 4 -p -d
 

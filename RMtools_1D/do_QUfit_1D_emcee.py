@@ -6,7 +6,7 @@
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 03-Oct-2017 by C. Purcell                                         #
+# MODIFIED: 25-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
