@@ -911,7 +911,7 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
     # Calculate the information criteria
     lnLike = lnlike_model(ip.inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr)
     AIC = 2.0*ip.nDim - 2.0 * lnLike
-    AICc = AIC + 2.0*ip.nDim*(ip.nDim+1)/(nSamp-ip.nDim-1)    
+    AICc = 2.0*ip.nDim*(ip.nDim+1)/(nSamp-ip.nDim-1) - 2.0 * lnLike
     BIC = ip.nDim * np.log(nSamp) - 2.0 * lnLike
     print
     print "DOF:", dof
