@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     do_QUfit_1D_multinest.py                                          #
+# NAME:     do_QUfit_1D_inest.py                                              #
 #                                                                             #
-# PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
-#           of Faraday active models.                                         #
+# PURPOSE:  Code to simultaneously fit Stokes Q/I and U/I spectra with a      #
+#           Faraday active models.                                            #
 #                                                                             #
 # MODIFIED: 26-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
 #   main           ... parse command line arguments and initiate procedure    #
+#   run_qufit      ... main function of the QU-fitting procedure              #
+#   prior_call     ... return the prior tranform fucntion given prior limits  #
+#   lnlike_call    ... return a function to evaluate ln(like) given the data  #
+#   wrap_arr       ... wrap the periodic values in an array                   #
+#   wrap_chains    ... wrap and shift chains of periodic parameters           #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -62,7 +67,6 @@ from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
 from RMutils.util_plotTk import tweakAxFormat
 from RMutils import corner
-
 
 C = 2.997924538e8 # Speed of light [m/s]
 
@@ -117,8 +121,7 @@ def main():
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, debug=False, redo=False):
-    """Root function controlling the fitting porcedure."""
-
+    """Root function controlling the fitting procedure."""
     
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -254,7 +257,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     statDict =  aObj.get_stats()
     fitDict =  aObj.get_best_fit()
 
-    # Get the best fitting values and uncertainties
+    # Get the best fitting values and marginals
     p = fitDict["parameters"]
     lnLike = fitDict["log_likelihood"]
     lnEvidence = statDict["nested sampling global log-evidence"]
@@ -265,7 +268,18 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         dp[i] = statDict["marginals"][i]['1sigma']
         dp[i] = statDict["marginals"][i]['1sigma']
         med[i] = statDict["marginals"][i]['median']
-
+        
+    # Re-centre and wrap periodic parameters
+    iWrap = [i for i, e in enumerate(wraps) if e != 0]
+    for i in iWrap:
+        wrapLow = bounds[i][0]
+        wrapHigh = bounds[i][1]
+        rng = wrapHigh - wrapLow
+        wrapCent = wrapLow + (wrapHigh - wrapLow)/2.0
+        wrapLow += (p[i] - wrapCent)
+        wrapHigh += (p[i] - wrapCent)
+        dp[i] = ((dp[i]-wrapLow) % rng) + wrapLow
+        
     # Calculate goodness-of-fit parameters
     nSamp = len(lamSqArr_m2)
     dof = nSamp - nDim -1
@@ -292,7 +306,6 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         print("p%d = %.4f +/- %.4f/%.4f" % \
               (i, p[i], p[i]-dp[i][0], dp[i][1]-p[i]))
 
-
     # Plot the results
     if showPlots:
         print "Plotting the best-fitting model."
@@ -318,9 +331,10 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         
         print "Plotting the corner-plot."
         chains =  aObj.get_equal_weighted_posterior()
+        chains = wrap_chains(chains, wraps, bounds, p)
         cornerFig = corner.corner(xs      = chains[:, :nDim],
                                   labels  = labels,
-                                  #range   = [0.99999]*nDim,
+                                  range   = [0.99999]*nDim,
                                   truths  = p,
                                   bins    = 30)
         cornerFig.show()
@@ -375,6 +389,39 @@ def lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     
     return lnlike
 
+
+#-----------------------------------------------------------------------------#
+def wrap_arr(arr, wrapLow=-90.0, wrapHigh=90.0):
+    """Wrap the values in an array (e.g., angles)."""
+    
+    rng = wrapHigh - wrapLow
+    arr = ((arr-wrapLow) % rng) + wrapLow
+    return arr
+
+
+#-----------------------------------------------------------------------------#
+def wrap_chains(chains, wraps, bounds, p, verbose=False):
+
+    # Get the indices of the periodic parameters
+    iWrap = [i for i, e in enumerate(wraps) if e != 0]
+
+    # Loop through the chains for periodic parameters
+    for i in iWrap:
+        wrapLow = bounds[i][0]
+        wrapHigh = bounds[i][1]
+        rng = wrapHigh - wrapLow
+        
+        # Shift the wrapping to centre on the best fit value
+        wrapCent = wrapLow + (wrapHigh - wrapLow)/2.0
+        wrapLow += (p[i] - wrapCent)
+        wrapHigh += (p[i] - wrapCent)
+        chains[:, i] = ((chains[:, i]-wrapLow) % rng) + wrapLow
+        if verbose:
+            print "> Wrapped parameter '%d' in range [%s, %s] ..." % \
+            (i, wrapLow, wrapHigh),
+
+    return chains
+    
 
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":

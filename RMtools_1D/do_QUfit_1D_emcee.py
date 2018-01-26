@@ -627,7 +627,7 @@ def chk_trace_stable(statDict, nCycles, stdLim=1.1, medLim=0.3):
 def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
               polyOrd=3, nBits=32, noStokesI=False, showPlots=False,
               debug=False):
-    """Root function controlling the fitting porcedure."""
+    """Root function controlling the fitting procedure."""
     
     # Default data types
     dtFloat = "float" + str(nBits)
