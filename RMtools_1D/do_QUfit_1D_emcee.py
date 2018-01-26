@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     do_QUfit_1D.py                                                    #
+# NAME:     do_QUfit_1D_emcee.py                                              #
 #                                                                             #
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 25-Jan-2018 by C. Purcell                                         #
+# MODIFIED: 26-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
