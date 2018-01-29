@@ -42,14 +42,14 @@ inParms = [
     {"parname":   "fracPol1",
      "label":     "$p_1$",
      "value":     0.1,
-     "bounds":    [0.0000001, 1.0],
+     "bounds":    [0.001, 1.0],
      "priortype": "uniform",
      "wrap":      0},
     
     {"parname":   "fracPol2",
      "label":     "$p_2$",
      "value":     0.1,
-     "bounds":    [0.0000001, 1.0],
+     "bounds":    [0.001, 1.0],
      "priortype": "uniform",
      "wrap":      0},
     
@@ -84,7 +84,7 @@ inParms = [
     {"parname":   "sigmaRM_radm2",
      "label":     "$\sigma_{RM}$ (rad m$^{-2}$)",
      "value":     0.0,
-     "bounds":    [0.0, 1000.0],
+     "bounds":    [0.0, 100.0],
      "priortype": "uniform",
      "wrap": 0}
 ]
@@ -93,5 +93,5 @@ inParms = [
 #-----------------------------------------------------------------------------#
 # Switches controlling the Nested Sampling algorithm                          #
 #-----------------------------------------------------------------------------#
-runParmDict = {"nPoints": 1000,
-               "verbose": True}
+nestArgsDict = {"n_live_points": 1000,
+                "verbose": True}

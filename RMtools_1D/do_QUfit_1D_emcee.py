@@ -6,7 +6,7 @@
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 26-Jan-2018 by C. Purcell                                         #
+# MODIFIED: 29-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -15,6 +15,7 @@
 #   lnlike_priors  ... calculate the ln(likelihood) for gaussian priors       #
 #   lnlike_bounds  ... calculate the ln(likelihood) for uniform priors        #
 #   lnlike_model   ... calculate the ln(likelihood for the model              #
+#   chisq_model    ... calculate the chi-squared for the model                #
 #   lnlike_total   ... calculate the total ln(likelihood)                     #
 #   plot_trace     ... plot the chains versus step (time)                     #
 #   plot_like_stats .. plot the likelihood statistics                         #
@@ -720,8 +721,8 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
     #-------------------------------------------------------------------------#
 
     # Load the model and parameters from the relevant file
-    print "\nLoading the model from file 'models/m%d.py' ..."  % modelNum
-    mod = imp.load_source("m%d" % modelNum, "models/m%d.py" % modelNum)
+    print "\nLoading the model from file 'models_mc/m%d.py' ..."  % modelNum
+    mod = imp.load_source("m%d" % modelNum, "models_mc/m%d.py" % modelNum)
     global model
     model = mod.model
     

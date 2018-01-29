@@ -69,5 +69,5 @@ inParms = [
 #-----------------------------------------------------------------------------#
 # Switches controlling the Nested Sampling algorithm                          #
 #-----------------------------------------------------------------------------#
-runParmDict = {"nPoints": 1000,
-               "verbose": True}
+nestArgsDict = {"n_live_points": 1000,
+                "verbose": True}
