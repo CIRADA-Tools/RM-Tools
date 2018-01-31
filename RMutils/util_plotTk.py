@@ -3,9 +3,9 @@
 #                                                                             #
 # NAME:     util_plotTk.py                                                    #
 #                                                                             #
-# PURPOSE:  Plotting functions for the POSSUM pipeline Tk interface.          #
+# PURPOSE:  Plotting functions for the POSSUM pipeline                        #
 #                                                                             #
-# MODIFIED: 16-May-2017 by C. Purcell                                         #
+# MODIFIED: 31-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -52,7 +52,7 @@
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
-# Copyright (c) 2015 Cormac R. Purcell                                        #
+# Copyright (c) 2015 -2018 Cormac R. Purcell                                  #
 #                                                                             #
 # Permission is hereby granted, free of charge, to any person obtaining a     #
 # copy of this software and associated documentation files (the "Software"),  #
@@ -93,6 +93,7 @@ import ttk
 from util_plotFITS import plot_fits_map
 from util_misc import xfloat
 from util_misc import norm_cdf
+from util_misc import nanmedian
 from normalize import APLpyNormalize
 
 # Alter the default linewidths etc.
@@ -241,8 +242,8 @@ def plot_I_vs_nu_ax(ax, freqArr_Hz, IArr_mJy, dIArr_mJy=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = (np.nanmax(freqArr_Hz) - np.nanmin(freqArr_Hz))/1e9 
-    ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                 np.max(freqArr_Hz)/1e9 + xRange*0.05)
+    ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
+                 np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
     ax.set_xlabel('$\\nu$ (GHz)')
     ax.set_ylabel('Flux Density (mJy)')
 
@@ -300,8 +301,8 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr_mJy, UArr_mJy, dQArr_mJy=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
-    ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                 np.max(freqArr_Hz)/1e9 + xRange*0.05)
+    ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
+                 np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
     ax.set_xlabel('$\\nu$ (GHz)')
     ax.set_ylabel('Flux Density (mJy)')
     ax.axhline(0, color='grey')
@@ -337,8 +338,8 @@ def plot_rmsIQU_vs_nu_ax(ax, freqArr_Hz, rmsIArr_mJy,  rmsQArr_mJy,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
-    ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                 np.max(freqArr_Hz)/1e9 + xRange*0.05)
+    ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
+                 np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
     ax.set_xlabel('$\\nu$ (GHz)')
     ax.set_ylabel('Flux Density (mJy bm$^{-1}$)')
     
@@ -412,8 +413,15 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(lamSqArr_m2)-np.nanmin(lamSqArr_m2)
-    ax.set_xlim( np.min(lamSqArr_m2) - xRange*0.05,
-                 np.max(lamSqArr_m2) + xRange*0.05)
+    ax.set_xlim( np.nanmin(lamSqArr_m2) - xRange*0.05,
+                 np.nanmax(lamSqArr_m2) + xRange*0.05)
+    yDataMax = max(np.nanmax(pArr), np.nanmax(qArr), np.nanmax(uArr))
+    yDataMin = min(np.nanmin(pArr), np.nanmin(qArr), np.nanmin(uArr))
+    yRange = yDataMax - yDataMin
+    medErrBar = np.max([float(nanmedian(dpArr)), float(nanmedian(dqArr)),
+                           float(nanmedian(duArr))])
+    ax.set_ylim( yDataMin - 2*medErrBar - yRange*0.05,
+                 yDataMax + 2*medErrBar + yRange*0.1)
     ax.set_xlabel('$\\lambda^2$ (m$^2$)')
     ax.set_ylabel('Fractional Polarisation')
     ax.axhline(0, color='grey')
@@ -466,8 +474,8 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(lamSqArr_m2)-np.nanmin(lamSqArr_m2)
-    ax.set_xlim( np.min(lamSqArr_m2) - xRange*0.05,
-                 np.max(lamSqArr_m2) + xRange*0.05)
+    ax.set_xlim( np.nanmin(lamSqArr_m2) - xRange*0.05,
+                 np.nanmax(lamSqArr_m2) + xRange*0.05)
     ax.set_ylim(-99.9, 99.9)
     ax.set_xlabel('$\\lambda^2$ (m$^2$)')
     ax.set_ylabel('$\psi$ (degrees)')
@@ -508,11 +516,11 @@ def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(uArr)-np.nanmin(uArr)
-    ax.set_xlim( np.min(uArr) - xRange*0.05,
-                 np.max(uArr) + xRange*0.05)
+    ax.set_xlim( np.nanmin(uArr) - xRange*0.05,
+                 np.nanmax(uArr) + xRange*0.05)
     yRange = np.nanmax(qArr)-np.nanmin(qArr)
-    ax.set_ylim( np.min(qArr) - yRange*0.05,
-                 np.max(qArr) + yRange*0.05)
+    ax.set_ylim( np.nanmin(qArr) - yRange*0.05,
+                 np.nanmax(qArr) + yRange*0.05)
     ax.set_xlabel('Stokes u')
     ax.set_ylabel('Stokes q')
     ax.axhline(0, color='grey')
@@ -566,8 +574,8 @@ def plot_RMSF_ax(ax, phiArr, RMSFArr, fwhmRMSF=None, axisYright=False,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(phiArr)-np.nanmin(phiArr)
-    ax.set_xlim( np.min(phiArr) - xRange*0.01,
-                 np.max(phiArr) + xRange*0.01)
+    ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
+                 np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Normalised Units')
     ax.set_xlabel('$\phi$ rad m$^{-2}$')
     ax.axhline(0, color='grey')
@@ -637,8 +645,8 @@ def plot_dirtyFDF_ax(ax, phiArr, FDFArr_mJy, gaussParm=[], vLine=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(8))
     xRange = np.nanmax(phiArr)-np.nanmin(phiArr)
-    ax.set_xlim( np.min(phiArr) - xRange*0.01,
-                 np.max(phiArr) + xRange*0.01)
+    ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
+                 np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Flux Density (mJy)')
     ax.set_xlabel('$\phi$ rad m$^{-2}$')
     ax.axhline(0, color='grey')
@@ -705,8 +713,8 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr_mJy=None, ccFDFArr_mJy=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(phiArr)-np.nanmin(phiArr)
-    ax.set_xlim( np.min(phiArr) - xRange*0.01,
-                 np.max(phiArr) + xRange*0.01)
+    ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
+                 np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Flux Density (mJy)')
     ax.set_xlabel('$\phi$ rad m$^{-2}$')
     ax.axhline(0, color='grey')
@@ -784,27 +792,27 @@ def plot_hist4_ax(ax, popLst, nBins=10, doXlog=False, doYlog=False, styIndx=0,
         yZeroPt = 0.8
         yMin = yZeroPt
         if yMax is None:
-            yMaxData = float(max(nEnsemble))
+            yMaxData = float(np.nanmax(nEnsemble))
             yFac = abs(yMaxData/yZeroPt)
             yMax = yMaxData*(1+ m.log10(yFac)*0.3)
     else:
         yZeroPt = 0.0
         yMin = yZeroPt
         if yMax is None:
-            yMax = float(max(nEnsemble))*1.2
+            yMax = float(np.nanmax(nEnsemble))*1.2
         
     # Set the X-axis limits, incorporating a single padding bin
     xFac = (len(b)-1)*0.05
     if doXlog:
         sign = np.sign(b)[0]
         logBins = np.log10(b*sign)
-        logBinWidth = np.max(np.diff(logBins))
+        logBinWidth = np.nanmax(np.diff(logBins))
         if xMin is None:
             xMin = 10**(logBins[0] - logBinWidth*xFac)*sign
         if xMax is None:
             xMax = 10**(logBins[-1] + logBinWidth*xFac)*sign
     else:        
-        linBinWidth = np.max(np.diff(b))
+        linBinWidth = np.nanmax(np.diff(b))
         if xMin is None:
             xMin = b[0] - linBinWidth*xFac
         if xMax is None:
@@ -1885,8 +1893,8 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax2 = fig.add_subplot(232)
     ax2.tick_params(labelbottom='off')    
     nBins = 15
-    yMin = np.min([np.min(qArr), np.min(uArr)])
-    yMax = np.max([np.max(qArr), np.max(uArr)])
+    yMin = np.nanmin([np.nanmin(qArr), np.nanmin(uArr)])
+    yMax = np.nanmax([np.nanmax(qArr), np.nanmax(uArr)])
     n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), normed=1,
                        histtype='step', color='b', linewidth=1.0)
     ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=1.5)
@@ -1963,10 +1971,10 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax6.set_ylabel(r"Cumulative Likelihood")
     
     # Zoom in
-    xLim1 = np.min( [mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"]*4.0, 
+    xLim1 = np.nanmin( [mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"]*4.0, 
                      mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"]*4.0] )
     xLim1 = max(0.0, xLim1)
-    xLim2 = np.max( [mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"]*4.0, 
+    xLim2 = np.nanmax( [mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"]*4.0, 
                      mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"]*4.0] )
     ax6.set_xlim(xLim1, xLim2)
     
