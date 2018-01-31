@@ -158,8 +158,8 @@ def main():
                         help='Frequency range [700 1800] (MHz)')
     parser.add_argument("-f0", dest="freq0_MHz", type=float, default=0.0,
                         help="Frequency of catalogue flux [1st channel] (MHz).")
-    parser.add_argument("-c", dest="nChans", type=int, default=110,
-                        help="Number of channels in output spectra [110].")
+    parser.add_argument("-c", dest="nChans", type=int, default=111,
+                        help="Number of channels in output spectra [111].")
     parser.add_argument("-n", dest="rmsNoise_mJy", type=float, default=0.02,
                         help="RMS noise of the output spectra [0.02 mJy].")
     parser.add_argument('-t', dest='noiseTmpFile', metavar="NOISE.TXT",

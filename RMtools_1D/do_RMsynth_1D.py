@@ -5,13 +5,13 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 29-Sep-2017 by C. Purcell                                         #
+# MODIFIED: 31-Jan-2018 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
-# Copyright (c) 2015 Cormac R. Purcell                                        #
+# Copyright (c) 2015 - 2018 Cormac R. Purcell                                 #
 #                                                                             #
 # Permission is hereby granted, free of charge, to any person obtaining a     #
 # copy of this software and associated documentation files (the "Software"),  #
@@ -243,7 +243,7 @@ def run_rmsynth(dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
             ax.set_ylabel('RMS (mJy bm$^{-1}$)')
             ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
             rmsFig.show()
-        
+
     #-------------------------------------------------------------------------#
 
     # Calculate some wavelength parameters
