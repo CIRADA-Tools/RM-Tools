@@ -7,8 +7,8 @@
 #                                                                             #
 # REQUIRED: Requires the numpy and scipy modules.                             #
 #                                                                             #
-# MODIFIED: 29-Sep-2017 by C.Purcell.                                         #
-#                                                                            #
+# MODIFIED: 31-Jan-2018 by C.Purcell.                                         #
+#                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
 #  do_rmsynth_planes   ... perform RM-synthesis on Q & U data cubes           #
@@ -38,7 +38,7 @@
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
-# Copyright (c) 2015 Cormac R. Purcell                                        #
+# Copyright (c) 2015 - 2018 Cormac R. Purcell                                 #
 #                                                                             #
 # Permission is hereby granted, free of charge, to any person obtaining a     #
 # copy of this software and associated documentation files (the "Software"),  #
@@ -873,8 +873,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
-        polAngle0Fit_deg = np.degrees(np.radians(polAngleFit_deg) -
-                                      phiPeakPIfit * lam0Sq)
+        polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
+                                      phiPeakPIfit * lam0Sq)) % 180.0
         dPolAngle0Fit_rad = \
             np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
@@ -931,7 +931,7 @@ def cdf_percentile(x, p, q=50.0):
     """Return the value at a given percentile of a cumulative distribution
     function."""
 
-    # Determin index where cumulative percentage is achieved
+    # Determine index where cumulative percentage is achieved
     i = np.where(p>q/100.0)[0][0]
 
     # If at extremes of the distribution, return the limiting value
@@ -958,10 +958,10 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         yMed = np.median(yArr)
     if noise is None:
         noise = MAD(yArr)
-        
+
     # Sample the PDF of the additional noise term from a limit near zero to
     # a limit of the range of the data, including error bars
-    yRng = np.max(yArr+dyArr) - np.min(yArr-dyArr)
+    yRng = np.nanmax(yArr+dyArr) - np.nanmin(yArr-dyArr)
     sigmaAddArr = np.linspace(yRng/nSamp, yRng, nSamp)
     
     # Model deviation from Gaussian as an additional noise term.
@@ -972,7 +972,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
     lnSigmaSumArr = np.zeros_like(sigmaAddArr)
     for i, sigmaAdd in enumerate(sigmaAddArr):
         sigmaSqTot = dyArr**2.0 + sigmaAdd**2.0
-        lnSigmaSumArr[i] = np.sum(np.log(np.sqrt(sigmaSqTot)))
+        lnSigmaSumArr[i] = np.nansum(np.log(np.sqrt(sigmaSqTot)))
         chiSqArr[i] = np.nansum((yArr-yMed)**2.0/sigmaSqTot)
     dof = nData-1
     chiSqRedArr = chiSqArr/dof
@@ -980,15 +980,15 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
     # Calculate the PDF in log space and normalise the peak to 1
     lnProbArr = (-np.log(sigmaAddArr) -nData * np.log(2.0*np.pi)/2.0
                  -lnSigmaSumArr -chiSqArr/2.0)
-    lnProbArr -= np.max(lnProbArr)
+    lnProbArr -= np.nanmax(lnProbArr)
     probArr = np.exp(lnProbArr)
-
+    
     # Normalise the area under the PDF to be 1
-    A = np.sum(probArr * np.diff(sigmaAddArr)[0])
+    A = np.nansum(probArr * np.diff(sigmaAddArr)[0])
     probArr /= A
     
     # Calculate the cumulative PDF
-    CPDF = np.cumsum(probArr)/np.sum(probArr)
+    CPDF = np.cumsum(probArr)/np.nansum(probArr)
 
     # Calculate the mean of the distribution and the +/- 1-sigma limits
     sigmaAdd = cdf_percentile(x=sigmaAddArr, p=CPDF, q=50.0)
