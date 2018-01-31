@@ -648,9 +648,9 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
         print "... success."
     except Exception:
         print "...failed."
-        # freq_Hz, Q_Jy, U_Jy, dQ_Jy, dU_Jy
+        # freq_Hz, q_Jy, u_Jy, dq_Jy, du_Jy
         try:
-            print "Reading [freq_Hz, Q_Jy, U_Jy,  dQ_Jy, dU_Jy]",
+            print "Reading [freq_Hz, q_Jy, u_Jy,  dq_Jy, du_Jy]",
             (freqArr_Hz, QArr_Jy, UArr_Jy, dQArr_Jy, dUArr_Jy) = \
                          np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
             print "... success."
