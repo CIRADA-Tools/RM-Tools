@@ -7,7 +7,7 @@ from __future__ import print_function
 # PURPOSE:  Code to simultaneously fit Stokes Q/I and U/I spectra with a      #
 #           Faraday active models.                                            #
 #                                                                             #
-# MODIFIED: 31-Jan-2018 by C. Purcell                                         #
+# MODIFIED: 10-Feb-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -138,6 +138,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         mpiSize = mpiComm.Get_size()
         mpiRank = mpiComm.Get_rank()
     else:
+        mpiSize = 1
         mpiRank = 0        
         
     # Default data types
