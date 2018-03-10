@@ -325,7 +325,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                         g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
     
         # Calculate goodness-of-fit parameters
-        nSamp = len(lamSqArr_m2)
+        nSamp = 2.0 * len(lamSqArr_m2)
         dof = nSamp - nFree -1
         chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr)
         chiSqRed = chiSq/dof
