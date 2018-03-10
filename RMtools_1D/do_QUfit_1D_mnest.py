@@ -7,7 +7,7 @@ from __future__ import print_function
 # PURPOSE:  Code to simultaneously fit Stokes Q/I and U/I spectra with a      #
 #           Faraday active models.                                            #
 #                                                                             #
-# MODIFIED: 10-Feb-2018 by C. Purcell                                         #
+# MODIFIED: 10-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -329,9 +329,9 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         dof = nSamp - nFree -1
         chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr)
         chiSqRed = chiSq/dof
-        AIC = 2.0*nFree - 2.0 * lnLike
-        AICc = 2.0*nFree*(nFree+1)/(nSamp-nFree-1) - 2.0 * lnLike
-        BIC = nFree * np.log(nSamp) - 2.0 * lnLike
+        AIC = 2.0*nFree - 2.0 * chiSq
+        AICc = 2.0*nFree*(nFree+1)/(nSamp-nFree-1) - 2.0 * chiSq
+        BIC = nFree * np.log(nSamp) - 2.0 * chiSq
         
         # Summary of run
         print("")
@@ -466,21 +466,26 @@ def prior_call(priorTypes, bounds, values):
     
     return prior
 
-    
+
 #-----------------------------------------------------------------------------#
 def lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     """ Returns a function to evaluate the log-likelihood """
 
     def lnlike(p, nDim, nParms):
         
-        # Evaluate the model and calculate the ln(like)
+        # Evaluate the model and calculate the joint ln(like)
+        # Silva 2006
         pDict = {k:v for k, v in zip(parNames, p)}
         quMod = model(pDict, lamSqArr_m2)
         dquArr = np.sqrt(np.power(dqArr, 2) + np.power(duArr, 2))
-        chiSqNrm = np.nansum( np.power((qArr-quMod.real)/dqArr, 2) +
-                              np.power((uArr-quMod.imag)/duArr, 2) +
-                              np.log(2 * np.pi * np.power(dquArr, 2)) )
-        return -chiSqNrm/2.0
+        chiSqQ = np.nansum(np.power((qArr-quMod.real)/dqArr, 2))
+        chiSqU = np.nansum(np.power((uArr-quMod.imag)/dqArr, 2))
+        nData = len(dquArr)
+        logLike = (-nData * np.log(2.0*np.pi)
+                   -2.0 * np.nansum(np.log(dquArr))
+                   -chiSqQ/2.0 -chiSqU/2.0)
+        
+        return logLike
     
     return lnlike
 
