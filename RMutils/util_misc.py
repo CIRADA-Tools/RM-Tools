@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires numpy and astropy.                                       #
 #                                                                             #
-# MODIFIED: 29-Sep-2017 by C. Purcell                                         #
+# MODIFIED: 12-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -79,7 +79,7 @@ import numpy as np
 import numpy.ma as ma
 import scipy.ndimage as ndi
 from scipy.stats import norm
-import ConfigParser
+#import ConfigParser
 import sqlite3
 import csv
 import json
@@ -323,21 +323,22 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
         IModArr = poly5(fitDict["p"])(freqArr)
 
         if verbose:
-            print "\n","-"*80
-            print "Details of the polynomial fit to the spectrum:"
+            print("\n")
+            print("-"*80)
+            print("Details of the polynomial fit to the spectrum:")
             for key, val in fitDict.iteritems():
-                print " %s = %s" % (key, val)
-            print "-"*80
-            print 
+                print(" %s = %s" % (key, val))
+            print("-"*80)
+            print("\n")
     except Exception:
-        print "Err: Failed to fit polynomial to Stokes I spectrum."
+        print("Err: Failed to fit polynomial to Stokes I spectrum.")
         if debug:
-            print "\nTRACEBACK:"
-            print "-" * 80
-            print traceback.format_exc()
-            print "-" * 80
-            print 
-        print "> Setting Stokes I spectrum to unity.\n"
+            print("\nTRACEBACK:")
+            print("-" * 80)
+            print(traceback.format_exc())
+            print("-" * 80)
+            print("\n")
+        print("> Setting Stokes I spectrum to unity.\n")
         fitDict["p"] = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
         IModArr = np.ones_like(IArr)
     
