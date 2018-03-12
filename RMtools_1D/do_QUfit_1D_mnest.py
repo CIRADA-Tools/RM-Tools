@@ -7,7 +7,7 @@ from __future__ import print_function
 # PURPOSE:  Code to simultaneously fit Stokes Q/I and U/I spectra with a      #
 #           Faraday active models.                                            #
 #                                                                             #
-# MODIFIED: 10-Mar-2018 by C. Purcell                                         #
+# MODIFIED: 12-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -55,13 +55,8 @@ import imp
 import json
 import argparse
 import traceback
-import math as m
 import numpy as np
-import numpy.ma as ma
-import scipy.optimize as op
-import pickle as pkl
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator, ScalarFormatter
 import pymultinest as pmn
 try:
     from mpi4py import MPI
@@ -74,7 +69,6 @@ from RMutils.util_misc import poly5
 from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
-from RMutils.util_plotTk import tweakAxFormat
 from RMutils import corner
     
 C = 2.997924538e8 # Speed of light [m/s]
