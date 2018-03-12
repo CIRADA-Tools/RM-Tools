@@ -70,7 +70,7 @@ from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
 from RMutils import corner
-    
+
 C = 2.997924538e8 # Speed of light [m/s]
 
 
@@ -86,7 +86,7 @@ def main():
     Stokes I spectra is first fit with a polynomial and the resulting model
     used to create fractional q = Q/I and u = U/I spectra. If the 'noStokesI'
     option is given, the input data are assumed to be fractional already.
-    
+
     The script uses the Nested Sampling algorithm (Skilling 2004) to find
     the best fitting parameters, given a prior function on each free parameter.
     The sampling algorithm also calculates the Bayesian evidence, which can
@@ -94,10 +94,10 @@ def main():
     model is strongly favoured over the other.
 
     Models and priors are  specified as Python code in files called 'mX.py'
-    within the 'models_ns' directory. See the existing files for examples 
+    within the 'models_ns' directory. See the existing files for examples
     drawn from the paper Sokoloff et al. 1998, MNRAS 229, pg 189.
     """
-    
+
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -122,7 +122,7 @@ def main():
         print("File does not exist: '%s'." % args.dataFile[0])
         sys.exit()
     dataDir, dummy = os.path.split(args.dataFile[0])
-    
+
     # Run the QU-fitting procedure
     run_qufit(dataFile     = args.dataFile[0],
               modelNum     = args.modelNum,
@@ -133,13 +133,13 @@ def main():
               showPlots    = args.showPlots,
               debug        = args.debug,
               verbose      = args.verbose)
-    
+
 
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, debug=False, verbose=False):
     """Function controlling the fitting procedure."""
-    
+
     # Get the processing environment
     if mpiSwitch:
         mpiComm = MPI.COMM_WORLD
@@ -147,22 +147,22 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         mpiRank = mpiComm.Get_rank()
     else:
         mpiSize = 1
-        mpiRank = 0        
-        
+        mpiRank = 0
+
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
 
     # Output prefix is derived from the input file name
     prefixOut, ext = os.path.splitext(dataFile)
-    nestOut = prefixOut + "_nest/" 
+    nestOut = prefixOut + "_nest/"
     if mpiRank==0:
         if os.path.exists(nestOut):
             shutil.rmtree(nestOut, True)
         os.mkdir(nestOut)
     if mpiSwitch:
         mpiComm.Barrier()
-    
+
     # Read the data file in the root process
     if mpiRank==0:
         dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
@@ -170,7 +170,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         dataArr = None
     if mpiSwitch:
         dataArr = mpiComm.bcast(dataArr, root=0)
-        
+
     # Parse the data array
     # freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy
     try:
@@ -190,9 +190,9 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
             if debug:
                 print(traceback.format_exc())
             if mpiSwitch:
-                MPI.Finalize()                
+                MPI.Finalize()
             sys.exit()
-    
+
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
         if mpiRank==0:
@@ -226,7 +226,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     if mpiSwitch:
         dataArr = mpiComm.bcast(dataArr, root=0)
     (IModArr, qArr, uArr, dqArr, duArr, IfitDict) = dataArr
-        
+
     # Plot the data and the Stokes I model fit
     if mpiRank==0:
         print("Plotting the input data and spectral index fit.")
@@ -234,16 +234,16 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         IModHirArr_mJy = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
         specFig = plt.figure(figsize=(10, 6))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr_mJy       = IArr_mJy, 
-                              qArr           = qArr, 
-                              uArr           = uArr, 
+                              IArr_mJy       = IArr_mJy,
+                              qArr           = qArr,
+                              uArr           = uArr,
                               dIArr_mJy      = dIArr_mJy,
                               dqArr          = dqArr,
                               duArr          = duArr,
                               freqHirArr_Hz  = freqHirArr_Hz,
                               IModArr_mJy    = IModHirArr_mJy,
                               fig            = specFig)
-    
+
         # Use the custom navigation toolbar
         try:
             specFig.canvas.toolbar.pack_forget()
@@ -255,9 +255,9 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         if showPlots:
             specFig.canvas.draw()
             specFig.show()
-            
+
     #-------------------------------------------------------------------------#
-    
+
     # Load the model and parameters from the relevant file
     if mpiSwitch:
         mpiComm.Barrier()
@@ -270,28 +270,28 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     # Let's time the sampler
     if mpiRank==0:
         startTime = time.time()
-        
+
     # Unpack the inParms structure
     parNames = [x["parname"] for x in mod.inParms]
     labels = [x["label"] for x in mod.inParms]
-    values = [x["value"] for x in mod.inParms]    
+    values = [x["value"] for x in mod.inParms]
     bounds = [x["bounds"] for x in mod.inParms]
     priorTypes = [x["priortype"] for x in mod.inParms]
     wraps = [x["wrap"] for x in mod.inParms]
     nDim = len(priorTypes)
     fixedMsk = [0 if x=="fixed" else 1 for x in priorTypes]
     nFree = sum(fixedMsk)
-    
+
     # Set the prior function given the bounds of each parameter
     prior = prior_call(priorTypes, bounds, values)
-    
+
     # Set the likelihood function given the data
     lnlike = lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr)
-    
+
     # Let's time the sampler
     if mpiRank==0:
         startTime = time.time()
-        
+
     # Run nested sampling using PyMultiNest
     nestArgsDict = merge_two_dicts(init_mnest(), mod.nestArgsDict)
     nestArgsDict["n_params"]             = nDim
@@ -300,19 +300,19 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     nestArgsDict["LogLikelihood"]        = lnlike
     nestArgsDict["Prior"]                = prior
     pmn.run(**nestArgsDict)
-    
+
     # Do the post-processing on one processor
     if mpiSwitch:
         mpiComm.Barrier()
     if mpiRank==0:
-        
+
         # Query the analyser object for results
         aObj = pmn.Analyzer(n_params=nDim, outputfiles_basename=nestOut)
         statDict = aObj.get_stats()
-        fitDict = aObj.get_best_fit()  
+        fitDict = aObj.get_best_fit()
         endTime = time.time()
 
-        # NOTE: The Analyser methods do not work well for parameters with 
+        # NOTE: The Analyser methods do not work well for parameters with
         # posteriors that overlap the wrap value. Use np.percentile instead.
         pMed = [None]*nDim
         for i in range(nDim):
@@ -331,7 +331,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         for i in range(nDim):
             p[i], errPlus[i], errMinus[i] = \
                         g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
-    
+
         # Calculate goodness-of-fit parameters
         nSamp = 2.0 * len(lamSqArr_m2)
         dof = nSamp - nFree -1
@@ -340,7 +340,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         AIC = 2.0*nFree - 2.0 * chiSq
         AICc = 2.0*nFree*(nFree+1)/(nSamp-nFree-1) - 2.0 * chiSq
         BIC = nFree * np.log(nSamp) - 2.0 * chiSq
-        
+
         # Summary of run
         print("")
         print("-"*80)
@@ -361,9 +361,9 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         for i in range(len(p)):
             print("%s = %.4g (+%3g, -%3g)" % \
                   (parNames[i], p[i], errPlus[i], errMinus[i]))
-        print( "-"*80)
+        print("-"*80)
         print("")
-    
+
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
@@ -384,24 +384,24 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                     "IfitDict":   IfitDict}
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
-        
+
         # Plot the data and best-fitting model
         lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
         freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-        IModArr_mJy = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)        
+        IModArr_mJy = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
         pDict = {k:v for k, v in zip(parNames, p)}
         quModArr = model(pDict, lamSqHirArr_m2)
         specFig.clf()
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr_mJy       = IArr_mJy, 
-                              qArr           = qArr, 
-                              uArr           = uArr, 
+                              IArr_mJy       = IArr_mJy,
+                              qArr           = qArr,
+                              uArr           = uArr,
                               dIArr_mJy      = dIArr_mJy,
                               dqArr          = dqArr,
                               duArr          = duArr,
                               freqHirArr_Hz  = freqHirArr_Hz,
                               IModArr_mJy    = IModArr_mJy,
-                              qModArr        = quModArr.real, 
+                              qModArr        = quModArr.real,
                               uModArr        = quModArr.imag,
                               fig            = specFig)
         specFig.canvas.draw()
@@ -420,7 +420,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                                   truths  = p,
                                   quantiles = [0.1572, 0.8427],
                                   bins    = 30)
-        
+
         # Save the figures
         outFile = nestOut + "fig_m%d_specfit.pdf" % modelNum
         specFig.savefig(outFile)
@@ -428,7 +428,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         outFile = nestOut + "fig_m%d_corner.pdf" % modelNum
         cornerFig.savefig(outFile)
         print("Plot of posterior samples saved to \n '%s'\n" % outFile)
-    
+
         # Display the figures
         if showPlots:
             specFig.show()
@@ -440,7 +440,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Clean up
         plt.close(specFig)
         plt.close(cornerFig)
-        
+
     # Clean up MPI environment
     if mpiSwitch:
         MPI.Finalize()
@@ -448,30 +448,30 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
 
 #-----------------------------------------------------------------------------#
 def prior_call(priorTypes, bounds, values):
-    """Returns a function to transform (0-1) range to the distribution of 
+    """Returns a function to transform (0-1) range to the distribution of
     values for each parameter. Note that a numpy vectorised version of this
     function fails because of type-errors."""
 
     def prior(p, nDim, nParms):
-	for i in range(nDim):
+        for i in range(nDim):
             if priorTypes[i] == "log":
-		bMin = np.log(np.abs(bounds[i][0]))
-		bMax = np.log(np.abs(bounds[i][1]))	
-		p[i] *= bMax - bMin
-		p[i] += bMin
-		p[i] = np.exp(p[i])
+                bMin = np.log(np.abs(bounds[i][0]))
+                bMax = np.log(np.abs(bounds[i][1]))
+                p[i] *= bMax - bMin
+                p[i] += bMin
+                p[i] = np.exp(p[i])
             elif priorTypes[i] == "normal":
                 bMin, bMax = bounds[i]
                 sigma = (bMax - bMin)/2.0
                 mu = bMin + sigma
                 p[i] = mu + sigma * ndtri(p[i])
             elif priorTypes[i] == "fixed":
-		p[i] = values[i]
+                p[i] = values[i]
             else: # uniform (linear)
                 bMin, bMax = bounds[i]
                 p[i] = bMin + p[i] * (bMax - bMin)
         return p
-    
+
     return prior
 
 
@@ -480,7 +480,7 @@ def lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     """ Returns a function to evaluate the log-likelihood """
 
     def lnlike(p, nDim, nParms):
-        
+
         # Evaluate the model and calculate the joint ln(like)
         # Silva 2006
         pDict = {k:v for k, v in zip(parNames, p)}
@@ -492,22 +492,22 @@ def lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr):
         logLike = (-nData * np.log(2.0*np.pi)
                    -2.0 * np.nansum(np.log(dquArr))
                    -chiSqQ/2.0 -chiSqU/2.0)
-        
+
         return logLike
-    
+
     return lnlike
 
 
 #-----------------------------------------------------------------------------#
 def chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     """Calculate the chi^2 for the current model, given the data."""
-    
+
     # Evaluate the model and calculate chisq
     pDict = {k:v for k, v in zip(parNames, p)}
     quMod = model(pDict, lamSqArr_m2)
     chisq = np.nansum( np.power((qArr-quMod.real)/dqArr, 2) +
                        np.power((uArr-quMod.imag)/duArr, 2))
-    
+
     return chisq
 
 
@@ -522,7 +522,7 @@ def wrap_chains(chains, wraps, bounds, p, verbose=False):
         wrapLow = bounds[i][0]
         wrapHigh = bounds[i][1]
         rng = wrapHigh - wrapLow
-        
+
         # Shift the wrapping to centre on the best fit value
         wrapCent = wrapLow + (wrapHigh - wrapLow)/2.0
         wrapLow += (p[i] - wrapCent)
@@ -533,12 +533,12 @@ def wrap_chains(chains, wraps, bounds, p, verbose=False):
                   (i, wrapLow, wrapHigh))
 
     return chains
-    
+
 
 #-----------------------------------------------------------------------------#
 def init_mnest():
     """Initialise MultiNest arguments"""
-    
+
     argsDict = {'LogLikelihood':              '',
                 'Prior':                      '',
                 'n_dims':                     0,
