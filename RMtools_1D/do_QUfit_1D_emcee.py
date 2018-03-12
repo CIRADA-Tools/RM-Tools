@@ -907,16 +907,16 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
                                           best, errPlus, errMinus)
     
     # Calculate goodness-of-fit parameters
-    nSamp = len(lamSqArr_m2)*2.0
-    dof = nSamp - ip.nDim -1
+    nData = 2.0 * len(lamSqArr_m2)
+    dof = nData - ip.nDim -1
     chiSq = chisq_model(ip.inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr)
     chiSqRed = chiSq/dof
 
     # Calculate the information criteria
     lnLike = lnlike_model(ip.inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr)
     AIC = 2.0*ip.nDim - 2.0 * lnLike
-    AICc = 2.0*ip.nDim*(ip.nDim+1)/(nSamp-ip.nDim-1) - 2.0 * lnLike
-    BIC = ip.nDim * np.log(nSamp) - 2.0 * lnLike
+    AICc = 2.0*ip.nDim*(ip.nDim+1)/(nData-ip.nDim-1) - 2.0 * lnLike
+    BIC = ip.nDim * np.log(nData) - 2.0 * lnLike
     print
     print "DOF:", dof
     print "CHISQ:", chiSq
