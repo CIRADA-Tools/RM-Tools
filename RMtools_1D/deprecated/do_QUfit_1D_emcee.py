@@ -6,7 +6,7 @@
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 29-Jan-2018 by C. Purcell                                         #
+# MODIFIED: 12-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -232,11 +232,14 @@ def lnlike_model(inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     
     # Calculate the ln(Like) for the model assuming a normal distribution
     dquArr = np.sqrt(np.power(dqArr, 2) + np.power(duArr, 2))
-    chiSqNrm = np.nansum( np.power((qArr-quMod.real)/dqArr, 2) +
-                          np.power((uArr-quMod.imag)/duArr, 2) +
-                          np.log(2 * np.pi * np.power(dquArr, 2)) )
+    chiSqQ = np.nansum(np.power((qArr-quMod.real)/dqArr, 2))
+    chiSqU = np.nansum(np.power((uArr-quMod.imag)/dqArr, 2))
+    nData = len(dquArr)
+    logLike = (-nData * np.log(2.0*np.pi)
+               -2.0 * np.nansum(np.log(dquArr))
+               -chiSqQ/2.0 -chiSqU/2.0)
     
-    return -chiSqNrm/2.0
+    return logLike
 
 
 #-----------------------------------------------------------------------------#
@@ -904,16 +907,16 @@ def run_qufit(dataFile, modelNum, nWalkers=200, nThreads=2, outDir="",
                                           best, errPlus, errMinus)
     
     # Calculate goodness-of-fit parameters
-    nSamp = len(lamSqArr_m2)*2.0
-    dof = nSamp - ip.nDim -1
+    nData = 2.0 * len(lamSqArr_m2)
+    dof = nData - ip.nDim -1
     chiSq = chisq_model(ip.inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr)
     chiSqRed = chiSq/dof
 
     # Calculate the information criteria
     lnLike = lnlike_model(ip.inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr)
     AIC = 2.0*ip.nDim - 2.0 * lnLike
-    AICc = 2.0*ip.nDim*(ip.nDim+1)/(nSamp-ip.nDim-1) - 2.0 * lnLike
-    BIC = ip.nDim * np.log(nSamp) - 2.0 * lnLike
+    AICc = 2.0*ip.nDim*(ip.nDim+1)/(nData-ip.nDim-1) - 2.0 * lnLike
+    BIC = ip.nDim * np.log(nData) - 2.0 * lnLike
     print
     print "DOF:", dof
     print "CHISQ:", chiSq
