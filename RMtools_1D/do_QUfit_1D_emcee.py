@@ -6,7 +6,7 @@
 # PURPOSE:  Code to simultaneously fit Stokes I, Q and U spectra with a suite #
 #           of Faraday active models.                                         #
 #                                                                             #
-# MODIFIED: 29-Jan-2018 by C. Purcell                                         #
+# MODIFIED: 12-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -232,11 +232,14 @@ def lnlike_model(inParms, lamSqArr_m2, qArr, dqArr, uArr, duArr):
     
     # Calculate the ln(Like) for the model assuming a normal distribution
     dquArr = np.sqrt(np.power(dqArr, 2) + np.power(duArr, 2))
-    chiSqNrm = np.nansum( np.power((qArr-quMod.real)/dqArr, 2) +
-                          np.power((uArr-quMod.imag)/duArr, 2) +
-                          np.log(2 * np.pi * np.power(dquArr, 2)) )
+    chiSqQ = np.nansum(np.power((qArr-quMod.real)/dqArr, 2))
+    chiSqU = np.nansum(np.power((uArr-quMod.imag)/dqArr, 2))
+    nData = len(dquArr)
+    logLike = (-nData * np.log(2.0*np.pi)
+               -2.0 * np.nansum(np.log(dquArr))
+               -chiSqQ/2.0 -chiSqU/2.0)
     
-    return -chiSqNrm/2.0
+    return logLike
 
 
 #-----------------------------------------------------------------------------#
