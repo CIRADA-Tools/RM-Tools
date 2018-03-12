@@ -40,17 +40,13 @@
 # Perform QU-fitting on the sources using the PyMultiNest sampler
 ./do_QUfit_1D_mnest.py data/Source1.dat -m 1 -p
 ./do_QUfit_1D_mnest.py data/Source2.dat -m 3 -p
-
+./do_QUfit_1D_mnest.py data/Source3.dat -m 3 -p
 
 # Perform QU-fitting on the sources using the EMCEE sampler (***DEPRECATED***)
-./do_QUfit_1D_emcee.py data/Source1.dat -t 7 -m 1 -p -d
-./do_QUfit_1D_emcee.py data/Source2.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_emcee.py data/Source3.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_emcee.py data/Source4.dat -t 7 -m 4 -p -d
-./do_QUfit_1D_emcee.py data/Source5.dat -t 7 -m 3 -p -d
-./do_QUfit_1D_emcee.py data/Source6.dat -t 7 -m 5 -p -d
-./do_QUfit_1D_emcee.py data/Source7.dat -t 7 -m 4 -p -d
-
-# Perform QU-fitting on the sources using the PyMultiNest sampler
-./do_QUfit_1D_mnest.py data/Source1.dat -m 1 -p
-./do_QUfit_1D_mnest.py data/Source2.dat -m 3 -p
+./do_QUfit_1D_emcee.py data/Source1.dat -t 7 -m 1 -p
+./do_QUfit_1D_emcee.py data/Source2.dat -t 7 -m 3 -p
+./do_QUfit_1D_emcee.py data/Source3.dat -t 7 -m 3 -p
+./do_QUfit_1D_emcee.py data/Source4.dat -t 7 -m 4 -p
+./do_QUfit_1D_emcee.py data/Source5.dat -t 7 -m 3 -p
+./do_QUfit_1D_emcee.py data/Source6.dat -t 7 -m 5 -p
+./do_QUfit_1D_emcee.py data/Source7.dat -t 7 -m 4 -p
