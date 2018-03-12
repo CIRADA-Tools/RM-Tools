@@ -37,7 +37,12 @@
 ./do_RMclean_1D.py data/Source4.dat -p
 ./do_RMclean_1D.py data/Source5.dat -p
 
-# Perform QU-fitting on the sources using the EMCEE sampler
+# Perform QU-fitting on the sources using the PyMultiNest sampler
+./do_QUfit_1D_mnest.py data/Source1.dat -m 1 -p
+./do_QUfit_1D_mnest.py data/Source2.dat -m 3 -p
+
+
+# Perform QU-fitting on the sources using the EMCEE sampler (***DEPRECATED***)
 ./do_QUfit_1D_emcee.py data/Source1.dat -t 7 -m 1 -p -d
 ./do_QUfit_1D_emcee.py data/Source2.dat -t 7 -m 3 -p -d
 ./do_QUfit_1D_emcee.py data/Source3.dat -t 7 -m 3 -p -d
