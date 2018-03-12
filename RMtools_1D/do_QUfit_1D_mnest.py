@@ -82,6 +82,20 @@ def main():
 
     # Help string to be shown using the -h option
     descStr = """
+    Run QU-fitting on polarised spectra (1D) stored in an ASCII file. The
+    Stokes I spectra is first fit with a polynomial and the resulting model
+    used to create fractional q = Q/I and u = U/I spectra. If the 'noStokesI'
+    option is given, the input data are assumed to be fractional already.
+    
+    The script uses the Nested Sampling algorithm (Skilling 2004) to find
+    the best fitting parameters, given a prior function on each free parameter.
+    The sampling algorithm also calculates the Bayesian evidence, which can
+    be used for model comparison. Factors of >10 between models mean that one
+    model is strongly favoured over the other.
+
+    Models and priors are  specified as Python code in files called 'mX.py'
+    within the 'models_ns' directory. See the existing files for examples 
+    drawn from the paper Sokoloff et al. 1998, MNRAS 229, pg 189.
     """
     
     # Parse the command line options
