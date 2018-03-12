@@ -333,13 +333,13 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                         g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
 
         # Calculate goodness-of-fit parameters
-        nSamp = 2.0 * len(lamSqArr_m2)
-        dof = nSamp - nFree -1
+        nData = 2.0 * len(lamSqArr_m2)
+        dof = nData - nFree -1
         chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr)
         chiSqRed = chiSq/dof
-        AIC = 2.0*nFree - 2.0 * chiSq
-        AICc = 2.0*nFree*(nFree+1)/(nSamp-nFree-1) - 2.0 * chiSq
-        BIC = nFree * np.log(nSamp) - 2.0 * chiSq
+        AIC = 2.0*nFree - 2.0 * lnLike
+        AICc = 2.0*nFree*(nFree+1)/(nData-nFree-1) - 2.0 * lnLike
+        BIC = nFree * np.log(nData) - 2.0 * lnLike
 
         # Summary of run
         print("")
