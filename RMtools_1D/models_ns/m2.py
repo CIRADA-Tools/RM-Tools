@@ -12,7 +12,7 @@ import numpy as np
 #  quArr       = Complex array containing the Re and Im spectra.              #
 #-----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
-    """Faraday simple source with Burn depolarisation"""
+    """Single Faraday component with Burn depolarisation"""
     
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
@@ -55,14 +55,14 @@ inParms = [
      "value":     0.0,
      "bounds":    [-1100.0, 1100.0],
      "priortype": "uniform",
-     "wrap": 0},
+     "wrap":      0},
     
     {"parname":   "sigmaRM_radm2",
      "label":     "$\sigma_{RM}$ (rad m$^{-2}$)",
      "value":     0.0,
      "bounds":    [0.0, 1000.0],
      "priortype": "uniform",
-     "wrap": 0}
+     "wrap":      0}
 ]
 
 
@@ -70,4 +70,4 @@ inParms = [
 # Switches controlling the Nested Sampling algorithm                          #
 #-----------------------------------------------------------------------------#
 nestArgsDict = {"n_live_points": 1000,
-                "verbose": True}
+                "verbose": False}

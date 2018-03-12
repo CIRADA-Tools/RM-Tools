@@ -12,7 +12,8 @@ import numpy as np
 #  quArr       = Complex array containing the Re and Im spectra.              #
 #-----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
-    """Simple Faraday thin source."""
+    """Two separate Faraday components, averaged within same telescope beam
+    (i.e., unresolved), with a common Burn depolarisation term."""
     
     # Calculate the complex fractional q and u spectra
     pArr1 = pDict["fracPol1"] * np.ones_like(lamSqArr_m2)
@@ -94,4 +95,4 @@ inParms = [
 # Switches controlling the Nested Sampling algorithm                          #
 #-----------------------------------------------------------------------------#
 nestArgsDict = {"n_live_points": 1000,
-                "verbose": True}
+                "verbose": False}
