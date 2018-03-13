@@ -51,7 +51,7 @@ inParms = [
     {"parname":   "RM_radm2",
      "label":     "RM (rad m$^{-2}$)",
      "value":     0.0,
-     "bounds":    [-600.0, 600.0],
+     "bounds":    [-1100.0, 1100.0],
      "priortype": "uniform",
      "wrap":      0}
 ]
