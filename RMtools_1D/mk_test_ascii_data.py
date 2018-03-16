@@ -13,7 +13,7 @@
 #                                                                             #
 #           This version for use with the stand-alone code, not the pipeline. #
 #                                                                             #
-# MODIFIED: 22-Sep-2017 by C. Purcell                                         #
+# MODIFIED: 14-mar-2018 by C. Purcell                                         #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -167,7 +167,6 @@ def main():
     parser.add_argument('-l', dest='flagFreqStr', metavar='f1,f2,f1,f2,...',
                         default="", help="Frequency ranges to flag out")
     args = parser.parse_args()
-    print args
     inCatFile = args.inCatFile[0]
     dataPath = args.dataPath
     startFreq_Hz = args.freqRng_MHz[0] * 1e6
@@ -206,7 +205,6 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
     """
     Create a set of ASCII files containing Stokes I Q & U spectra.
     """
-
     
     # Sample frequency space
     freqArr_Hz = np.linspace(startFreq_Hz, endFreq_Hz, nChans)

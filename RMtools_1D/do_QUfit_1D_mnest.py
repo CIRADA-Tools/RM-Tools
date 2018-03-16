@@ -71,6 +71,12 @@ from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
 from RMutils import corner
 
+# Fail if script has been started with mpiexec & mpi4py is not installed
+if os.environ.get('OMPI_COMM_WORLD_SIZE') is not None:
+    if not mpiSwitch:
+        print("Script called with mpiexec, but mpi4py not installed")
+        sys.exit()
+        
 C = 2.997924538e8 # Speed of light [m/s]
 
 
@@ -148,7 +154,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     else:
         mpiSize = 1
         mpiRank = 0
-
+        
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
@@ -191,7 +197,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                 print(traceback.format_exc())
             if mpiSwitch:
                 MPI.Finalize()
-            sys.exit()
+            return
 
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
