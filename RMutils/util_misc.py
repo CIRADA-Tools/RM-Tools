@@ -7,7 +7,7 @@
 #                                                                             #
 # REQUIRED: Requires numpy and astropy.                                       #
 #                                                                             #
-# MODIFIED: 12-Mar-2018 by C. Purcell                                         #
+# MODIFIED: 19-Mar-2018 by C. Purcell                                         #
 #                                                                             #
 # CONTENTS:                                                                   #
 #                                                                             #
@@ -171,7 +171,11 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
         if len(line)<1:
             continue
         if doFloat:
-            line = [float(x) for x in line]
+            for i, x in enumerate(line):
+                try:
+                    line[i] = float(x)
+                except Exception:
+                    pass
         
         outLst.append(line)
 
