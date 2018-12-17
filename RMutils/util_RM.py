@@ -351,7 +351,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 progress(40, ((i+1)*100.0/nPhi))
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
-            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
+            RMSFcube[i,:,:] =  KArr * np.sum(weightCube * arg, axis=0)
 
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
