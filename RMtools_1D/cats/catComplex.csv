@@ -1,0 +1,31 @@
+#-----------------------------------------------------------------------------#
+#                                                                             #
+# Input catalogue file for use with the POSSUM pipeline.                      #
+# Used to generate artificial data for testing purposes.                      #
+#                                                                             #
+# Note: spatial information (x,y,maj,min,pa) is ignored when generating 1D    #
+#       ASCII data. If generating image data these are the world-coordinates  #
+#       and parameters of the injected Gaussians.                             #
+#                                                                             #
+# C. Purcell 24-Mar-2016                                                      #
+#                                                                             #
+#-----------------------------------------------------------------------------#
+
+# MODEL TYPE 1: External depolarised components within same beam (not LOS).
+# Type, x_deg, y_deg, maj_asec, min_asec, pa_deg, fluxI_mJy, SI, [polFrac, evpa_deg, faradayDepth_radm2, faradayDispersion_radm2]xN
+#
+# MODEL TYPE 2: Emitting & rotating regions stacked along the line-of-sight.
+# Type, x_deg, y_deg, maj_asec, min_asec, pa_deg, fluxI_mJy, SI, [polFrac, evpa_deg, faradayDepth_radm2]xN
+#
+
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0                            # 1
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 31.0, 0.0 # 2
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 32.0, 0.0 # 3
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 33.0, 0.0 # 4
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 34.0, 0.0 # 5
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 35.0, 0.0 # 6
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 36.0, 0.0 # 7
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 37.0, 0.0 # 8
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 38.0, 0.0 # 9
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 30.0, 0.0,      0.4, 30.0, 39.0, 0.0 # 10
+1, 90.0016, +0.0023, 0.0, 0.0, 0.0, 1.0, -0.7,      0.4, 30.0, 1500.0, 0.0,     0.4, 30.0, 1000.0, 0.0                      # 11
