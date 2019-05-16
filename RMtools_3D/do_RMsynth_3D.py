@@ -129,10 +129,12 @@ def main():
     else:
         rmsArr_Jy=None
     # Run RM-synthesis on the cubes
-    cl.run_rmsynth(dataQ     = cl.readFitsCube(args.fitsQ[0], verbose)[1],
+    header, dataQ=cl.readFitsCube(args.fitsQ[0], verbose)
+    
+    cl.run_rmsynth(dataQ     = dataQ,
                 dataU        = cl.readFitsCube(args.fitsU[0], verbose)[1],
                 freqArr_Hz   = cl.readFreqFile(args.freqFile[0], verbose),
-                headtemplate = cl.readFitsCube(args.fitsQ[0], verbose)[0],
+                headtemplate = header,
                 dataI        = dataI,
                 rmsArr_Jy    = rmsArr_Jy,
                 phiMax_radm2 = args.phiMax_radm2,
