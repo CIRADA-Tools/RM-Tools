@@ -35,16 +35,8 @@
 
 import sys
 import os
-import time
 import argparse
-import math as m
-import numpy as np
-import astropy.io.fits as pf
-import pdb
 
-from RMutils.util_RM import do_rmsynth_planes
-from RMutils.util_RM import get_rmsf_planes
-from RMutils.util_misc import interp_images
 import cl_RMsynth_3D as cl
 
 C = 2.997924538e8 # Speed of light [m/s]

@@ -36,11 +36,9 @@
 import sys
 import os
 import time
-import argparse
 import math as m
 import numpy as np
 import astropy.io.fits as pf
-import pdb
 
 from RMutils.util_RM import do_rmsynth_planes
 from RMutils.util_RM import get_rmsf_planes
@@ -89,7 +87,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
         phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
 
     # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0
+    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0)
     startPhi_radm2 = - (nChanRM-1.0) * dPhi_radm2 / 2.0
     stopPhi_radm2 = + (nChanRM-1.0) * dPhi_radm2 / 2.0
     phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
@@ -280,6 +278,8 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
     header["NAXIS"+str(freq_axis)] = 1
+    header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:
@@ -290,7 +290,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, np.max(np.abs(FDFcube), freq_axis-1).astype(dtFloat), header,
+    pf.writeto(fitsFileOut, np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), header,
                overwrite=True, output_verify="fix")
     
     # Save a peak RM map
