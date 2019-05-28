@@ -576,7 +576,8 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
             # Lets CONVOLVE
 
-            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - np.convolve(ccArr, RMSFArr[:, yi, xi])
+            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - np.convolve(ccArr[:,
+            yi, xi], RMSFArr[:, yi, xi])[2*nPhiPad-1:-2*nPhiPad+1]
 
 
             '''
