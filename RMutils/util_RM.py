@@ -550,14 +550,16 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     if verbose:
         pass
         #progress(40, 0)  #This is currently broken...
-    inputs = [[yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, dirtyFDF, cleanFDF, fwhmRMSFArr, iterCountArr] \
-        for yi, xi in xyCoords]
+    inputs = [[yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, cleanFDF, fwhmRMSFArr, iterCountArr] for yi, xi in xyCoords]
+    #print(len(inputs))
     output = np.array(pool.map(cleanloop, inputs))
     pool.close()
-
     residFDF, ccArr, iterCountArr = output
+        #residFDF, ccArr, iterCountArr = output
     # Restore the residual to the CLEANed FDF (moved outside of loop:
         #will now work for pixels/spectra without clean components)
+    print(residFDF.shape)
+    print(cleanFDF.shape)
     cleanFDF += residFDF
 
 
@@ -569,10 +571,8 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     return cleanFDF, ccArr, iterCountArr
 
 #-----------------------------------------------------------------------------#
-def cleanloop(input):
-    yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, dirtyFDF, cleanFDF, fwhmRMSFArr, iterCountArr = input
-
-
+def cleanloop(inputs):
+    yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, cleanFDF, fwhmRMSFArr, iterCountArr = inputs
     # Find the index of the peak of the RMSF
     indxMaxRMSF = np.nanargmax(RMSFArr[:, yi, xi])
 
@@ -592,8 +592,7 @@ def cleanloop(input):
 
         # A clean component is "loop-gain * peakFDFval
         CC = gain * peakFDFval
-        ccArr[indxPeakFDF, yi, xi] += CC
-
+        ccArr[indxPeakFDF, yi, xi] += np.abs(CC)
 
         # At which channel is the CC located at in the RMSF?
         indxPeakRMSF = indxPeakFDF + nPhiPad
@@ -604,7 +603,6 @@ def cleanloop(input):
 
         # Subtract the product of the CC shifted RMSF from the residual FDF
         residFDF[:, yi, xi] -= CC * shiftedRMSFArr
-
 
         # Restore the CC * a Gaussian to the cleaned FDF
         cleanFDF[:, yi, xi] += \
