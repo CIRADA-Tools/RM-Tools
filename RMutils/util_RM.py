@@ -550,11 +550,13 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     if verbose:
         pass
         #progress(40, 0)  #This is currently broken...
-    inputs = [[yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, cleanFDF, fwhmRMSFArr, iterCountArr] for yi, xi in xyCoords]
+    inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     #print(len(inputs))
-    output = np.array(pool.map(cleanloop, inputs))
+    test = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
+    output = np.array(pool.map(test.cleanloop, inputs))
     pool.close()
-    residFDF, ccArr, iterCountArr = output
+    print(output.shape)
+    residFDF, ccArr, iterCountArr = output.T
         #residFDF, ccArr, iterCountArr = output
     # Restore the residual to the CLEANed FDF (moved outside of loop:
         #will now work for pixels/spectra without clean components)
@@ -570,46 +572,67 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
     return cleanFDF, ccArr, iterCountArr
 
-#-----------------------------------------------------------------------------#
-def cleanloop(inputs):
-    yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, cleanFDF, fwhmRMSFArr, iterCountArr = inputs
-    # Find the index of the peak of the RMSF
-    indxMaxRMSF = np.nanargmax(RMSFArr[:, yi, xi])
+class RMcleaner:
+    def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, iterCountArr, maxIter=1000, gain=0.1, cutoff=0, verbose=False):
+        self.RMSFArr = RMSFArr
+        self.phi2Arr_radm2 = phi2Arr_radm2
+        self.phiArr_radm2 = phiArr_radm2
+        self.fwhmRMSFArr = fwhmRMSFArr
+        self.iterCountArr = iterCountArr
+        self.maxIter = maxIter
+        self.gain = gain
+        self.cutoff = cutoff
+        self.verbose = verbose
 
-    # Calculate the padding in the sampled RMSF
-    # Assumes only integer shifts and symmetric
-    nPhiPad = int((len(phi2Arr_radm2)-len(phiArr_radm2))/2)
+    def cleanloop(self, args):
+        yi, xi, dirtyFDF = args
+        # Initialise arrays to hold the residual FDF, clean components, clean FDF
+        residFDF = dirtyFDF.copy()
+        ccArr = np.zeros(dirtyFDF.shape)
+        cleanFDF = np.zeros_like(dirtyFDF)
 
-    # Main CLEAN loop
-    iterCount = 0
-    while ( np.max(np.abs(residFDF[:, yi, xi])) >= cutoff
-            and iterCount <= maxIter ):
+        # Find the index of the peak of the RMSF
+        indxMaxRMSF = np.nanargmax(self.RMSFArr[:, yi, xi])
 
-        # Get the absolute peak channel, values and Faraday depth
-        indxPeakFDF = np.argmax(np.abs(residFDF[:, yi, xi]))
-        peakFDFval = residFDF[indxPeakFDF, yi, xi]
-        phiPeak = phiArr_radm2[indxPeakFDF]
+        # Calculate the padding in the sampled RMSF
+        # Assumes only integer shifts and symmetric
+        nPhiPad = int((len(self.phi2Arr_radm2)-len(self.phiArr_radm2))/2)
 
-        # A clean component is "loop-gain * peakFDFval
-        CC = gain * peakFDFval
-        ccArr[indxPeakFDF, yi, xi] += np.abs(CC)
+        # Main CLEAN loop
+        iterCount = 0
+        while ( np.max(np.abs(residFDF[:, yi, xi])) >= self.cutoff
+                and iterCount <= self.maxIter ):
 
-        # At which channel is the CC located at in the RMSF?
-        indxPeakRMSF = indxPeakFDF + nPhiPad
+            # Get the absolute peak channel, values and Faraday depth
+            indxPeakFDF = np.argmax(np.abs(residFDF[:, yi, xi]))
+            peakFDFval = residFDF[indxPeakFDF, yi, xi]
+            phiPeak = self.phiArr_radm2[indxPeakFDF]
 
-        # Shift the RMSF & clip so that its peak is centred above this CC
-        shiftedRMSFArr = np.roll(RMSFArr[:, yi, xi],
-                             indxPeakRMSF-indxMaxRMSF)[nPhiPad:-nPhiPad]
+            # A clean component is "loop-gain * peakFDFval
+            CC = self.gain * peakFDFval
+            ccArr[indxPeakFDF, yi, xi] += np.abs(CC)
 
-        # Subtract the product of the CC shifted RMSF from the residual FDF
-        residFDF[:, yi, xi] -= CC * shiftedRMSFArr
+            # At which channel is the CC located at in the RMSF?
+            indxPeakRMSF = indxPeakFDF + nPhiPad
 
-        # Restore the CC * a Gaussian to the cleaned FDF
-        cleanFDF[:, yi, xi] += \
-            gauss1D(CC, phiPeak, fwhmRMSFArr[yi, xi])(phiArr_radm2)
-        iterCount += 1
-        iterCountArr[yi, xi] = iterCount
-    return residFDF, ccArr, iterCountArr
+            # Shift the RMSF & clip so that its peak is centred above this CC
+            shiftedRMSFArr = np.roll(self.RMSFArr[:, yi, xi],
+                                 indxPeakRMSF-indxMaxRMSF)[nPhiPad:-nPhiPad]
+
+            # Subtract the product of the CC shifted RMSF from the residual FDF
+            residFDF[:, yi, xi] -= CC * shiftedRMSFArr
+
+            # Restore the CC * a Gaussian to the cleaned FDF
+            cleanFDF[:, yi, xi] += \
+                gauss1D(CC, phiPeak, self.fwhmRMSFArr[yi, xi])(self.phiArr_radm2)
+            iterCount += 1
+            self.iterCountArr[yi, xi] = iterCount
+
+        cleanFDF = np.squeeze(cleanFDF)
+        ccArr = np.squeeze(ccArr)
+        iterCountArr = np.squeeze(self.iterCountArr)
+
+        return cleanFDF, ccArr, iterCountArr
 
 
 #-----------------------------------------------------------------------------#
