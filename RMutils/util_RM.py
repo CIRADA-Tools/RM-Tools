@@ -552,9 +552,10 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         #progress(40, 0)  #This is currently broken...
     inputs = [[yi, xi, verbose, RMSFArr, phi2Arr_radm2, phiArr_radm2, residFDF, cutoff, maxIter, gain, ccArr, dirtyFDF, cleanFDF, fwhmRMSFArr, iterCountArr] \
         for yi, xi in xyCoords]
-    pool.map(cleanloop, inputs)
+    output = np.array(pool.map(cleanloop, inputs))
     pool.close()
 
+    residFDF, ccArr, iterCountArr = output
     # Restore the residual to the CLEANed FDF (moved outside of loop:
         #will now work for pixels/spectra without clean components)
     cleanFDF += residFDF
@@ -610,6 +611,7 @@ def cleanloop(input):
             gauss1D(CC, phiPeak, fwhmRMSFArr[yi, xi])(phiArr_radm2)
         iterCount += 1
         iterCountArr[yi, xi] = iterCount
+    return residFDF, ccArr, iterCountArr
 
 
 #-----------------------------------------------------------------------------#
