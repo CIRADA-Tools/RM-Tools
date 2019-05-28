@@ -550,7 +550,36 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     if verbose:
         pass
         #progress(40, 0)  #This is currently broken...
-    for yi, xi in xyCoords:
+    pool.map(cleanloop, for xyCoord in xyCoords):
+
+
+
+        if doPlots:
+            plot_clean_spec(ax1,
+                            ax2,
+                            phiArr_radm2,
+                            dirtyFDF,
+                            ccArr,
+                            residFDF,
+                            cutoff)
+            ax1.lines[2].remove()
+            plt.draw()
+
+    # Restore the residual to the CLEANed FDF (moved outside of loop:
+        #will now work for pixels/spectra without clean components)
+    cleanFDF += residFDF
+
+
+    # Remove redundant dimensions
+    cleanFDF = np.squeeze(cleanFDF)
+    ccArr = np.squeeze(ccArr)
+    iterCountArr = np.squeeze(iterCountArr)
+
+    return cleanFDF, ccArr, iterCountArr
+
+#-----------------------------------------------------------------------------#
+def cleanloop(xyCoord):
+    yi, xi = xyCoord
         if verbose:
             j += 1
             #progress(40, ((j)*100.0/nCleanPix))  #This is currently broken...
@@ -610,30 +639,6 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                                 ccArr,
                                 residFDF,
                                 cutoff)
-
-
-        if doPlots:
-            plot_clean_spec(ax1,
-                            ax2,
-                            phiArr_radm2,
-                            dirtyFDF,
-                            ccArr,
-                            residFDF,
-                            cutoff)
-            ax1.lines[2].remove()
-            plt.draw()
-
-    # Restore the residual to the CLEANed FDF (moved outside of loop:
-        #will now work for pixels/spectra without clean components)
-    cleanFDF += residFDF
-
-
-    # Remove redundant dimensions
-    cleanFDF = np.squeeze(cleanFDF)
-    ccArr = np.squeeze(ccArr)
-    iterCountArr = np.squeeze(iterCountArr)
-
-    return cleanFDF, ccArr, iterCountArr
 
 
 #-----------------------------------------------------------------------------#
