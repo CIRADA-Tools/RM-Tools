@@ -51,10 +51,9 @@ from RMutils.util_RM import measure_fdf_complexity
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
-#@profile
 def run_rmclean(mDictS, aDict, cutoff,
                 maxIter=1000, gain=0.1, prefixOut="", outDir="", nBits=32,
-                showPlots=False, doAnimate=False, verbose=False,log=print):
+                showPlots=False, doAnimate=False, verbose=False,log=print, pool=None):
     """
     Run RM-CLEAN on a complex FDF spectrum given a RMSF.
     """
@@ -90,7 +89,8 @@ def run_rmclean(mDictS, aDict, cutoff,
                                 gain            = gain,
                                 verbose         = verbose,
                                 doPlots         = showPlots,
-                                doAnimate       = doAnimate)
+                                doAnimate       = doAnimate,
+                                pool            = pool)
 
     # ALTERNATIVE RM_CLEAN CODE ----------------------------------------------#
     '''

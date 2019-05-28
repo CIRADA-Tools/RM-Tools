@@ -41,6 +41,8 @@ import math as m
 import numpy as np
 import astropy.io.fits as pf
 
+import schwimmbad
+
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import fits_make_lin_axis
 
@@ -48,7 +50,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
 def main():
-    
+
     """
     Start the function to perform RM-clean if called from the command line.
     """
@@ -60,7 +62,7 @@ def main():
     'do_RMsynth_3D.py'. Saves a cube of deconvolved FDFs & clean-component
     spectra, and a pixel map showing the number of iterations performed.
     """
-    
+
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -78,6 +80,15 @@ def main():
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-f", dest="write_separate_FDF", action="store_true",
                         help="Separate complex (multi-extension) FITS files into individual files [False].")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ncores", dest="n_cores", default=1,
+                       type=int, help="Number of processes (uses multiprocessing).")
+    group.add_argument("--mpi", dest="mpi", default=False,
+                       action="store_true", help="Run with MPI.")
+    args = parser.parse_args()
+
+    pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
+
     args = parser.parse_args()
 
     # Sanity checks
@@ -96,11 +107,12 @@ def main():
                 prefixOut   = args.prefixOut,
                 outDir      = dataDir,
                 nBits       = 32,
-                write_separate_FDF=args.write_separate_FDF)
+                write_separate_FDF=args.write_separate_FDF,
+                pool = pool)
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
-                prefixOut="", outDir="", nBits=32,write_separate_FDF=False):
+                prefixOut="", outDir="", nBits=32, write_separate_FDF=False, pool=None):
     """Run RM-CLEAN on a FDF cube given a RMSF cube."""
 
 
@@ -111,10 +123,10 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     # Read the FDF
     dirtyFDF, head,FD_axis=read_FDF_cube(fitsFDF)
 
-    
-    
+
+
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1, dtype=dtFloat)
-    
+
     # Read the RMSF
 
     RMSFArr, headRMSF,FD_axis=read_FDF_cube(fitsRMSF)
@@ -124,7 +136,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
 
     startTime = time.time()
-    
+
     # Do the clean
     cleanFDF, ccArr, iterCountArr = \
         do_rmclean_hogbom(dirtyFDF         = dirtyFDF * 1e3,
@@ -136,10 +148,11 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
                           maxIter          = maxIter,
                           gain             = gain,
                           verbose          = True,
-                          doPlots          = False)
+                          doPlots          = False,
+                          pool             = pool)
     cleanFDF /= 1e3
     ccArr /= 1e3
-        
+
     endTime = time.time()
     cputime = (endTime - startTime)
     print("> RM-clean completed in %.2f seconds." % cputime)
@@ -154,7 +167,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     Ndim=cleanFDF.ndim
     cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
     ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
-    
+
 
     # Save the clean FDF
     if not write_separate_FDF:
@@ -213,10 +226,10 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     hduLst = pf.HDUList([hdu0])
     hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
     hduLst.close()
-    
+
 
 def read_FDF_cube(filename):
-    """Read in a FDF/RMSF cube. Figures out which axis is Faraday depth and 
+    """Read in a FDF/RMSF cube. Figures out which axis is Faraday depth and
     puts it first (in numpy order) to accommodate the rest of the code.
     Removes degenerate axes, to prevent problems with later steps.
     Returns: (complex_cube, header,FD_axis)
@@ -226,10 +239,10 @@ def read_FDF_cube(filename):
     FDFreal = HDULst[0].data
     FDFimag = HDULst[1].data
     complex_cube = FDFreal + 1j * FDFimag
-    
+
     #Identify Faraday depth axis (assumed to be last one if not explicitly found)
     Ndim=head['NAXIS']
-    FD_axis=Ndim 
+    FD_axis=Ndim
     #Check for FD axes:
     for i in range(1,Ndim+1):
         try:
@@ -244,10 +257,10 @@ def read_FDF_cube(filename):
         complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
 
     #Remove degenerate axes to prevent problems with later steps.
-    complex_cube=complex_cube.squeeze() 
+    complex_cube=complex_cube.squeeze()
 
     return complex_cube, head,FD_axis
-    
+
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()
