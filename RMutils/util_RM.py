@@ -71,6 +71,8 @@ from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
 
+from scipy.signal import convolve
+
 from RMutils.mpfit import mpfit
 from RMutils.util_misc import progress
 from RMutils.util_misc import toscalar
@@ -576,7 +578,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
             # Lets CONVOLVE
 
-            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - np.convolve(ccArr[:,
+            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - convolve(ccArr[:,
             yi, xi], RMSFArr[:, yi, xi])[2*nPhiPad-1:-2*nPhiPad+1]
 
 
