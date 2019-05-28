@@ -71,7 +71,7 @@ from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
 
-from scipy.signal import convolve
+from scipy import signal
 
 from RMutils.mpfit import mpfit
 from RMutils.util_misc import progress
@@ -578,8 +578,8 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
             # Lets CONVOLVE
 
-            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - convolve(ccArr[:,
-            yi, xi], RMSFArr[:, yi, xi], mode = 'valid')[2*nPhiPad-1:-2*nPhiPad+1]
+            residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - signal.fftconvolve(ccArr[:,
+            yi, xi], RMSFArr[:, yi, xi], mode = 'valid')[1:-1]
 
 
             '''
