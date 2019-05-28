@@ -579,7 +579,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
             # Lets CONVOLVE
 
             residFDF[:, yi, xi] = dirtyFDF[:, yi, xi] - convolve(ccArr[:,
-            yi, xi], RMSFArr[:, yi, xi])[2*nPhiPad-1:-2*nPhiPad+1]
+            yi, xi], RMSFArr[:, yi, xi], mode = 'valid')[2*nPhiPad-1:-2*nPhiPad+1]
 
 
             '''
