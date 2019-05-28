@@ -393,7 +393,6 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 
 
 #-----------------------------------------------------------------------------#
-@profile
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
