@@ -83,7 +83,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=1,
                        type=int, help="Number of processes (uses multiprocessing).")
-    group.add_argument("--chunk", dest="chunk", default=None,
+    parser.add_argument("--chunk", dest="chunk", default=None,
                        type=int, help="Chunk size (uses multiprocessing -- not available in MPI!)")
     group.add_argument("--mpi", dest="mpi", default=False,
                        action="store_true", help="Run with MPI.")
