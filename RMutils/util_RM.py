@@ -552,9 +552,8 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         #progress(40, 0)  #This is currently broken...
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
-    output = pool.map(rmc.cleanloop, inputs)
+    output = list(pool.map(rmc.cleanloop, inputs))
     pool.close()
-
     # Put data back in correct shape
     ccArr = np.rot90(np.stack([model for _, _, model in output]), k=-1)
     cleanFDF = np.rot90(np.stack([clean for clean, _, _ in output]), k=-1)
