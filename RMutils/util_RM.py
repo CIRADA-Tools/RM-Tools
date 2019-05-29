@@ -552,16 +552,18 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         #progress(40, 0)  #This is currently broken...
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     #print(len(inputs))
-    test = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
-    output = np.array(pool.map(test.cleanloop, inputs))
+    rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
+    output = pool.map(rmc.cleanloop, inputs)
     pool.close()
-    print(output.shape)
-    residFDF, ccArr, iterCountArr = output.T
+    ccArr = np.stack([model for _, _, model in output])
+    cleanFDF = np.stack([clean for clean, _, _ in output])
+    residFDF = np.stack([resid for _, resid, _ in output])
+    # residFDF, ccArr, iterCountArr = output.T
         #residFDF, ccArr, iterCountArr = output
     # Restore the residual to the CLEANed FDF (moved outside of loop:
         #will now work for pixels/spectra without clean components)
-    print(residFDF.shape)
-    print(cleanFDF.shape)
+    print('reside coming in', residFDF.shape)
+    print('oh boy its clean', cleanFDF.shape)
     cleanFDF += residFDF
 
 
@@ -570,7 +572,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     ccArr = np.squeeze(ccArr)
     iterCountArr = np.squeeze(iterCountArr)
 
-    return cleanFDF, ccArr, iterCountArr
+    return np.rot90(cleanFDF, axes=(0,1)), np.rot90(ccArr, axes=(0,1)), iterCountArr
 
 class RMcleaner:
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, iterCountArr, maxIter=1000, gain=0.1, cutoff=0, verbose=False):
@@ -585,14 +587,19 @@ class RMcleaner:
         self.verbose = verbose
 
     def cleanloop(self, args):
-        yi, xi, dirtyFDF = args
+        return self._cleanloop(*args)
+
+    def _cleanloop(self, yi, xi, dirtyFDF):
+        dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
         ccArr = np.zeros(dirtyFDF.shape)
         cleanFDF = np.zeros_like(dirtyFDF)
+        RMSFArr = self.RMSFArr[:, yi, xi]
+        fwhmRMSFArr = self.fwhmRMSFArr[yi, xi]
 
         # Find the index of the peak of the RMSF
-        indxMaxRMSF = np.nanargmax(self.RMSFArr[:, yi, xi])
+        indxMaxRMSF = np.nanargmax(RMSFArr)
 
         # Calculate the padding in the sampled RMSF
         # Assumes only integer shifts and symmetric
@@ -600,39 +607,38 @@ class RMcleaner:
 
         # Main CLEAN loop
         iterCount = 0
-        while ( np.max(np.abs(residFDF[:, yi, xi])) >= self.cutoff
+        while ( np.max(np.abs(residFDF)) >= self.cutoff
                 and iterCount <= self.maxIter ):
 
             # Get the absolute peak channel, values and Faraday depth
-            indxPeakFDF = np.argmax(np.abs(residFDF[:, yi, xi]))
-            peakFDFval = residFDF[indxPeakFDF, yi, xi]
+            indxPeakFDF = np.argmax(np.abs(residFDF))
+            peakFDFval = residFDF[indxPeakFDF]
             phiPeak = self.phiArr_radm2[indxPeakFDF]
 
             # A clean component is "loop-gain * peakFDFval
             CC = self.gain * peakFDFval
-            ccArr[indxPeakFDF, yi, xi] += np.abs(CC)
+            ccArr[indxPeakFDF] += np.abs(CC)
 
             # At which channel is the CC located at in the RMSF?
             indxPeakRMSF = indxPeakFDF + nPhiPad
 
             # Shift the RMSF & clip so that its peak is centred above this CC
-            shiftedRMSFArr = np.roll(self.RMSFArr[:, yi, xi],
+            shiftedRMSFArr = np.roll(RMSFArr,
                                  indxPeakRMSF-indxMaxRMSF)[nPhiPad:-nPhiPad]
 
             # Subtract the product of the CC shifted RMSF from the residual FDF
-            residFDF[:, yi, xi] -= CC * shiftedRMSFArr
+            residFDF -= CC * shiftedRMSFArr
 
             # Restore the CC * a Gaussian to the cleaned FDF
-            cleanFDF[:, yi, xi] += \
-                gauss1D(CC, phiPeak, self.fwhmRMSFArr[yi, xi])(self.phiArr_radm2)
+            cleanFDF += \
+                gauss1D(CC, phiPeak, fwhmRMSFArr)(self.phiArr_radm2)
             iterCount += 1
             self.iterCountArr[yi, xi] = iterCount
 
         cleanFDF = np.squeeze(cleanFDF)
         ccArr = np.squeeze(ccArr)
-        iterCountArr = np.squeeze(self.iterCountArr)
 
-        return cleanFDF, ccArr, iterCountArr
+        return cleanFDF, residFDF, ccArr
 
 
 #-----------------------------------------------------------------------------#
