@@ -353,16 +353,15 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 
         # Calculate the RMSF for each plane
         if verbose:
-            progress(40, 0)
+            pbar = tqdm.tqdm(total=nPhi)
         a = (lambdaSqArr_m2 - lam0Sq_m2)
         for i in range(nPhi):
             if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
-#            arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
-#            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
+                pbar.update()
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i,:,:] =  KArr * np.sum(weightCube * arg, axis=0)
-
+        if verbose:
+            pbar.close()
 
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
@@ -373,13 +372,13 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-            progress(40, 0)
+                pbar = tqdm.tqdm(total=nPix)
             k = 0
             for i in range(nX):
                 for j in range(nY):
                     k += 1
                     if verbose:
-                        progress(40, (k*100.0/nPix))
+                        pbar.update()
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:,j,i].real)
                     else:
@@ -387,6 +386,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
                     if not (mp is None or mp.status<1):
                         fwhmRMSFArr[j,i] = mp.params[2]
                         statArr[j,i]  = mp.status
+            if verbose:
+                pbar.close()
 
     # Remove redundant dimensions
     RMSFcube = np.squeeze(RMSFcube)
@@ -549,10 +550,6 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         fig.show()
 
     # Loop through the pixels containing a polarised signal
-    j = 0
-    if verbose:
-        pass
-        #progress(40, 0)  #This is currently broken...
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
     output = list(pool.map(rmc.cleanloop, inputs))
