@@ -72,6 +72,7 @@ from scipy.stats import kstest
 from scipy.stats import norm
 
 from scipy import signal
+import tqdm
 
 from RMutils.mpfit import mpfit
 from RMutils.util_misc import progress
@@ -177,14 +178,16 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     # Do the RM-synthesis on each plane
     if verbose:
         log("Running RM-synthesis by channel.")
-        progress(40, 0)
+        pbar = tqdm.tqdm(total=nPhi)
     a = lambdaSqArr_m2 - lam0Sq_m2
+
     for i in range(nPhi):
         if verbose:
-            progress(40, ((i+1)*100.0/nPhi))
+            pbar.update()
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)[:, np.newaxis,np.newaxis]
         FDFcube[i,:,:] =  KArr * np.sum(pCube * arg, axis=0)
-
+    if verbose:
+        pbar.close()
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
 
