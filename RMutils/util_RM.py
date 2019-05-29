@@ -401,7 +401,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
-                      doAnimate=False, pool=None):
+                      doAnimate=False, pool=None, chunksize=None):
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -552,7 +552,11 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     # Loop through the pixels containing a polarised signal
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
-    output = list(pool.map(rmc.cleanloop, inputs))
+    type(pool)
+    if chunksize is not None:
+        output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
+    else:
+        output = list(pool.map(rmc.cleanloop, inputs))
     pool.close()
     # Put data back in correct shape
     ccArr = np.rot90(np.stack([model for _, _, model in output]), k=-1)
@@ -1793,14 +1797,15 @@ def threeDnoise_do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     # Do the RM-synthesis on each plane
     if verbose:
         log("Running RM-synthesis by channel.")
-        progress(40, 0)
+        pbar = tqdm.tqdm(total=nPhi)
     a = lambdaSqArr_m2[:,np.newaxis,np.newaxis] -lam0Sq_m2[np.newaxis,:,:]
     for i in range(nPhi):
-#        if verbose:
-#            progress(40, ((i+1)*100.0/nPhi))
+        if verbose:
+            pbar.update()
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)
         FDFcube[i,:,:] =  KArr * np.sum(pCube * arg, axis=0)
-
+    if verbose:
+        pbar.close()
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
     lam0Sq_m2=np.squeeze(lam0Sq_m2)
@@ -1955,15 +1960,16 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
 
         # Calculate the RMSF for each plane
         if verbose:
-            progress(40, 0)
+            pbar = tqdm.tqdm(total=nPhi)
         a = lambdaSqArr_m2[:,np.newaxis,np.newaxis] -lam0Sq_m2[np.newaxis,:,:]
         for i in range(nPhi):
             if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
+                pbar.update()
             arg = np.exp(-2.0j * phi2Arr[i] * a)
 #            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
             RMSFcube[i,:,:] =  KArr * np.sum(weightArr * arg, axis=0)
-
+        if verbose:
+            pbar.close()
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
         statArr = np.ones((nY, nX), dtype="int") * (-1)

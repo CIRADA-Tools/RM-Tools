@@ -83,11 +83,22 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=1,
                        type=int, help="Number of processes (uses multiprocessing).")
+    group.add_argument("--chunk", dest="chunk", default=None,
+                       type=int, help="Chunk size (uses multiprocessing -- not available in MPI!)")
     group.add_argument("--mpi", dest="mpi", default=False,
                        action="store_true", help="Run with MPI.")
     args = parser.parse_args()
 
     pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
+
+    if args.mpi:
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+    if args.n_cores > 1:
+        chunksize = args.chunk
+    else:
+        chunksize = None
 
     args = parser.parse_args()
 
@@ -108,11 +119,12 @@ def main():
                 outDir      = dataDir,
                 nBits       = 32,
                 write_separate_FDF=args.write_separate_FDF,
-                pool = pool)
+                pool = pool,
+                chunksize   = chunksize)
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
-                prefixOut="", outDir="", nBits=32, write_separate_FDF=False, pool=None):
+                prefixOut="", outDir="", nBits=32, write_separate_FDF=False, pool=None, chunksize=None):
     """Run RM-CLEAN on a FDF cube given a RMSF cube."""
 
 
@@ -149,7 +161,8 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
                           gain             = gain,
                           verbose          = True,
                           doPlots          = False,
-                          pool             = pool)
+                          pool             = pool,
+                          chunksize        = chunksize)
     cleanFDF /= 1e3
     ccArr /= 1e3
 
