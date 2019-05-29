@@ -551,19 +551,17 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         pass
         #progress(40, 0)  #This is currently broken...
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
-    #print(len(inputs))
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
     output = pool.map(rmc.cleanloop, inputs)
     pool.close()
-    ccArr = np.stack([model for _, _, model in output])
-    cleanFDF = np.stack([clean for clean, _, _ in output])
-    residFDF = np.stack([resid for _, resid, _ in output])
-    # residFDF, ccArr, iterCountArr = output.T
-        #residFDF, ccArr, iterCountArr = output
+
+    # Put data back in correct shape
+    ccArr = np.rot90(np.stack([model for _, _, model in output]), k=-1)
+    cleanFDF = np.rot90(np.stack([clean for clean, _, _ in output]), k=-1)
+    residFDF = np.rot90(np.stack([resid for _, resid, _ in output]), k=-1)
+
     # Restore the residual to the CLEANed FDF (moved outside of loop:
         #will now work for pixels/spectra without clean components)
-    print('reside coming in', residFDF.shape)
-    print('oh boy its clean', cleanFDF.shape)
     cleanFDF += residFDF
 
 
@@ -572,7 +570,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     ccArr = np.squeeze(ccArr)
     iterCountArr = np.squeeze(iterCountArr)
 
-    return np.rot90(cleanFDF, axes=(0,1)), np.rot90(ccArr, axes=(0,1)), iterCountArr
+    return cleanFDF, ccArr, iterCountArr
 
 class RMcleaner:
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, iterCountArr, maxIter=1000, gain=0.1, cutoff=0, verbose=False):
@@ -585,6 +583,7 @@ class RMcleaner:
         self.gain = gain
         self.cutoff = cutoff
         self.verbose = verbose
+
 
     def cleanloop(self, args):
         return self._cleanloop(*args)
