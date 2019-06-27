@@ -49,7 +49,6 @@ from RMutils.util_RM import measure_FDF_parms
 from RMutils.util_RM import measure_fdf_complexity
 
 C = 2.997924538e8 # Speed of light [m/s]
-eru = 1
 #-----------------------------------------------------------------------------#
 def run_rmclean(mDictS, aDict, cutoff,
                 maxIter=1000, gain=0.1, prefixOut="", outDir="", nBits=32,
