@@ -190,7 +190,7 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
 
 #-----------------------------------------------------------------------------#
 def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None, 
-                    lam0Sq_m2=None, double=True, fitRMSF=False,
+                    lam0Sq_m2= None, double=True, fitRMSF=False,
                     fitRMSFreal=False, nBits=32, verbose=False,
                     log=print):
     """Calculate the Rotation Measure Spread Function from inputs. This version
@@ -546,11 +546,11 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     j = 0
     if verbose:
         pass  
-        #progress(40, 0)  #This is currently broken...
+        progress(40, 0)  #This is currently broken...
     for yi, xi in xyCoords:
         if verbose:
             j += 1
-            #progress(40, ((j)*100.0/nCleanPix))  #This is currently broken...
+            progress(40, ((j)*100.0/nCleanPix))  #This is currently broken...
 
         # Find the index of the peak of the RMSF
         indxMaxRMSF = np.nanargmax(RMSFArr[:, yi, xi])
