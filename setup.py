@@ -15,8 +15,10 @@ REQUIRES_PYTHON = '>=3.5.0'
 VERSION = '0.1.0'
 
 REQUIRED = [
-    'numpy', 'scipy', 'matplotlib', 'astropy', 'pymultinest',
+    'numpy', 'scipy', 'matplotlib', 'astropy',
 ]
+
+extras_require={'QUfitting': 'pymultinest'}
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -38,8 +40,8 @@ setup(
     entry_points={
         'console_scripts': ['rmsynth3d=RMtools_3D.do_RMsynth_3D:main',
                             'rmclean3d=RMtools_3D.do_RMclean_3D:main',
-                            'rmsynth=RMtools_1D.do_RMsynth_1D:main',
-                            'rmclean=RMtools_1D.do_RMclean_1D:main'],
+                            'rmsynth1d=RMtools_1D.do_RMsynth_1D:main',
+                            'rmclean1d=RMtools_1D.do_RMclean_1D:main'],
     },
     install_requires=REQUIRED,
     include_package_data=True,

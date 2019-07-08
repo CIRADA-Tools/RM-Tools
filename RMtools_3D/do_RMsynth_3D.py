@@ -37,10 +37,8 @@ import sys
 import os
 import time
 import argparse
-import math as m
 import numpy as np
 import astropy.io.fits as pf
-import pdb
 
 from RMutils.util_RM import do_rmsynth_planes
 from RMutils.util_RM import get_rmsf_planes
@@ -110,9 +108,8 @@ def main():
                         help="Separate dirty FDF components into individual files [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
-
     parser.add_argument("-R", dest="not_RMSF", action="store_true",
-                        help=".")
+                        help="Skip calculation of RMSF? [False]")
     args = parser.parse_args()
 
     # Sanity checks

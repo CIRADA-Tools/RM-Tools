@@ -156,7 +156,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
         outDir='.'
 
     #Move FD axis back to original position:
-    Ndim=head['NAXIS']
+    Ndim=cleanFDF.ndim
     cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
     ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
     
@@ -247,6 +247,8 @@ def read_FDF_cube(filename):
     if FD_axis != Ndim:
         complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
 
+    #Remove degenerate axes to prevent problems with later steps.
+    complex_cube=complex_cube.squeeze() 
 
     return complex_cube, head,FD_axis
     
