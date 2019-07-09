@@ -39,7 +39,7 @@ import os
 import argparse
 #import pdb
 
-import cl_RMsynth_1d as clRM
+import RMtools_1D.cl_RMsynth_1d as clRM
 
 C = 2.997924538e8 # Speed of light [m/s]
 
