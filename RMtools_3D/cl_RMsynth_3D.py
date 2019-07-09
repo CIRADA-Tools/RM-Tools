@@ -184,7 +184,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     header["CRPIX"+str(freq_axis)] = 1.0
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
-    header["lambda0_m2"] = lam0Sq_m2
+    header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:
@@ -244,7 +244,6 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
         header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
         header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
-        header["lambda0_m2"] = lam0Sq_m2
         if(write_seperate_FDF):
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
