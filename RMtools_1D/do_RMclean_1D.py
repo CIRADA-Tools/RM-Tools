@@ -38,7 +38,7 @@ import os
 import time
 import argparse
 
-import cl_RMclean_1D as clRM
+import RMtools_1D.cl_RMclean_1D as clRM
 
 C = 2.997924538e8 # Speed of light [m/s]
 

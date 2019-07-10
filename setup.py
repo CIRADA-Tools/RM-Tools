@@ -54,4 +54,5 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
+    test_suite='tests',
 )

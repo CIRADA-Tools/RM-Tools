@@ -39,8 +39,8 @@ import os
 import argparse
 #import pdb
 from astropy.io import fits
-from make_freq_file import get_freq_array
-import cl_RMsynth_1d as clRM
+from RMtools_1D.make_freq_file import get_freq_array
+import RMtools_1D.cl_RMsynth_1d as clRM
 import numpy as np
 from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
