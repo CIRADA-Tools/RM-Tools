@@ -82,7 +82,7 @@ def main():
     parser.add_argument("-f", dest="write_separate_FDF", action="store_true",
                         help="Separate complex (multi-extension) FITS files into individual files [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
-                        help="Verbose [False].")
+                        help="Verbose [False].", default=False)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=1,
                        type=int, help="Number of processes (uses multiprocessing).")
@@ -123,13 +123,14 @@ def main():
                 nBits=32,
                 write_separate_FDF=args.write_separate_FDF,
                 pool=pool,
-                chunksize=chunksize)
+                chunksize=chunksize,
+                verbose=verbose)
 
 #-----------------------------------------------------------------------------#
 
 
 def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
-                prefixOut="", outDir="", nBits=32, write_separate_FDF=False, verbose=True, log=print, pool=None, chunksize=None, verbose=verbose):
+                prefixOut="", outDir="", nBits=32, write_separate_FDF=False, log=print, pool=None, chunksize=None, verbose=False):
     """Run RM-CLEAN on a FDF cube given a RMSF cube."""
 
     # Default data types
@@ -161,7 +162,6 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
                           cutoff=cutoff_mJy,
                           maxIter=maxIter,
                           gain=gain,
-                          verbose=True,
                           doPlots=False,
                           pool=pool,
                           chunksize=chunksize,
