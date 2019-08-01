@@ -35,9 +35,15 @@
 
 import sys
 import os
+import time
 import argparse
+import numpy as np
+import astropy.io.fits as pf
 
-import cl_RMsynth_3D as cl
+from RMutils.util_RM import do_rmsynth_planes
+from RMutils.util_RM import get_rmsf_planes
+from RMutils.util_misc import interp_images
+import RMtools_3D.cl_RMsynth_3D as cl
 
 C = 2.997924538e8 # Speed of light [m/s]
 
@@ -102,7 +108,8 @@ def main():
                         help="Separate dirty FDF components into individual files [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
-
+    parser.add_argument("-R", dest="not_RMSF", action="store_true",
+                        help="Skip calculation of RMSF? [False]")
     args = parser.parse_args()
 
     # Sanity checks
@@ -121,12 +128,10 @@ def main():
     else:
         rmsArr_Jy=None
     # Run RM-synthesis on the cubes
-    header, dataQ=cl.readFitsCube(args.fitsQ[0], verbose)
-    
-    cl.run_rmsynth(dataQ     = dataQ,
+    cl.run_rmsynth(dataQ     = cl.readFitsCube(args.fitsQ[0], verbose)[1],
                 dataU        = cl.readFitsCube(args.fitsU[0], verbose)[1],
                 freqArr_Hz   = cl.readFreqFile(args.freqFile[0], verbose),
-                headtemplate = header,
+                headtemplate = cl.readFitsCube(args.fitsQ[0], verbose)[0],
                 dataI        = dataI,
                 rmsArr_Jy    = rmsArr_Jy,
                 phiMax_radm2 = args.phiMax_radm2,
@@ -138,7 +143,8 @@ def main():
                 fitRMSF      = args.fitRMSF,
                 nBits        = 32,
                 write_seperate_FDF = args.write_seperate_FDF,
-                verbose      = verbose)
+                verbose      = verbose,
+                   not_rmsf = args.not_RMSF)
 
 
 

@@ -38,9 +38,11 @@ import os
 #import time
 import argparse
 #import pdb
-
+from astropy.io import fits
+from RMtools_1D.make_freq_file import get_freq_array
 import RMtools_1D.cl_RMsynth_1d as clRM
-
+import numpy as np
+from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
 
 
@@ -52,16 +54,11 @@ def main():
 
     # Help string to be shown using the -h option
     descStr = """
-    Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in an ASCII
-    file. The Stokes I spectrum is first fit with a polynomial and the 
-    resulting model used to create fractional q = Q/I and u = U/I spectra.
+    *** PROTOTYPE! FUNCTIONALITY NOT GUARANTEED! PLEASE TEST AND SUBMIT BUG REPORTS!***
 
-    The ASCII file should the following columns, in a space separated format:
-    [freq_Hz, I, Q, U, I_err, Q_err, U_err]
-    OR
-    [freq_Hz, Q, U, Q_err, U_err]
-    Stokes units are assumed to be Jy, but output will have same units as input.
-
+    Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in a FITS
+    file. Does not correct for Stokes I spectrum, and does not account for errors.
+    If these features are needed, please use the standard 1D function.
     """
 
     epilog_text="""
@@ -77,11 +74,19 @@ def main():
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,epilog=epilog_text,
                                  formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
-                        help="ASCII file containing Stokes spectra & errors.")
+    parser.add_argument("dataFile", metavar="StokesQ.fits", nargs=1,
+                        help="FITS cube with Stokes Q data (assumes Stokes U is in similarly named file).")
+    parser.add_argument("xcoords", metavar="xcoords",nargs = "?",type = float, default = "1",
+                        help="X pixel location (FITS 1-indexed convention)")
+    parser.add_argument("ycoords", metavar="ycoords", nargs = "?", type = float, default= "1",
+                        help="Y pixel location (FITS 1-indexed convention)")
+    parser.add_argument("-c", dest="sky_coords", action="store_true",
+                        help="transform from sky coordinates (assumes X and Y are sky coordinates in degrees).")
+    parser.add_argument("-I", dest="StokesI_fits", default = None,
+                        help="extract Stokes I from given file. [None]")
     parser.add_argument("-t", dest="fitRMSF", action="store_true",
                         help="fit a Gaussian to the RMSF [False]")
-    parser.add_argument("-l", dest="phiMax_radm2", type=float, default=None,
+    parser.add_argument("-l", dest="phiMax_radm2", type=float , default=None,
                         help="absolute max Faraday depth sampled [Auto].")
     parser.add_argument("-d", dest="dPhi_radm2", type=float, default=None,
                         help="width of Faraday depth channel [Auto].\n(overrides -s NSAMPLES flag)")
@@ -116,8 +121,34 @@ def main():
     if args.bit64:
         nBits = 64
     verbose=args.verbose
-    data = clRM.readFile(args.dataFile[0],nBits, verbose)
+    #data = clRM.readFile(args.dataFile[0],nBits, verbose)
+
+    if args.sky_coords:
+        hduList = fits.open(args.dataFile[0])
+        imgwcs = wcs.WCS(hduList[0].header, naxis=(1, 2))
+        xcoords, ycoords = np.round(imgwcs.all_world2pix(args.xcoords, args.ycoords, 0)).astype(int)
+        print("Extracting pixel {} x {} (1-indexed)".format(xcoords+1,ycoords+1))
+#        print(ycoords+1)
+    else:
+        xcoords = int(args.xcoords)-1
+        ycoords = int(args.ycoords)-1
+    freq_array = get_freq_array(args.dataFile[0])
+    Q_array = get_data_Q_U(args.dataFile[0], ycoords, xcoords)
+    U_array = get_data_Q_U(args.dataFile[0].replace("Q", "U"), ycoords, xcoords)
+    dQ_array = np.full(freq_array.shape, 1*10**(-3))
+    dU_array = np.full(freq_array.shape, 1*10**(-3))
     
+    Q_array[~np.isfinite(Q_array)]=np.nan
+    U_array[~np.isfinite(U_array)]=np.nan
+    data = [freq_array, Q_array, U_array, dQ_array, dU_array]
+
+    if (Q_array != 0).sum() == 0 and (Q_array != 0).sum() == 0:
+        raise Exception("All QU values zero! Maybe invalid pixel?")
+
+    if args.StokesI_fits is not None:
+        I_array = get_data_Q_U(args.StokesI_fits, ycoords, xcoords)
+        dI_array = np.full(freq_array.shape, 1 * 10 ** (-3))
+        data.append(I_array, dI_array)
     # Run RM-synthesis on the spectra
     dict, aDict = clRM.run_rmsynth(data           = data,
                 polyOrd        = args.polyOrd,
@@ -134,6 +165,10 @@ def main():
     #pdb.set_trace()
     if args.saveOutput:
         clRM.saveOutput(dict, aDict, prefixOut, verbose)
+
+def get_data_Q_U(filename, ycoords, xcoords):
+    hduList = fits.open(filename)
+    return hduList[0].data[:, ycoords, xcoords]
 
 
 #-----------------------------------------------------------------------------#

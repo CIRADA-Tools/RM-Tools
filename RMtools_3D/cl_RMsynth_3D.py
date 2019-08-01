@@ -50,7 +50,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", prefixOut="", outDir="",
-                fitRMSF=False, nBits=32, write_seperate_FDF=False, verbose=True,
+                fitRMSF=False, nBits=32, write_seperate_FDF=False, verbose=True, not_rmsf = True,
                 log = print):
 
     """Read the Q & U data and run RM-synthesis."""
@@ -87,7 +87,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
         phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
 
     # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0)
+    nChanRM = round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0
     startPhi_radm2 = - (nChanRM-1.0) * dPhi_radm2 / 2.0
     stopPhi_radm2 = + (nChanRM-1.0) * dPhi_radm2 / 2.0
     phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
@@ -124,20 +124,21 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
                                            phiArr_radm2    = phiArr_radm2,
                                            weightArr       = weightArr,
                                            nBits           = 32,
-                                           verbose         = True)
+                                           verbose         = verbose)
     # Calculate the Rotation Measure Spread Function cube
-    RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr = \
-        get_rmsf_planes(lambdaSqArr_m2   = lambdaSqArr_m2,
-                        phiArr_radm2     = phiArr_radm2,
-                        weightArr        = weightArr,
-                        mskArr           = ~np.isfinite(dataQ),
-                        lam0Sq_m2        = lam0Sq_m2,
-                        double           = True,
-                        fitRMSF          = fitRMSF,
-                        fitRMSFreal      = False,
-                        nBits            = 32,
-                        verbose          = True,
-                        log              = log)
+    if not_rmsf is not True:
+        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr = \
+            get_rmsf_planes(lambdaSqArr_m2   = lambdaSqArr_m2,
+                            phiArr_radm2     = phiArr_radm2,
+                            weightArr        = weightArr,
+                            mskArr           = ~np.isfinite(dataQ),
+                            lam0Sq_m2        = lam0Sq_m2,
+                            double           = True,
+                            fitRMSF          = fitRMSF,
+                            fitRMSFreal      = False,
+                            nBits            = 32,
+                            verbose          = verbose,
+                            log              = log)
     endTime = time.time()
     cputime = (endTime - startTime)
     if(verbose): log("> RM-synthesis completed in %.2f seconds." % cputime)
@@ -183,6 +184,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     header["CRPIX"+str(freq_axis)] = 1.0
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
+    header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:
@@ -200,12 +202,12 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     output_axes.reverse()  #To get into numpy order.
     #Put frequency axis first, and reshape to add degenerate axes:
     FDFcube=np.reshape(FDFcube,[FDFcube.shape[0]]+output_axes) 
-    RMSFcube=np.reshape(RMSFcube,[RMSFcube.shape[0]]+output_axes) 
+    if not_rmsf is not True: RMSFcube=np.reshape(RMSFcube,[RMSFcube.shape[0]]+output_axes)
         
     
     #Move Faraday depth axis to appropriate position to match header.
     FDFcube=np.moveaxis(FDFcube,0,Ndim-freq_axis)
-    RMSFcube=np.moveaxis(RMSFcube,0,Ndim-freq_axis)
+    if not_rmsf is not True: RMSFcube=np.moveaxis(RMSFcube,0,Ndim-freq_axis)
 
     
     if(write_seperate_FDF):
@@ -237,41 +239,42 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     
     
     # Save the RMSF
-    header["NAXIS"+str(freq_axis)] = phi2Arr_radm2.size
-    header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
-    header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
-    header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
-    if(write_seperate_FDF):
-        hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
-        hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
-        hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
-        hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), header)
-        fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
-        if(verbose): log("> %s" % fitsFileOut)
-        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+    if not_rmsf is not True:
+        header["NAXIS"+str(freq_axis)] = phi2Arr_radm2.size
+        header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
+        header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
+        header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
+        if(write_seperate_FDF):
+            hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
+            hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
+            hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
+            hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
+            if(verbose): log("> %s" % fitsFileOut)
+            hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-        fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
-        if(verbose): log("> %s" % fitsFileOut)
-        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
+            if(verbose): log("> %s" % fitsFileOut)
+            hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-        fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
-        if(verbose): log("> %s" % fitsFileOut)
-        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
+            if(verbose): log("> %s" % fitsFileOut)
+            hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-        fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
-        if(verbose): log("> %s" % fitsFileOut)
-        hdu3.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        
-    else:
-        fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
-        hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
-        hdu1 = pf.ImageHDU(RMSFcube.imag.astype(dtFloat), header)
-        hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
-        hdu3 = pf.ImageHDU(fwhmRMSFCube.astype(dtFloat), header)
-        hduLst = pf.HDUList([hdu0, hdu1, hdu2, hdu3])
-        if(verbose): log("> %s" % fitsFileOut)
-        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        hduLst.close()
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
+            if(verbose): log("> %s" % fitsFileOut)
+            hdu3.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+
+        else:
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
+            hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
+            hdu1 = pf.ImageHDU(RMSFcube.imag.astype(dtFloat), header)
+            hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
+            hdu3 = pf.ImageHDU(fwhmRMSFCube.astype(dtFloat), header)
+            hduLst = pf.HDUList([hdu0, hdu1, hdu2, hdu3])
+            if(verbose): log("> %s" % fitsFileOut)
+            hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            hduLst.close()
         
 
  
@@ -279,7 +282,6 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     #don't try to remove the FD axis, but just make it degenerate.
     header["NAXIS"+str(freq_axis)] = 1
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
-
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:

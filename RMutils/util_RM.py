@@ -195,8 +195,8 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
 
 
 #-----------------------------------------------------------------------------#
-def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
-                    lam0Sq_m2=None, double=True, fitRMSF=False,
+def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None, 
+                    lam0Sq_m2= None, double=True, fitRMSF=False,
                     fitRMSFreal=False, nBits=32, verbose=False,
                     log=print):
     """Calculate the Rotation Measure Spread Function from inputs. This version
