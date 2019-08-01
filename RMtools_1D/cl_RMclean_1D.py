@@ -77,7 +77,7 @@ def run_rmclean(mDictS, aDict, cutoff,
 
     startTime = time.time()
     # Perform RM-clean on the spectrum
-    cleanFDF, ccArr, iterCountArr = \
+    cleanFDF, ccArr, iterCountArr, residFDF = \
               do_rmclean_hogbom(dirtyFDF        = dirtyFDF,
                                 phiArr_radm2    = phiArr_radm2,
                                 RMSFArr         = RMSFArr,
@@ -140,13 +140,16 @@ def run_rmclean(mDictS, aDict, cutoff,
 
 
     # Save the deconvolved FDF and CC model to ASCII files
-    log("Saving the clean FDF and component model to ASCII files.")
+    log("Saving the clean FDF, component model, and residuals to ASCII files.")
     outFile = prefixOut + "_FDFclean.dat"
     log("> %s" % outFile)
     np.savetxt(outFile, list(zip(phiArr_radm2, cleanFDF.real, cleanFDF.imag)))
     outFile = prefixOut + "_FDFmodel.dat"
     log("> %s" % outFile)
     np.savetxt(outFile, list(zip(phiArr_radm2, ccArr.real, ccArr.imag)))
+    outFile = prefixOut + "_FDFresid.dat"
+    log("> %s" % outFile)
+    np.savetxt(outFile, list(zip(phiArr_radm2, residFDF.real, residFDF.imag)))
 
     # Save the RM-clean measurements to a "key=value" text file
     log("Saving the measurements on the FDF in 'key=val' and JSON formats.")
