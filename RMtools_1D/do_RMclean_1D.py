@@ -37,6 +37,7 @@ import sys
 import os
 import time
 import argparse
+import schwimmbad
 
 import RMtools_1D.cl_RMclean_1D as clRM
 
@@ -64,7 +65,7 @@ def main():
     _RMclean.dat: list of calculated paramaters describing FDF
     _RMclean.json: dictionary of calculated parameters
     """
-    
+
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,epilog=epilog_text,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -83,6 +84,15 @@ def main():
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Print verbose messages")
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ncores", dest="n_cores", default=1,
+                       type=int, help="Number of processes (uses multiprocessing).")
+    group.add_argument("--mpi", dest="mpi", default=False,
+                       action="store_true", help="Run with MPI.")
+    args = parser.parse_args()
+
+    pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
+
     args = parser.parse_args()
 
     # Form the input file names from prefix of the original data file
@@ -98,7 +108,7 @@ def main():
             sys.exit()
     nBits = 32
     dataDir, dummy = os.path.split(args.dataFile[0])
-    mDictS, aDict = clRM.readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits)  
+    mDictS, aDict = clRM.readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits)
     # Run RM-CLEAN on the spectrum
     clRM.run_rmclean(mDictS  = mDictS,
                 aDict        = aDict,
@@ -110,11 +120,12 @@ def main():
                 nBits        = nBits,
                 showPlots    = args.showPlots,
                 doAnimate    = args.doAnimate,
-                verbose      = args.verbose)
-    
+                verbose      = args.verbose,
+                pool         = pool)
 
 
-    
+
+
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()

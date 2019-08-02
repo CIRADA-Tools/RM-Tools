@@ -52,7 +52,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmclean(mDictS, aDict, cutoff,
                 maxIter=1000, gain=0.1, prefixOut="", outDir="", nBits=32,
-                showPlots=False, doAnimate=False, verbose=False,log=print):
+                showPlots=False, doAnimate=False, verbose=False,log=print, pool=None):
     """
     Run RM-CLEAN on a complex FDF spectrum given a RMSF.
     """
@@ -77,7 +77,7 @@ def run_rmclean(mDictS, aDict, cutoff,
 
     startTime = time.time()
     # Perform RM-clean on the spectrum
-    cleanFDF, ccArr, iterCountArr = \
+    cleanFDF, ccArr, iterCountArr, residFDF = \
               do_rmclean_hogbom(dirtyFDF        = dirtyFDF,
                                 phiArr_radm2    = phiArr_radm2,
                                 RMSFArr         = RMSFArr,
@@ -88,7 +88,8 @@ def run_rmclean(mDictS, aDict, cutoff,
                                 gain            = gain,
                                 verbose         = verbose,
                                 doPlots         = showPlots,
-                                doAnimate       = doAnimate)
+                                doAnimate       = doAnimate,
+                                pool            = pool)
 
     # ALTERNATIVE RM_CLEAN CODE ----------------------------------------------#
     '''
@@ -124,12 +125,12 @@ def run_rmclean(mDictS, aDict, cutoff,
     # Measure the complexity of the clean component spectrum
     mDict["mom2CCFDF"] = measure_fdf_complexity(phiArr = phiArr_radm2,
                                                 FDF = ccArr)
-    
+
     #Calculating observed errors (based on dFDFcorMAD)
     mDict["dPhiObserved_rm2"] = mDict["dPhiPeakPIfit_rm2"]*mDict["dFDFcorMAD_Jybm"]/mDictS["dFDFth_Jybm"]
     mDict["dAmpObserved_Jybm"] = mDict["dFDFcorMAD_Jybm"]
     mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD_Jybm"]/mDictS["dFDFth_Jybm"]
-    
+
     nChansGood = np.sum(np.where(lambdaSqArr_m2==lambdaSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lambdaSqArr_m2**2.0) -
                       np.sum(lambdaSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
@@ -137,15 +138,18 @@ def run_rmclean(mDictS, aDict, cutoff,
     np.degrees(np.sqrt( mDict["dFDFcorMAD_Jybm"]**2.0 / (4.0*(nChansGood-2.0)*mDict["ampPeakPIfit_Jybm"]**2.0) *
                  ((nChansGood-1)/nChansGood + mDictS["lam0Sq_m2"]**2.0/varLamSqArr_m2) ))
 
-    
+
     # Save the deconvolved FDF and CC model to ASCII files
-    log("Saving the clean FDF and component model to ASCII files.")
+    log("Saving the clean FDF, component model, and residuals to ASCII files.")
     outFile = prefixOut + "_FDFclean.dat"
     log("> %s" % outFile)
     np.savetxt(outFile, list(zip(phiArr_radm2, cleanFDF.real, cleanFDF.imag)))
     outFile = prefixOut + "_FDFmodel.dat"
     log("> %s" % outFile)
     np.savetxt(outFile, list(zip(phiArr_radm2, ccArr.real, ccArr.imag)))
+    outFile = prefixOut + "_FDFresid.dat"
+    log("> %s" % outFile)
+    np.savetxt(outFile, list(zip(phiArr_radm2, residFDF.real, residFDF.imag)))
 
     # Save the RM-clean measurements to a "key=value" text file
     log("Saving the measurements on the FDF in 'key=val' and JSON formats.")
@@ -159,7 +163,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     log("> %s" % outFile)
     json.dump(mDict, open(outFile, "w"))
 
-    
+
     # Print the results to the screen
     log()
     log('-'*80)
@@ -184,15 +188,15 @@ def run_rmclean(mDictS, aDict, cutoff,
     if showPlots or doAnimate:
         print("Press <RETURN> to exit ...", end=' ')
         input()
-        
+
     return mDict
-        
+
 def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
 
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
-        
+
     # Read the RMSF from the ASCII file
     phi2Arr_radm2, RMSFreal, RMSFimag = np.loadtxt(rmsfFile, unpack=True, dtype=dtFloat)
     # Read the frequency vector for the lambda^2 array
@@ -201,9 +205,9 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     phiArr_radm2, FDFreal, FDFimag = np.loadtxt(fdfFile, unpack=True, dtype=dtFloat)
     # Read the RM-synthesis parameters from the JSON file
     mDictS = json.load(open(rmSynthFile, "r"))
-    dirtyFDF = FDFreal + 1j * FDFimag    
+    dirtyFDF = FDFreal + 1j * FDFimag
     RMSFArr = RMSFreal + 1j * RMSFimag
-    
+
     #add array dictionary
     aDict = dict()
     aDict["phiArr_radm2"] = phiArr_radm2
@@ -212,7 +216,7 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     aDict["freqArr_Hz"] = freqArr_Hz
     aDict["weightArr"]=weightArr
     aDict["dirtyFDF"]=dirtyFDF
-    
+
     return mDictS, aDict
 
 
