@@ -284,7 +284,15 @@ def calc_mom2_FDF(FDF, phiArr):
 def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
     """
     Calculate the vertex of a parabola given three adjacent points.
+    Normalization of coordinates must be performed first to reduce risk of 
+    floating point errors.
     """
+    midpoint=x2
+    deltax=x2-x3
+    yscale=y2
+    (x1,x2,x3)=[(x-x2)/deltax for x in (x1,x2,x3)]  #slide spectrum to zero
+    (y1,y2,y3)=[y/yscale for y in (y1,y2,y3) ]
+    
     
     D = (x1 - x2) * (x1 - x3) * (x2 - x3)
     A = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D
@@ -295,7 +303,7 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
     xv = -B / (2.0 * A)
     yv = C - B * B / (4.0 * A)
 
-    return xv, yv
+    return xv*deltax+midpoint, yv*yscale
 
 #-----------------------------------------------------------------------------#
 def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
