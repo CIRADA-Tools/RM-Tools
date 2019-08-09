@@ -37,7 +37,6 @@ import sys
 import os
 import time
 import argparse
-import schwimmbad
 
 import RMtools_1D.cl_RMclean_1D as clRM
 
@@ -79,19 +78,8 @@ def main():
                         help="CLEAN loop gain [0.1].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
-    parser.add_argument("-a", dest="doAnimate", action="store_true",
-                        help="animate the CLEAN plots [False]")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Print verbose messages")
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--ncores", dest="n_cores", default=1,
-                       type=int, help="Number of processes (uses multiprocessing).")
-    group.add_argument("--mpi", dest="mpi", default=False,
-                       action="store_true", help="Run with MPI.")
-    args = parser.parse_args()
-
-    pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
 
     args = parser.parse_args()
 
@@ -119,9 +107,9 @@ def main():
                 outDir       = dataDir,
                 nBits        = nBits,
                 showPlots    = args.showPlots,
-                doAnimate    = args.doAnimate,
-                verbose      = args.verbose,
-                pool         = pool)
+                verbose      = args.verbose)
+
+
 
 
 

@@ -8,7 +8,7 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 
-NAME = 'RM'
+NAME = 'RM-tools'
 DESCRIPTION = 'RM-synthesis, RM-clean and QU-fitting on polarised radio spectra'
 URL = 'https://github.com/CIRADA-Tools/RM'
 REQUIRES_PYTHON = '>=3.5.0'
@@ -18,7 +18,7 @@ REQUIRED = [
     'numpy', 'scipy', 'matplotlib', 'astropy',
 ]
 
-extras_require={'QUfitting': 'pymultinest'}
+extras_require={'QUfitting': ['pymultinest'],'parallel':["schwimmbad"]}
 
 here = os.path.abspath(os.path.dirname(__file__))
 

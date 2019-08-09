@@ -71,9 +71,9 @@ from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
 
-from scipy import signal
-import tqdm
-import schwimmbad
+#from scipy import signal
+#import tqdm
+#import schwimmbad
 
 from RMutils.mpfit import mpfit
 from RMutils.util_misc import progress
@@ -82,7 +82,6 @@ from RMutils.util_misc import calc_parabola_vertex
 from RMutils.util_misc import create_pqu_spectra_burn
 from RMutils.util_misc import calc_mom2_FDF
 from RMutils.util_misc import MAD
-from RMutils.util_misc import nanstd
 
 
 # Constants
@@ -180,16 +179,14 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     # Do the RM-synthesis on each plane
     if verbose:
         log("Running RM-synthesis by channel.")
-        pbar = tqdm.tqdm(total=nPhi)
+        progress(40, 0)
     a = lambdaSqArr_m2 - lam0Sq_m2
 
     for i in range(nPhi):
         if verbose:
-            pbar.update()
+            progress(40, ((i+1)*100.0/nPhi))
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)[:, np.newaxis, np.newaxis]
         FDFcube[i, :, :] = KArr * np.sum(pCube * arg, axis=0)
-    if verbose:
-        pbar.close()
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
 
@@ -355,15 +352,13 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 
         # Calculate the RMSF for each plane
         if verbose:
-            pbar = tqdm.tqdm(total=nPhi)
+            progress(40, 0)
         a = (lambdaSqArr_m2 - lam0Sq_m2)
         for i in range(nPhi):
             if verbose:
-                pbar.update()
+                progress(40, ((i+1)*100.0/nPhi))
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
-        if verbose:
-            pbar.close()
 
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
@@ -374,13 +369,13 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-                pbar = tqdm.tqdm(total=nPix)
+                progress(40, 0)
             k = 0
             for i in range(nX):
                 for j in range(nY):
                     k += 1
                     if verbose:
-                        pbar.update()
+                        progress(40, ((i+1)*100.0/nPhi))
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:, j, i].real)
                     else:
@@ -388,8 +383,6 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
                     if not (mp is None or mp.status < 1):
                         fwhmRMSFArr[j, i] = mp.params[2]
                         statArr[j, i] = mp.status
-            if verbose:
-                pbar.close()
 
     # Remove redundant dimensions
     RMSFcube = np.squeeze(RMSFcube)
@@ -403,7 +396,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
-                      doAnimate=False, pool=None, chunksize=None):
+                      pool=None, chunksize=None,log=print):
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -419,7 +412,6 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     nBits          ... precision of data arrays [32]
     verbose        ... print feedback during calculation [False]
     doPlots        ... plot the final CLEAN FDF [False]
-    doAnimate      ... animate the CLEAN loop plots [False]
 
     """
 
@@ -428,81 +420,34 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     dtComplex = "complex" + str(2*nBits)
 
     # Function to plot FDF
-    def plot_clean_spec(ax1, ax2, phiArr_radm2, dirtyFDF, ccArr, residFDF,
-                        cutoff):
-        ax1.cla()
-        ax2.cla()
-        ax1.step(phiArr_radm2, np.abs(dirtyFDF[:, yi, xi]),
-                 color="grey", marker="None", mfc="w", mec="g", ms=10,
-                 where="mid", label="Dirty FDF")
-        ax1.step(phiArr_radm2, np.abs(ccArr[:, yi, xi]), color="g",
-                 marker="None", mfc="w", mec="g", ms=10, where="mid",
-                 label="Clean Components")
-        ax1.step(phiArr_radm2, np.abs(residFDF[:, yi, xi]), color="magenta",
-                 marker="None", mfc="w", mec="g", ms=10, where="mid",
-                 label="Residual FDF")
-        ax1.step(phiArr_radm2, np.abs(cleanFDF[:, yi, xi]), color="k",
-                 marker="None", mfc="w", mec="g", ms=10, where="mid", lw=1.5,
-                 label="Clean FDF")
-        ax1.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
-        ax1.yaxis.set_major_locator(MaxNLocator(4))
-        ax1.set_ylabel("Flux Density")
-        leg = ax1.legend(numpoints=1, loc='upper right', shadow=False,
-                         borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
-        for t in leg.get_texts():
-            t.set_fontsize('small')
-        leg.get_frame().set_linewidth(0.5)
-        leg.get_frame().set_alpha(0.5)
-        [label.set_visible(False) for label in ax1.get_xticklabels()]
-        ax2.step(phiArr_radm2, np.abs(residFDF[:, yi, xi]), color="magenta",
-                 marker="None", mfc="w", mec="g", ms=10, where="mid",
-                 label="Residual FDF")
-        ax2.step(phiArr_radm2, np.abs(ccArr[:, yi, xi]), color="g",
-                 marker="None", mfc="w", mec="g", ms=10, where="mid",
-                 label="Clean Components")
-        ax2.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
-        ax2.set_ylim(0, cutoff*3.0)
-        ax2.yaxis.set_major_locator(MaxNLocator(4))
-        ax2.set_ylabel("Flux Density")
-        ax2.set_xlabel("$\phi$ rad m$^{-2}$")
-        leg = ax2.legend(numpoints=1, loc='upper right', shadow=False,
-                         borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
-        for t in leg.get_texts():
-            t.set_fontsize('small')
-        leg.get_frame().set_linewidth(0.5)
-        leg.get_frame().set_alpha(0.5)
-        ax2.autoscale_view(True, True, True)
-        plt.draw()
 
-    if doAnimate:
-        doPlots = True
 
     # Sanity checks on array sizes
     nPhi = phiArr_radm2.shape[0]
     if nPhi != dirtyFDF.shape[0]:
-        print("Err: 'phi2Arr_radm2' and 'dirtyFDF' are not the same length.")
+        log("Err: 'phi2Arr_radm2' and 'dirtyFDF' are not the same length.")
         return None, None, None
     nPhi2 = phi2Arr_radm2.shape[0]
     if not nPhi2 == RMSFArr.shape[0]:
-        print("Err: missmatch in 'phi2Arr_radm2' and 'RMSFArr' length.")
+        log("Err: missmatch in 'phi2Arr_radm2' and 'RMSFArr' length.")
         return None, None, None
     if not (nPhi2 >= 2 * nPhi):
-        print("Err: the Faraday depth of the RMSF must be twice the FDF.")
+        log("Err: the Faraday depth of the RMSF must be twice the FDF.")
         return None, None, None
     nDims = len(dirtyFDF.shape)
     if not nDims <= 3:
-        print("Err: FDF array dimensions must be <= 3.")
+        log("Err: FDF array dimensions must be <= 3.")
         return None, None, None
     if not nDims == len(RMSFArr.shape):
-        print("Err: the input RMSF and FDF must have the same number of axes.")
+        log("Err: the input RMSF and FDF must have the same number of axes.")
         return None, None, None
     if not RMSFArr.shape[1:] == dirtyFDF.shape[1:]:
-        print("Err: the xy dimesions of the RMSF and FDF must match.")
+        log("Err: the xy dimesions of the RMSF and FDF must match.")
         return None, None, None
     if mskArr is not None:
         if not mskArr.shape == dirtyFDF.shape[1:]:
-            print("Err: pixel mask must match xy dimesnisons of FDF cube.")
-            print("     FDF[z,y,z] = {:}, Mask[y,x] = {:}.".format(
+            log("Err: pixel mask must match xy dimesnisons of FDF cube.")
+            log("     FDF[z,y,z] = {:}, Mask[y,x] = {:}.".format(
                 dirtyFDF.shape, mskArr.shape), end=' ')
 
             return None, None, None
@@ -531,41 +476,42 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     if verbose:
         nPix = dirtyFDF.shape[-1] * dirtyFDF.shape[-2]
         nCleanPix = len(xyCoords)
-        print("Cleaning {:}/{:} spectra.".format(nCleanPix, nPix), end=' ')
+        log("Cleaning {:}/{:} spectra.".format(nCleanPix, nPix), end=' ')
 
-    # Initialise arrays to hold the residual FDF, clean components, clean FDF
-    residFDF = dirtyFDF.copy()
-    ccArr = np.zeros(dirtyFDF.shape, dtype=dtComplex)
-    cleanFDF = np.zeros_like(dirtyFDF)
+    # Initialise arrays to hold the residual FDF, clean components, clean FDF (no longer needed)
+#    residFDF = dirtyFDF.copy()
+#    ccArr = np.zeros(dirtyFDF.shape, dtype=dtComplex)
+#    cleanFDF = np.zeros_like(dirtyFDF)
 
-    # Plotting
-    if doPlots:
-
-        from matplotlib import pyplot as plt
-        from matplotlib.ticker import MaxNLocator
-
-        # Setup the figure to track the clean
-        fig = plt.figure(figsize=(12.0, 8))
-        ax1 = fig.add_subplot(211)
-        ax2 = fig.add_subplot(212, sharex=ax1)
-
-        fig.show()
 
     # Loop through the pixels containing a polarised signal
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
-    rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2,
-                    fwhmRMSFArr, iterCountArr, maxIter, gain, cutoff, verbose)
+    rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
+                    iterCountArr, maxIter, gain, cutoff, nBits, verbose)
+
+
     if pool is None:
-        pool = schwimmbad.SerialPool()
-    if chunksize is not None:
-        output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
+        if verbose:
+            progress(40,0)
+            i=0
+        output=[]
+        for pix in inputs:    
+            output.append(rmc.cleanloop(pix))
+            if verbose:
+                progress(40, ((i)*100.0/nPix))
+                i+=1
     else:
-        output = list(pool.map(rmc.cleanloop, inputs))
-    pool.close()
+        if verbose:
+            log('(Progress bar is not supported for parallel mode. Please wait for the code to finish.')
+        if chunksize is not None:
+            output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
+        else:
+                output = list(pool.map(rmc.cleanloop, inputs))
+        pool.close()
     # Put data back in correct shape
-    ccArr = np.rot90(np.stack([model for _, _, model in output]), k=-1)
-    cleanFDF = np.rot90(np.stack([clean for clean, _, _ in output]), k=-1)
-    residFDF = np.rot90(np.stack([resid for _, resid, _ in output]), k=-1)
+    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
+    cleanFDF = np.reshape(np.rot90(np.stack([clean for clean, _, _ in output]), k=-1),dirtyFDF.shape)
+    residFDF = np.reshape(np.rot90(np.stack([resid for _, resid, _ in output]), k=-1),dirtyFDF.shape)
 
     # Restore the residual to the CLEANed FDF (moved outside of loop:
     # will now work for pixels/spectra without clean components)
@@ -586,7 +532,9 @@ class RMcleaner:
 
     """
 
-    def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, iterCountArr, maxIter=1000, gain=0.1, cutoff=0, verbose=False):
+    def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
+                 iterCountArr, maxIter=1000, gain=0.1, cutoff=0,nbits=32, 
+                 verbose=False):
         self.RMSFArr = RMSFArr
         self.phi2Arr_radm2 = phi2Arr_radm2
         self.phiArr_radm2 = phiArr_radm2
@@ -596,6 +544,7 @@ class RMcleaner:
         self.gain = gain
         self.cutoff = cutoff
         self.verbose = verbose
+        self.nbits = nbits
 
     def cleanloop(self, args):
         return self._cleanloop(*args)
@@ -604,7 +553,7 @@ class RMcleaner:
         dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
-        ccArr = np.zeros(dirtyFDF.shape)
+        ccArr = np.zeros_like(dirtyFDF)
         cleanFDF = np.zeros_like(dirtyFDF)
         RMSFArr = self.RMSFArr[:, yi, xi]
         fwhmRMSFArr = self.fwhmRMSFArr[yi, xi]
@@ -628,7 +577,7 @@ class RMcleaner:
 
             # A clean component is "loop-gain * peakFDFval
             CC = self.gain * peakFDFval
-            ccArr[indxPeakFDF] += np.abs(CC)
+            ccArr[indxPeakFDF] += CC
 
             # At which channel is the CC located at in the RMSF?
             indxPeakRMSF = indxPeakFDF + nPhiPad
@@ -1808,15 +1757,13 @@ def threeDnoise_do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     # Do the RM-synthesis on each plane
     if verbose:
         log("Running RM-synthesis by channel.")
-        pbar = tqdm.tqdm(total=nPhi)
+        progress(40, 0)
     a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - lam0Sq_m2[np.newaxis, :, :]
     for i in range(nPhi):
         if verbose:
-            pbar.update()
+            progress(40, ((i+1)*100.0/nPhi))
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)
         FDFcube[i, :, :] = KArr * np.sum(pCube * arg, axis=0)
-    if verbose:
-        pbar.close()
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
     lam0Sq_m2 = np.squeeze(lam0Sq_m2)
@@ -1969,17 +1916,15 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
 
         # Calculate the RMSF for each plane
         if verbose:
-            pbar = tqdm.tqdm(total=nPhi)
+            progress(40, 0)
         a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - \
             lam0Sq_m2[np.newaxis, :, :]
         for i in range(nPhi):
             if verbose:
-                pbar.update()
+                progress(40, ((i+1)*100.0/nPhi))
             arg = np.exp(-2.0j * phi2Arr[i] * a)
 #            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
             RMSFcube[i, :, :] = KArr * np.sum(weightArr * arg, axis=0)
-        if verbose:
-            pbar.close()
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
         statArr = np.ones((nY, nX), dtype="int") * (-1)
