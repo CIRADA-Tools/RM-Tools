@@ -761,8 +761,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
 
     # Determine the peak channel in the FDF, its amplitude and index
     absFDF = np.abs(FDF)
-    ampPeakPIchan = np.nanmax(absFDF)
-    indxPeakPIchan = np.nanargmax(absFDF)
+    indxPeakPIchan = np.nanargmax(absFDF[1:-1])+1  #Masks out the edge channels, since they can't be fit to.
+    ampPeakPIchan = absFDF[indxPeakPIchan]
 
     # Measure the RMS noise in the spectrum after masking the peak
     dPhi = np.nanmin(np.diff(phiArr))

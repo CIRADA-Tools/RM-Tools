@@ -275,30 +275,6 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU_Jybm"] = toscalar(nanmedian(dQUArr_Jy))
     mDict["dFDFth_Jybm"] = toscalar(dFDFth_Jybm)
-    if mDict['phiPeakPIfit_rm2'] == None:
-        log('Peak is at edge of RM spectrum! Peak fitting failed!\n')
-        log('Rerunning with Phi_max twice as large.')
-        #The following code re-runs everything with higher phiMax, 
-        #Then overwrite the appropriate variables so as to continue on without
-        #interuption.
-        mDict, aDict = run_rmsynth(data           = data,
-                polyOrd        = polyOrd,
-                phiMax_radm2   = phiMax_radm2*2,
-                dPhi_radm2     = dPhi_radm2,
-                nSamples       = nSamples,
-                weightType     = weightType,
-                fitRMSF        = fitRMSF,
-                noStokesI      = noStokesI,
-                nBits          = nBits,
-                showPlots      = False,
-                debug          = debug,
-                verbose        = verbose)
-        phiArr_radm2=aDict["phiArr_radm2"]
-        phi2Arr_radm2=aDict["phi2Arr_radm2"]
-        RMSFArr=aDict["RMSFArr"]
-        freqArr_Hz=aDict["freqArr_Hz"]
-        weightArr=aDict["weightArr"]
-        dirtyFDF=aDict["dirtyFDF"]
 
 
         
