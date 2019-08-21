@@ -584,41 +584,23 @@ class RMcleaner:
             cleanFDF[:, yi, xi] += \
                 gauss1D(CC, phiPeak, fwhmRMSFArr[yi, xi])(phiArr_radm2)
             iterCount += 1
-            iterCountArr[yi, xi] = iterCount
+            self.iterCountArr[yi, xi] = iterCount
             
             # Plot the progress of the clean
-            if doAnimate:
-                plot_clean_spec(ax1,
-                                ax2,
-                                phiArr_radm2,
-                                dirtyFDF,
-                                ccArr,
-                                residFDF,
-                                cutoff)
 
 
-        if doPlots:
-            plot_clean_spec(ax1,
-                            ax2,
-                            phiArr_radm2,
-                            dirtyFDF,
-                            ccArr,
-                            residFDF,
-                            cutoff)
-            ax1.lines[2].remove()
-            plt.draw()
 
     # Restore the residual to the CLEANed FDF (moved outside of loop: 
         #will now work for pixels/spectra without clean components)
-    cleanFDF += residFDF
+        cleanFDF += residFDF
 
 
     # Remove redundant dimensions
-    cleanFDF = np.squeeze(cleanFDF)
-    ccArr = np.squeeze(ccArr)
-    iterCountArr = np.squeeze(iterCountArr)
-    
-    return cleanFDF, ccArr, iterCountArr
+        cleanFDF = np.squeeze(cleanFDF)
+        ccArr = np.squeeze(ccArr)
+
+        return cleanFDF, residFDF, ccArr
+
 
 
 #-----------------------------------------------------------------------------#
