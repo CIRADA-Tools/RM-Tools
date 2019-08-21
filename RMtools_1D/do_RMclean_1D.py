@@ -78,8 +78,6 @@ def main():
                         help="CLEAN loop gain [0.1].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
-    parser.add_argument("-a", dest="doAnimate", action="store_true",
-                        help="animate the CLEAN plots [False]")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Print verbose messages")
 
@@ -109,9 +107,8 @@ def main():
                 outDir       = dataDir,
                 nBits        = nBits,
                 showPlots    = args.showPlots,
-                doAnimate    = args.doAnimate,
                 verbose      = args.verbose)
-    
+
 
 
     

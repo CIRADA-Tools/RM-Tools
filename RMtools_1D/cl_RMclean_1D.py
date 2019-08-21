@@ -34,16 +34,10 @@
 #                                                                             #
 #=============================================================================#
 
-import sys
-import os
 import time
-import argparse
 import json
-import math as m
 import numpy as np
-import pdb
 
-from RMutils.util_RM import do_rmclean
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import measure_FDF_parms
 from RMutils.util_RM import measure_fdf_complexity
@@ -52,7 +46,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmclean(mDictS, aDict, cutoff,
                 maxIter=1000, gain=0.1, prefixOut="", outDir="", nBits=32,
-                showPlots=False, doAnimate=False, verbose=False,log=print):
+                showPlots=False, verbose=False,log=print):
     """
     Run RM-CLEAN on a complex FDF spectrum given a RMSF.
     """
@@ -87,8 +81,7 @@ def run_rmclean(mDictS, aDict, cutoff,
                                 maxIter         = maxIter,
                                 gain            = gain,
                                 verbose         = verbose,
-                                doPlots         = showPlots,
-                                doAnimate       = doAnimate)
+                                doPlots         = showPlots)
 
     # ALTERNATIVE RM_CLEAN CODE ----------------------------------------------#
     '''
@@ -181,7 +174,9 @@ def run_rmclean(mDictS, aDict, cutoff,
     log('-'*80)
 
     # Pause to display the figure
-    if showPlots or doAnimate:
+    if showPlots:
+        plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
+                    cutoff)
         print("Press <RETURN> to exit ...", end=' ')
         input()
         
@@ -214,5 +209,67 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     aDict["dirtyFDF"]=dirtyFDF
     
     return mDictS, aDict
+
+
+def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
+                    cutoff):
+    from matplotlib import pyplot as plt
+    from matplotlib.ticker import MaxNLocator
+
+    fig = plt.figure(figsize=(12.0, 8))
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212, sharex=ax1)
+
+    dirtyFDF=np.squeeze(dirtyFDF)
+    cleanFDF=np.squeeze(cleanFDF)
+    ccArr=np.squeeze(ccArr)
+    residFDF=np.squeeze(residFDF)
+
+    fig.show()
+
+
+    ax1.cla()
+    ax2.cla()
+    ax1.step(phiArr_radm2, np.abs(dirtyFDF),
+             color="grey", marker="None", mfc="w", mec="g", ms=10,
+             where="mid", label="Dirty FDF")
+    ax1.step(phiArr_radm2, np.abs(ccArr), color="g",
+             marker="None", mfc="w", mec="g", ms=10, where="mid",
+             label="Clean Components")
+    ax1.step(phiArr_radm2, np.abs(residFDF), color="magenta",
+             marker="None", mfc="w", mec="g", ms=10, where="mid",
+             label="Residual FDF")
+    ax1.step(phiArr_radm2, np.abs(cleanFDF), color="k",
+             marker="None", mfc="w", mec="g", ms=10, where="mid", lw=1.5,
+             label="Clean FDF")
+    ax1.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
+    ax1.yaxis.set_major_locator(MaxNLocator(4))
+    ax1.set_ylabel("Flux Density")
+    leg = ax1.legend(numpoints=1, loc='upper right', shadow=False,
+                     borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
+    for t in leg.get_texts():
+        t.set_fontsize('small')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+    [label.set_visible(False) for label in ax1.get_xticklabels()]
+    ax2.step(phiArr_radm2, np.abs(residFDF), color="magenta",
+             marker="None", mfc="w", mec="g", ms=10, where="mid",
+             label="Residual FDF")
+    ax2.step(phiArr_radm2, np.abs(ccArr), color="g",
+             marker="None", mfc="w", mec="g", ms=10, where="mid",
+             label="Clean Components")
+    ax2.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
+    ax2.set_ylim(0, cutoff*3.0)
+    ax2.yaxis.set_major_locator(MaxNLocator(4))
+    ax2.set_ylabel("Flux Density")
+    ax2.set_xlabel("$\phi$ rad m$^{-2}$")
+    leg = ax2.legend(numpoints=1, loc='upper right', shadow=False,
+                     borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
+    for t in leg.get_texts():
+        t.set_fontsize('small')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+    ax2.autoscale_view(True, True, True)
+    plt.draw()
 
 

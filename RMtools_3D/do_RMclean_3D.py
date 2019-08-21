@@ -37,9 +37,14 @@ import sys
 import os
 import time
 import argparse
-import math as m
 import numpy as np
 import astropy.io.fits as pf
+
+try:
+    import schwimmbad
+    parallel_available=True
+except:
+    parallel_available=False
 
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import fits_make_lin_axis
@@ -59,6 +64,8 @@ def main():
     a cube of rotation measure spread functions created by the script
     'do_RMsynth_3D.py'. Saves a cube of deconvolved FDFs & clean-component
     spectra, and a pixel map showing the number of iterations performed.
+    Set any of the multiprocessing options to enable parallelization 
+    (otherwise, pixels will be processed serially).
     """
     
     # Parse the command line options
@@ -84,6 +91,26 @@ def main():
 
     args = parser.parse_args()
 
+    #Check if the user is trying to use parallelization without installing it:
+    if parallel_available==False and (args.n_cores != 1 or args.chunk != None or args.mpi != False):
+        raise Exception('Parallel processing not available. Please install the schwimmbad module to enable parallel processing.')
+        
+    #If parallelization requested use it, otherwise use the old-fashioned way.
+    if parallel_available==True and (args.n_cores != 1 or args.chunk != None or args.mpi != False):
+        pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
+        if args.mpi:
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+        if args.n_cores > 1:
+            chunksize = args.chunk
+        else:
+            chunksize = None
+    else:
+        pool = None
+        chunksize = None
+
+
     verbose = args.verbose
     # Sanity checks
     for f in args.fitsFDF + args.fitsRMSF:
@@ -103,6 +130,8 @@ def main():
                 nBits       = 32,
                 write_separate_FDF=args.write_separate_FDF,
                 verbose = verbose)
+
+
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
