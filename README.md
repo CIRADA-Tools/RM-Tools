@@ -1,7 +1,5 @@
 # RM
 
-THIS IS THE EXPERIMENTAL BRANCH. USE AT OWN RISK.
-
 RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
 
  Python scripts to perform RM-synthesis, RM-clean and QU-fitting on
