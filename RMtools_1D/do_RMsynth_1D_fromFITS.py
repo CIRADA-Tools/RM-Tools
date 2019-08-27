@@ -75,7 +75,9 @@ def main():
     parser = argparse.ArgumentParser(description=descStr,epilog=epilog_text,
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("dataFile", metavar="StokesQ.fits", nargs=1,
-                        help="FITS cube with Stokes Q data (assumes Stokes U is in similarly named file).")
+                        help="FITS cube with Stokes Q data.")
+    parser.add_argument("UFile", metavar="StokesU.fits", nargs=1,
+                        help="FITS cube with Stokes U data.")
     parser.add_argument("xcoords", metavar="xcoords",nargs = "?",type = float, default = "1",
                         help="X pixel location (FITS 1-indexed convention)")
     parser.add_argument("ycoords", metavar="ycoords", nargs = "?", type = float, default= "1",
@@ -134,7 +136,7 @@ def main():
         ycoords = int(args.ycoords)-1
     freq_array = get_freq_array(args.dataFile[0])
     Q_array = get_data_Q_U(args.dataFile[0], ycoords, xcoords)
-    U_array = get_data_Q_U(args.dataFile[0].replace("Q", "U"), ycoords, xcoords)
+    U_array = get_data_Q_U(args.UFile[0], ycoords, xcoords)
     dQ_array = np.full(freq_array.shape, 1*10**(-3))
     dU_array = np.full(freq_array.shape, 1*10**(-3))
     

@@ -89,6 +89,15 @@ def main():
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ncores", dest="n_cores", default=1,
+                       type=int, help="Number of processes (uses multiprocessing).")
+    parser.add_argument("--chunk", dest="chunk", default=None,
+                       type=int, help="Chunk size (uses multiprocessing -- not available in MPI!)")
+    group.add_argument("--mpi", dest="mpi", default=False,
+                       action="store_true", help="Run with MPI.")
+
+
     args = parser.parse_args()
 
     #Check if the user is trying to use parallelization without installing it:
@@ -135,7 +144,8 @@ def main():
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
-                prefixOut="", outDir="", nBits=32,write_separate_FDF=False, verbose = True, log = print):
+                prefixOut="", outDir="", nBits=32,write_separate_FDF=False, 
+                pool=None, chunksize=None, verbose = True, log = print):
     """Run RM-CLEAN on a FDF cube given a RMSF cube."""
 
 
@@ -161,7 +171,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     startTime = time.time()
     
     # Do the clean
-    cleanFDF, ccArr, iterCountArr = \
+    cleanFDF, ccArr, iterCountArr, residFDF  = \
         do_rmclean_hogbom(dirtyFDF         = dirtyFDF * 1e3,
                           phiArr_radm2     = phiArr_radm2,
                           RMSFArr          = RMSFArr,
@@ -171,7 +181,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
                           maxIter          = maxIter,
                           gain             = gain,
                           verbose          = verbose,
-                          doPlots          = False)
+                          doPlots          = False,
+                          pool             = pool,
+                          chunksize        = chunksize)
     cleanFDF /= 1e3
     ccArr /= 1e3
         

@@ -71,7 +71,7 @@ def run_rmclean(mDictS, aDict, cutoff,
 
     startTime = time.time()
     # Perform RM-clean on the spectrum
-    cleanFDF, ccArr, iterCountArr = \
+    cleanFDF, ccArr, iterCountArr, residFDF = \
               do_rmclean_hogbom(dirtyFDF        = dirtyFDF,
                                 phiArr_radm2    = phiArr_radm2,
                                 RMSFArr         = RMSFArr,
