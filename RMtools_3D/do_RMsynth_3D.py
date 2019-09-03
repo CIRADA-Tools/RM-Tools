@@ -69,7 +69,7 @@ def main():
         Default:
         FDF_dirty.fits: FDF, in 3 extensions: Q,U, and PI.
         FDF_maxPI.fits: 2D map of peak polarized intensity per pixel.
-        FDF_maxPI.fits: 2D map of Faraday depth of highest peak, per pixel.
+        FDF_peakRM.fits: 2D map of Faraday depth of highest peak, per pixel.
         RMSF.fits: 4 extensions; first 3 are RMSF cubes [Q, U, PI]
                                  4th is 2D map of RMSF FWHM.
         With -f flag:
@@ -124,7 +124,7 @@ def main():
     else:
         dataI=None
     if args.noiseFile is not None:
-        rmsArr_Jy = cl.readFitsCube(args.noiseFile[0], verbose)[1]
+        rmsArr_Jy = cl.readFitsCube(args.noiseFile, verbose)[1]
     else:
         rmsArr_Jy=None
         

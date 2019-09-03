@@ -305,17 +305,16 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     pf.writeto(fitsFileOut, peakFDFmap, header, overwrite=True,
                output_verify="fix")
     
-    # Save an RM moment-1 map
-    fitsFileOut = outDir + "/" + prefixOut + "FDF_mom1.fits"
-    header["BUNIT"] = "rad/m^2"
-    mom1FDFmap = (np.nansum(np.moveaxis(np.abs(FDFcube),FDFcube.ndim-freq_axis,FDFcube.ndim-1) * phiArr_radm2, FDFcube.ndim-1)
-                  /np.nansum(np.abs(FDFcube), FDFcube.ndim-freq_axis))
-#    mom1FDFmap = (np.nansum(np.abs(FDFcube).transpose(1,2,0) * phiArr_radm2, 2)
-#                  /np.nansum(np.abs(FDFcube).transpose(1,2,0), 2))
-    mom1FDFmap = mom1FDFmap.astype(dtFloat)
-    if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
-               output_verify="fix")
+#   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
+#    # Save an RM moment-1 map
+#    fitsFileOut = outDir + "/" + prefixOut + "FDF_mom1.fits"
+#    header["BUNIT"] = "rad/m^2"
+#    mom1FDFmap = (np.nansum(np.moveaxis(np.abs(FDFcube),FDFcube.ndim-freq_axis,FDFcube.ndim-1) * phiArr_radm2, FDFcube.ndim-1)
+#                  /np.nansum(np.abs(FDFcube), FDFcube.ndim-freq_axis))
+#    mom1FDFmap = mom1FDFmap.astype(dtFloat)
+#    if(verbose): log("> %s" % fitsFileOut)
+#    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
+#               output_verify="fix")
 
 
 def readFitsCube_old(file, verbose, log = print):
