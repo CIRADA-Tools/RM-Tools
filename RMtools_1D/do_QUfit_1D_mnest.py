@@ -178,18 +178,18 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         dataArr = mpiComm.bcast(dataArr, root=0)
 
     # Parse the data array
-    # freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy
+    # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        (freqArr_Hz, IArr_Jy, QArr_Jy, UArr_Jy,
-         dIArr_Jy, dQArr_Jy, dUArr_Jy) = dataArr
+        (freqArr_Hz, IArr, QArr, UArr,
+         dIArr, dQArr, dUArr) = dataArr
         if mpiRank==0:
-            print("\nFormat [freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy]")
+            print("\nFormat [freq_Hz, I, Q, U, dI, dQ, dU]")
     except Exception:
-        # freq_Hz, Q_Jy, U_Jy, dQ_Jy, dU_Jy
+        # freq_Hz, Q, U, dQ, dU
         try:
-            (freqArr_Hz, QArr_Jy, UArr_Jy, dQArr_Jy, dUArr_Jy) = dataArr
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = dataArr
             if mpiRank==0:
-                print("\nFormat [freq_Hz, Q_Jy, U_Jy,  dQ_Jy, dU_Jy]")
+                print("\nFormat [freq_Hz, Q, U,  dQ, dU]")
             noStokesI = True
         except Exception:
             print("\nError: Failed to parse data file!")
@@ -203,28 +203,22 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     if noStokesI:
         if mpiRank==0:
             print("Note: no Stokes I data - assuming fractional polarisation.")
-        IArr_Jy = np.ones_like(QArr_Jy)
-        dIArr_Jy = np.zeros_like(QArr_Jy)
+        IArr = np.ones_like(QArr)
+        dIArr = np.zeros_like(QArr)
 
-    # Convert to GHz and mJy for convenience
+    # Convert to GHz for convenience
     freqArr_GHz = freqArr_Hz / 1e9
     lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
-    IArr_mJy = IArr_Jy * 1e3
-    QArr_mJy = QArr_Jy * 1e3
-    UArr_mJy = UArr_Jy * 1e3
-    dIArr_mJy = dIArr_Jy * 1e3
-    dQArr_mJy = dQArr_Jy * 1e3
-    dUArr_mJy = dUArr_Jy * 1e3
 
     # Fit the Stokes I spectrum and create the fractional spectra
     if mpiRank==0:
         dataArr = create_frac_spectra(freqArr=freqArr_GHz,
-                                      IArr=IArr_mJy,
-                                      QArr=QArr_mJy,
-                                      UArr=UArr_mJy,
-                                      dIArr=dIArr_mJy,
-                                      dQArr=dQArr_mJy,
-                                      dUArr=dUArr_mJy,
+                                      IArr=IArr,
+                                      QArr=QArr,
+                                      UArr=UArr,
+                                      dIArr=dIArr,
+                                      dQArr=dQArr,
+                                      dUArr=dUArr,
                                       polyOrd=polyOrd,
                                       verbose=True)
     else:
@@ -237,17 +231,17 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     if mpiRank==0:
         print("Plotting the input data and spectral index fit.")
         freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr_mJy = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        IModHirArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
         specFig = plt.figure(figsize=(10, 6))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr_mJy       = IArr_mJy,
+                              IArr           = IArr,
                               qArr           = qArr,
                               uArr           = uArr,
-                              dIArr_mJy      = dIArr_mJy,
+                              dIArr          = dIArr,
                               dqArr          = dqArr,
                               duArr          = duArr,
                               freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr_mJy    = IModHirArr_mJy,
+                              IModArr        = IModHirArr,
                               fig            = specFig)
 
         # Use the custom navigation toolbar
@@ -394,19 +388,19 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Plot the data and best-fitting model
         lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
         freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-        IModArr_mJy = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
         pDict = {k:v for k, v in zip(parNames, p)}
         quModArr = model(pDict, lamSqHirArr_m2)
         specFig.clf()
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr_mJy       = IArr_mJy,
+                              IArr           = IArr,
                               qArr           = qArr,
                               uArr           = uArr,
-                              dIArr_mJy      = dIArr_mJy,
+                              dIArr          = dIArr,
                               dqArr          = dqArr,
                               duArr          = duArr,
                               freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr_mJy    = IModArr_mJy,
+                              IModArr        = IModArr,
                               qModArr        = quModArr.real,
                               uModArr        = quModArr.imag,
                               fig            = specFig)

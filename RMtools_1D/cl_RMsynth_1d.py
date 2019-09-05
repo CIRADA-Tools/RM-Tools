@@ -67,7 +67,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None, 
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
-                debug=False, verbose=False, log=print):
+                debug=False, verbose=False, log=print,units='Jy/beam'):
     """
     Read the I, Q & U data and run RM-synthesis.
     """
@@ -76,17 +76,17 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
 
-    # freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy
+    # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        if verbose: log("> Trying [freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy]", end=' ')
-        (freqArr_Hz, IArr_Jy, QArr_Jy, UArr_Jy, dIArr_Jy, dQArr_Jy, dUArr_Jy) = data 
+        if verbose: log("> Trying [freq_Hz, I, Q, U, dI, dQ, dU]", end=' ')
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data 
         if verbose: log("... success.")
     except Exception:
         if verbose: log("...failed.")
-        # freq_Hz, q_Jy, u_Jy, dq_Jy, du_Jy
+        # freq_Hz, q, u, dq, du
         try:
-            if verbose: log("> Trying [freq_Hz, q_Jy, u_Jy,  dq_Jy, du_Jy]", end=' ')
-            (freqArr_Hz, QArr_Jy, UArr_Jy, dQArr_Jy, dUArr_Jy) = data 
+            if verbose: log("> Trying [freq_Hz, q, u,  dq, du]", end=' ')
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data 
             if verbose: log("... success.")
             noStokesI = True
         except Exception:
@@ -99,29 +99,22 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
         log("Warn: no Stokes I data in use.")
-        IArr_Jy = np.ones_like(QArr_Jy)
-        dIArr_Jy = np.zeros_like(QArr_Jy)
+        IArr = np.ones_like(QArr)
+        dIArr = np.zeros_like(QArr)
         
-    # Convert to GHz and mJy for convenience
+    # Convert to GHz for convenience
     freqArr_GHz = freqArr_Hz / 1e9
-    IArr_mJy = IArr_Jy * 1e3
-    QArr_mJy = QArr_Jy * 1e3
-    UArr_mJy = UArr_Jy * 1e3
-    dIArr_mJy = dIArr_Jy * 1e3
-    dQArr_mJy = dQArr_Jy * 1e3
-    dUArr_mJy = dUArr_Jy * 1e3
-    dQUArr_mJy = (dQArr_mJy + dUArr_mJy)/2.0
-    dQUArr_Jy = dQUArr_mJy / 1e3
+    dQUArr = (dQArr + dUArr)/2.0
  
     # Fit the Stokes I spectrum and create the fractional spectra
     IModArr, qArr, uArr, dqArr, duArr, fitDict = \
              create_frac_spectra(freqArr  = freqArr_GHz,
-                                 IArr     = IArr_mJy,
-                                 QArr     = QArr_mJy,
-                                 UArr     = UArr_mJy,
-                                 dIArr    = dIArr_mJy,
-                                 dQArr    = dQArr_mJy,
-                                 dUArr    = dUArr_mJy,
+                                 IArr     = IArr,
+                                 QArr     = QArr,
+                                 UArr     = UArr,
+                                 dIArr    = dIArr,
+                                 dQArr    = dQArr,
+                                 dUArr    = dUArr,
                                  polyOrd  = polyOrd,
                                  verbose  = True,
                                  debug    = debug)
@@ -130,18 +123,19 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     if showPlots:
         if verbose: log("Plotting the input data and spectral index fit.")
         freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)     
-        IModHirArr_mJy = poly5(fitDict["p"])(freqHirArr_Hz/1e9)    
+        IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)    
         specFig = plt.figure(figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr_mJy       = IArr_mJy, 
+                              IArr           = IArr, 
                               qArr           = qArr, 
                               uArr           = uArr, 
-                              dIArr_mJy      = dIArr_mJy,
+                              dIArr          = dIArr,
                               dqArr          = dqArr,
                               duArr          = duArr,
                               freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr_mJy    = IModHirArr_mJy,
-                              fig            = specFig)
+                              IModArr        = IModHirArr,
+                              fig            = specFig,
+                              units          = units)
 
         # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
@@ -158,17 +152,17 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         if debug:
             rmsFig = plt.figure(figsize=(12.0, 8))
             ax = rmsFig.add_subplot(111)
-            ax.plot(freqArr_Hz/1e9, dQUArr_mJy, marker='o', color='k', lw=0.5,
+            ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
                     label='rms <QU>')
-            ax.plot(freqArr_Hz/1e9, dQArr_mJy, marker='o', color='b', lw=0.5,
+            ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
                     label='rms Q')
-            ax.plot(freqArr_Hz/1e9, dUArr_mJy, marker='o', color='r', lw=0.5,
+            ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
                     label='rms U')
             xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
             ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
                          np.max(freqArr_Hz)/1e9 + xRange*0.05)
             ax.set_xlabel('$\\nu$ (GHz)')
-            ax.set_ylabel('RMS (mJy bm$^{-1}$)')
+            ax.set_ylabel('RMS '+units)
             ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
 #            rmsFig.show()
 
@@ -203,7 +197,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                                              
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
     if weightType=="variance":
-        weightArr = 1.0 / np.power(dQUArr_mJy, 2.0)
+        weightArr = 1.0 / np.power(dQUArr, 2.0)
     else:
         weightType = "uniform"
         weightArr = np.ones(freqArr_Hz.shape, dtype=dtFloat)
@@ -248,14 +242,13 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     if verbose: log("> RM-synthesis completed in %.2f seconds." % cputime)
     
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
-    # Multiply the dirty FDF by Ifreq0 to recover the PI in Jy
+    # Multiply the dirty FDF by Ifreq0 to recover the PI
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
-    Ifreq0_mJybm = poly5(fitDict["p"])(freq0_Hz/1e9)
-    dirtyFDF *= (Ifreq0_mJybm / 1e3)    # FDF is in Jy 
+    Ifreq0 = poly5(fitDict["p"])(freq0_Hz/1e9)
+    dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux 
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
-    #dFDFth_Jybm = np.sqrt(1./np.sum(1./dQUArr_Jy**2.)) 
-    dFDFth_Jybm = np.sqrt( np.sum(weightArr**2 * dQUArr_Jy**2) / (np.sum(weightArr))**2 )
+    dFDFth = np.sqrt( np.sum(weightArr**2 * dQUArr**2) / (np.sum(weightArr))**2 )
     
     
     # Measure the parameters of the dirty FDF
@@ -263,23 +256,23 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict = measure_FDF_parms(FDF         = dirtyFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = fwhmRMSF,
-                              dFDF        = dFDFth_Jybm,
+                              dFDF        = dFDFth,
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = lam0Sq_m2)
-    mDict["Ifreq0_mJybm"] = toscalar(Ifreq0_mJybm)
+    mDict["Ifreq0"] = toscalar(Ifreq0)
     mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
     mDict["IfitStat"] = fitDict["fitStatus"]
     mDict["IfitChiSqRed"] = fitDict["chiSqRed"]
     mDict["lam0Sq_m2"] = toscalar(lam0Sq_m2)
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
-    mDict["dQU_Jybm"] = toscalar(nanmedian(dQUArr_Jy))
-    mDict["dFDFth_Jybm"] = toscalar(dFDFth_Jybm)
-
+    mDict["dQU"] = toscalar(nanmedian(dQUArr))
+    mDict["dFDFth"] = toscalar(dFDFth)
+    mDict["units"] = units
 
         
     # Measure the complexity of the q and u spectra
-    mDict["fracPol"] = mDict["ampPeakPIfit_Jybm"]/(Ifreq0_mJybm/1e3)
+    mDict["fracPol"] = mDict["ampPeakPIfit"]/(Ifreq0)
     mD, pD = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
                                    qArr       = qArr,
                                    uArr       = uArr,
@@ -329,13 +322,13 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
        log('Peak FD = %.4g (+/-%.4g) rad/m^2' % (mDict["phiPeakPIfit_rm2"],
                                                 mDict["dPhiPeakPIfit_rm2"]))
        log('freq0_GHz = %.4g ' % (mDict["freq0_Hz"]/1e9))
-       log('I freq0 = %.4g mJy/beam' % (mDict["Ifreq0_mJybm"]))
-       log('Peak PI = %.4g (+/-%.4g) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,
-                                                mDict["dAmpPeakPIfit_Jybm"]*1e3))
-       log('QU Noise = %.4g mJy/beam' % (mDict["dQU_Jybm"]*1e3))
-       log('FDF Noise (theory)   = %.4g mJy/beam' % (mDict["dFDFth_Jybm"]*1e3))
-       log('FDF Noise (Corrected MAD) = %.4g mJy/beam' % (mDict["dFDFcorMAD_Jybm"]*1e3))
-       log('FDF Noise (rms)   = %.4g mJy/beam' % (mDict["dFDFrms_Jybm"]*1e3))
+       log('I freq0 = %.4g %s' % (mDict["Ifreq0"],units))
+       log('Peak PI = %.4g (+/-%.4g) %s' % (mDict["ampPeakPIfit"],
+                                                mDict["dAmpPeakPIfit"],units))
+       log('QU Noise = %.4g %s' % (mDict["dQU"],units))
+       log('FDF Noise (theory)   = %.4g %s' % (mDict["dFDFth"],units))
+       log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],units))
+       log('FDF Noise (rms)   = %.4g %s' % (mDict["dFDFrms"],units))
        log('FDF SNR = %.4g ' % (mDict["snrPIfit"]))
        log('sigma_add(q) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],
@@ -357,7 +350,8 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                           RMSFArr    = RMSFArr,
                           fwhmRMSF   = fwhmRMSF,
                           vLine      = mDict["phiPeakPIfit_rm2"],
-                          fig        = fdfFig)
+                          fig        = fdfFig,
+                          units      = units)
 
         # Use the custom navigation toolbar
 #        try:
@@ -391,23 +385,23 @@ def readFile(dataFile, nBits, verbose):
 
     # Read the data-file. Format=space-delimited, comments="#".
     if verbose: print("Reading the data file '%s':" % dataFile)
-    # freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy
+    # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        if verbose: print("> Trying [freq_Hz, I_Jy, Q_Jy, U_Jy, dI_Jy, dQ_Jy, dU_Jy]", end=' ')
-        (freqArr_Hz, IArr_Jy, QArr_Jy, UArr_Jy,
-         dIArr_Jy, dQArr_Jy, dUArr_Jy) = \
+        if verbose: print("> Trying [freq_Hz, I, Q, U, dI, dQ, dU]", end=' ')
+        (freqArr_Hz, IArr, QArr, UArr,
+         dIArr, dQArr, dUArr) = \
          np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
         if verbose: print("... success.")
-        data=[freqArr_Hz, IArr_Jy, QArr_Jy, UArr_Jy, dIArr_Jy, dQArr_Jy, dUArr_Jy]
+        data=[freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr]
     except Exception:
         if verbose: print("...failed.")
-        # freq_Hz, q_Jy, u_Jy, dq_Jy, du_Jy
+        # freq_Hz, q, u, dq, du
         try:
-            if verbose: print("> Trying [freq_Hz, q_Jy, u_Jy,  dq_Jy, du_Jy]", end=' ')
-            (freqArr_Hz, QArr_Jy, UArr_Jy, dQArr_Jy, dUArr_Jy) = \
+            if verbose: print("> Trying [freq_Hz, q, u,  dq, du]", end=' ')
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = \
                          np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
             if verbose: print("... success.")
-            data=[freqArr_Hz, QArr_Jy, UArr_Jy, dQArr_Jy, dUArr_Jy]
+            data=[freqArr_Hz, QArr, UArr, dQArr, dUArr]
 
             noStokesI = True
         except Exception:

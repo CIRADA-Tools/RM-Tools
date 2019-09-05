@@ -762,15 +762,15 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     absFDFmsked[iL:iR] = np.nan
     absFDFmsked = absFDFmsked[np.where(absFDFmsked==absFDFmsked)]
     if float(len(absFDFmsked))/len(absFDF)<0.3:
-        dFDFcorMAD_Jybm = MAD(absFDF)
-        dFDFrms_Jybm = np.sqrt( np.mean(absFDF**2) )
+        dFDFcorMAD = MAD(absFDF)
+        dFDFrms = np.sqrt( np.mean(absFDF**2) )
     else:
-        dFDFcorMAD_Jybm = MAD(absFDFmsked)
-        dFDFrms_Jybm = np.sqrt( np.mean(absFDFmsked**2) )
+        dFDFcorMAD = MAD(absFDFmsked)
+        dFDFrms = np.sqrt( np.mean(absFDFmsked**2) )
 
     # Default to using the measured FDF if a noise value has not been provided
     if dFDF is None:
-        dFDF = dFDFcorMAD_Jybm
+        dFDF = dFDFcorMAD
     
     # Measure the RM of the peak channel
     phiPeakPIchan = phiArr[indxPeakPIchan]
@@ -856,13 +856,13 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
     # Store the measurements in a dictionary and return
-    mDict = {'dFDFcorMAD_Jybm':       toscalar(dFDFcorMAD_Jybm),
-             'dFDFrms_Jybm':          toscalar(dFDFrms_Jybm),
+    mDict = {'dFDFcorMAD':       toscalar(dFDFcorMAD),
+             'dFDFrms':          toscalar(dFDFrms),
              'phiPeakPIchan_rm2':     toscalar(phiPeakPIchan),
              'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
-             'ampPeakPIchan_Jybm':    toscalar(ampPeakPIchan),
-             'ampPeakPIchanEff_Jybm': toscalar(ampPeakPIchanEff),
-             'dAmpPeakPIchan_Jybm':   toscalar(dFDF),
+             'ampPeakPIchan':    toscalar(ampPeakPIchan),
+             'ampPeakPIchanEff': toscalar(ampPeakPIchanEff),
+             'dAmpPeakPIchan':   toscalar(dFDF),
              'snrPIchan':             toscalar(snrPIchan),
              'indxPeakPIchan':        toscalar(indxPeakPIchan),
              'peakFDFimagChan':       toscalar(peakFDFimagChan),
@@ -873,9 +873,9 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
              'dPolAngle0Chan_deg':    toscalar(dPolAngle0Chan_deg),
              'phiPeakPIfit_rm2':      toscalar(phiPeakPIfit),
              'dPhiPeakPIfit_rm2':     toscalar(dPhiPeakPIfit),
-             'ampPeakPIfit_Jybm':     toscalar(ampPeakPIfit),
-             'ampPeakPIfitEff_Jybm':  toscalar(ampPeakPIfitEff),
-             'dAmpPeakPIfit_Jybm':    toscalar(dFDF),
+             'ampPeakPIfit':     toscalar(ampPeakPIfit),
+             'ampPeakPIfitEff':  toscalar(ampPeakPIfitEff),
+             'dAmpPeakPIfit':    toscalar(dFDF),
              'snrPIfit':              toscalar(snrPIfit),
              'indxPeakPIfit':         toscalar(indxPeakPIfit),
              'peakFDFimagFit':        toscalar(peakFDFimagFit),

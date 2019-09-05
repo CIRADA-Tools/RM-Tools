@@ -72,7 +72,7 @@ def main():
     descStr = """
     Create a new dataset directory and populate it with ASCII files containing
     Stokes I, Q and U spectra. Each output file contains four columns
-    corresponding to [freq_Hz, StokesI_Jy, StokesQ_Jy, StokesU_Jy] vectors for
+    corresponding to [freq_Hz, StokesI, StokesQ, StokesU] vectors for
     one source.
 
     The spectra are populated with polarised sources whose properties are given
@@ -160,7 +160,7 @@ def main():
                         help="Frequency of catalogue flux [1st channel] (MHz).")
     parser.add_argument("-c", dest="nChans", type=int, default=111,
                         help="Number of channels in output spectra [111].")
-    parser.add_argument("-n", dest="rmsNoise_mJy", type=float, default=0.02,
+    parser.add_argument("-n", dest="rmsNoise", type=float, default=0.02,
                         help="RMS noise of the output spectra [0.02 mJy].")
     parser.add_argument('-t', dest='noiseTmpFile', metavar="NOISE.TXT",
                         help="ASCII file providing a template noise curve (freq amp)")
@@ -175,7 +175,7 @@ def main():
     if args.freq0_MHz>0.0:
         freq0_Hz = args.freq0_MHz * 1e6
     nChans = args.nChans
-    rmsNoise_mJy = args.rmsNoise_mJy
+    rmsNoise = args.rmsNoise
     noiseTmpFile = args.noiseTmpFile
     flagRanges_Hz = []
     if len(args.flagFreqStr)>0:
@@ -194,13 +194,13 @@ def main():
     
     # Call the function to create the ASCII data files on disk
     nSrc = create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz,
-                                 endFreq_Hz, nChans, rmsNoise_mJy,
+                                 endFreq_Hz, nChans, rmsNoise,
                                  noiseTmpArr, flagRanges_Hz, freq0_Hz)
 
     
 #-----------------------------------------------------------------------------#
 def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, 
-                          nChans, rmsNoise_mJy, noiseTmpArr=None,
+                          nChans, rmsNoise, noiseTmpArr=None,
                           flagRanges_Hz=[], freq0_Hz=None):
     """
     Create a set of ASCII files containing Stokes I Q & U spectra.
@@ -221,7 +221,7 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
                 freqArr_Hz[i]=np.nan
 
     # Create normalised noise array from a template or assume all ones.
-    print("Input RMS noise is %.3g mJy" % rmsNoise_mJy)
+    print("Input RMS noise is %.3g mJy" % rmsNoise)
     if noiseTmpArr is None:
         print("Assuming flat noise versus frequency curve.")
         noiseArr = np.ones(freqArr_Hz.shape, dtype="f8")
@@ -277,9 +277,9 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
             
             # Create the model spectra from multiple thin components
             # modified by external depolarisation
-            IArr_Jy, QArr_Jy, UArr_Jy = \
+            IArr, QArr, UArr = \
                 create_IQU_spectra_burn(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5]/1e3, # mJy->Jy
+                                        fluxI = preLst[5], 
                                         SI = preLst[6],
                                         fracPolArr = parmArr[0],
                                         psi0Arr_deg = parmArr[1],
@@ -295,9 +295,9 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
             
             # Create the model spectra from multiple components
             # modified by internal Faraday depolarisation
-            IArr_Jy, QArr_Jy, UArr_Jy = \
+            IArr, QArr, UArr = \
                 create_IQU_spectra_diff(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5]/1e3, # mJy->Jy
+                                        fluxI = preLst[5], 
                                         SI = preLst[6],
                                         fracPolArr = parmArr[0],
                                         psi0Arr_deg = parmArr[1],
@@ -307,19 +307,18 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
             continue
         
         # Add scatter to the data to simulate noise
-        rmsNoise_Jy = rmsNoise_mJy/1e3
-        IArr_Jy += (np.random.normal(scale=rmsNoise_Jy, size=IArr_Jy.shape)
+        IArr += (np.random.normal(scale=rmsNoise, size=IArr.shape)
                     * noiseArr)
-        QArr_Jy += (np.random.normal(scale=rmsNoise_Jy, size=QArr_Jy.shape)
+        QArr += (np.random.normal(scale=rmsNoise, size=QArr.shape)
                     * noiseArr)
-        UArr_Jy += (np.random.normal(scale=rmsNoise_Jy, size=UArr_Jy.shape)
+        UArr += (np.random.normal(scale=rmsNoise, size=UArr.shape)
                     * noiseArr)
-        dIArr_Jy = noiseArr * rmsNoise_Jy
-        dIArr_Jy *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
-        dQArr_Jy = noiseArr * rmsNoise_Jy 
-        dQArr_Jy *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
-        dUArr_Jy = noiseArr * rmsNoise_Jy 
-        dUArr_Jy *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
+        dIArr = noiseArr * rmsNoise
+        dIArr *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
+        dQArr = noiseArr * rmsNoise 
+        dQArr *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
+        dUArr = noiseArr * rmsNoise 
+        dUArr *= np.random.normal(loc=1.0, scale=0.05, size=noiseArr.shape)
         
         # Save spectra to disk
         outFileName = "Source%d.dat" % (i+1)
@@ -327,12 +326,12 @@ def create_IQU_ascii_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
         print("> Writing ASCII file '%s' ..." % outFileName, end=' ')
         np.savetxt(outFilePath,
                    np.column_stack((freqArr_Hz,
-                                    IArr_Jy,
-                                    QArr_Jy,
-                                    UArr_Jy,
-                                    dIArr_Jy,
-                                    dQArr_Jy,
-                                    dUArr_Jy)))
+                                    IArr,
+                                    QArr,
+                                    UArr,
+                                    dIArr,
+                                    dQArr,
+                                    dUArr)))
         print("done.")
         successCount += 1
 

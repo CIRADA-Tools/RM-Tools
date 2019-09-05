@@ -75,8 +75,8 @@ def main():
                         help="FITS cube containing the dirty FDF.\n(Must be the single-file output from do_RMsynth_3D.py)")
     parser.add_argument("fitsRMSF", metavar="RMSF.fits", nargs=1,
                         help="FITS cube containing the RMSF and FWHM image.\n(Must be the single-file output from do_RMsynth_3D.py)")
-    parser.add_argument("-c", dest="cutoff_mJy", type=float, nargs=1,
-                        default=1.0, help="CLEAN cutoff in mJy")
+    parser.add_argument("-c", dest="cutoff", type=float, nargs=1,
+                        default=1.0, help="CLEAN cutoff in flux units")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="Maximum number of CLEAN iterations per pixel [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
@@ -131,7 +131,7 @@ def main():
     # Run RM-CLEAN on the cubes
     run_rmclean(fitsFDF     = args.fitsFDF[0],
                 fitsRMSF    = args.fitsRMSF[0],
-                cutoff_mJy  = args.cutoff_mJy,
+                cutoff      = args.cutoff,
                 maxIter     = args.maxIter,
                 gain        = args.gain,
                 prefixOut   = args.prefixOut,
@@ -143,7 +143,7 @@ def main():
 
 
 #-----------------------------------------------------------------------------#
-def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
+def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1,
                 prefixOut="", outDir="", nBits=32,write_separate_FDF=False, 
                 pool=None, chunksize=None, verbose = True, log = print):
     """Run RM-CLEAN on a FDF cube given a RMSF cube."""
@@ -172,20 +172,19 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff_mJy, maxIter=1000, gain=0.1,
     
     # Do the clean
     cleanFDF, ccArr, iterCountArr, residFDF  = \
-        do_rmclean_hogbom(dirtyFDF         = dirtyFDF * 1e3,
+        do_rmclean_hogbom(dirtyFDF         = dirtyFDF,
                           phiArr_radm2     = phiArr_radm2,
                           RMSFArr          = RMSFArr,
                           phi2Arr_radm2    = phi2Arr_radm2,
                           fwhmRMSFArr      = fwhmRMSFArr,
-                          cutoff           = cutoff_mJy,
+                          cutoff           = cutoff,
                           maxIter          = maxIter,
                           gain             = gain,
                           verbose          = verbose,
                           doPlots          = False,
                           pool             = pool,
                           chunksize        = chunksize)
-    cleanFDF /= 1e3
-    ccArr /= 1e3
+
         
     endTime = time.time()
     cputime = (endTime - startTime)

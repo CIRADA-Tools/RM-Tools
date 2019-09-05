@@ -60,7 +60,6 @@ def main():
     [freq_Hz, I, Q, U, I_err, Q_err, U_err]
     OR
     [freq_Hz, Q, U, Q_err, U_err]
-    Stokes units are assumed to be Jy, but output will have same units as input.
 
     """
 
@@ -103,6 +102,8 @@ def main():
                         help="save the arrays [False].")
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages & plots [False].")
+    parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
+                        help="Intensity units of the data. [Jy/beam]")    
     args = parser.parse_args()
     
     # Sanity checks
@@ -130,7 +131,8 @@ def main():
                 nBits          = nBits,
                 showPlots      = args.showPlots,
                 debug          = args.debug,
-                verbose        = verbose)
+                verbose        = verbose,
+                units          = args.units)
     #pdb.set_trace()
     if args.saveOutput:
         clRM.saveOutput(dict, aDict, prefixOut, verbose)

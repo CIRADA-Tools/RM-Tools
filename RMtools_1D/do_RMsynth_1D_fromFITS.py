@@ -110,6 +110,9 @@ def main():
                         help="save the arrays [False].")
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages & plots [False].")
+    parser.add_argument("-U", dest="units", type=str, default=None,
+                        help="Intensity units of the data. [from FITS header]")    
+
     args = parser.parse_args()
     
     # Sanity checks
@@ -125,8 +128,8 @@ def main():
     verbose=args.verbose
     #data = clRM.readFile(args.dataFile[0],nBits, verbose)
 
+    hduList = fits.open(args.dataFile[0])
     if args.sky_coords:
-        hduList = fits.open(args.dataFile[0])
         imgwcs = wcs.WCS(hduList[0].header, naxis=(1, 2))
         xcoords, ycoords = np.round(imgwcs.all_world2pix(args.xcoords, args.ycoords, 0)).astype(int)
         print("Extracting pixel {} x {} (1-indexed)".format(xcoords+1,ycoords+1))
@@ -143,6 +146,12 @@ def main():
     Q_array[~np.isfinite(Q_array)]=np.nan
     U_array[~np.isfinite(U_array)]=np.nan
     data = [freq_array, Q_array, U_array, dQ_array, dU_array]
+
+    if args.units == None:
+        if 'BUNIT' in hduList[0].header:
+            args.units=hduList[0].header['BUNIT']
+        else:
+            args.units='Jy/beam'
 
     if (Q_array != 0).sum() == 0 and (Q_array != 0).sum() == 0:
         raise Exception("All QU values zero! Maybe invalid pixel?")
@@ -163,7 +172,8 @@ def main():
                 nBits          = nBits,
                 showPlots      = args.showPlots,
                 debug          = args.debug,
-                verbose        = verbose)
+                verbose        = verbose,
+                units          = args.units)
     #pdb.set_trace()
     if args.saveOutput:
         clRM.saveOutput(dict, aDict, prefixOut, verbose)

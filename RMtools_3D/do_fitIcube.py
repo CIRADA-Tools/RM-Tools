@@ -137,7 +137,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     # Measure the RMS spectrum using 2 passes of MAD on each plane
     # Determine which pixels have emission above the cutoff
     print("Measuring the RMS noise and creating an emission mask")
-    rmsArr_Jy = np.zeros_like(freqArr_Hz)
+    rmsArr = np.zeros_like(freqArr_Hz)
     mskSrc = np.zeros((headI["NAXIS2"], headI["NAXIS1"]), dtype=dtFloat)
     mskSky = np.zeros((headI["NAXIS2"], headI["NAXIS1"]), dtype=dtFloat)
     for i in range(nChan):
@@ -158,7 +158,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
         idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
         medSky = np.median(dataPlane[idxSky])
-        rmsArr_Jy[i] = MAD(dataPlane[idxSky])
+        rmsArr[i] = MAD(dataPlane[idxSky])
         mskSky[idxSky] +=1
         
         # When building final emission mask treat +ve cutoffs as absolute
@@ -166,7 +166,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         if cutoff>0:
             idxSrc = np.where(dataPlane > cutoff)
         else:
-            idxSrc = np.where(dataPlane > medSky -1 * rmsArr_Jy[i] * cutoff)
+            idxSrc = np.where(dataPlane > medSky -1 * rmsArr[i] * cutoff)
         mskSrc[idxSrc] +=1
 
         # Clean up
@@ -177,7 +177,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     print("Saving the RMS noise spectrum in an ASCII file:")
     outFile = outDir + "/"  + prefixOut + "Inoise.dat"
     print("> %s" % outFile)
-    np.savetxt(outFile, rmsArr_Jy)
+    np.savetxt(outFile, rmsArr)
         
     # Save FITS files containing sky and source masks
     print("Saving sky and source mask images:")
@@ -246,9 +246,9 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         # Select the relevant pixel columns from the mask
         HDULst = pf.open(fitsI, "readonly", memmap=True)
         if nDim==3:
-            IArr = HDULst[0].data[:, :, i:i+buffCols]*1e3
+            IArr = HDULst[0].data[:, :, i:i+buffCols]
         elif nDim==4:
-            IArr = HDULst[0].data[0,:, :, i:i+buffCols]*1e3
+            IArr = HDULst[0].data[0,:, :, i:i+buffCols]
         HDULst.close()
         IModArr = np.ones_like(IArr)*medSky
 
@@ -269,14 +269,14 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
             try:
                 mp = fit_spec_poly5(freqArr_GHz,
                                     IArr[:,yi,xi],
-                                    rmsArr_Jy * 1e3,
+                                    rmsArr,
                                     polyOrd)
                 fitDict["p"]         = mp.params
                 fitDict["fitStatus"] = mp.status
                 fitDict["chiSq"]     = mp.fnorm
                 fitDict["chiSqRed"]  = mp.fnorm/fitDict["dof"]
                 fitDict["nIter"]     = mp.niter
-                IModArr[:,yi,xi]       = poly5(fitDict["p"])(freqArr_GHz)/1e3
+                IModArr[:,yi,xi]       = poly5(fitDict["p"])(freqArr_GHz)
             
             except Exception:
                 nFailPix += 1

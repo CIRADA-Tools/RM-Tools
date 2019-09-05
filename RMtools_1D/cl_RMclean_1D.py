@@ -61,13 +61,13 @@ def run_rmclean(mDictS, aDict, cutoff,
     lambdaSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
 
     # If the cutoff is negative, assume it is a sigma level
-    if verbose: log("Expected RMS noise = %.4g mJy/beam/rmsf" % (mDictS["dFDFth_Jybm"]*1e3))
+    if verbose: log("Expected RMS noise = %.4g flux units" % (mDictS["dFDFth"]))
     if cutoff<0:
         log("Using a sigma cutoff of %.1f." %  (-1 * cutoff))
-        cutoff = -1 * mDictS["dFDFth_Jybm"] * cutoff
+        cutoff = -1 * mDictS["dFDFth"] * cutoff
         log("Absolute value = %.3g" % cutoff)
     else:
-        log("Using an absolute cutoff of %.3g (%.1f x expected RMS)." % (cutoff, cutoff/mDictS["dFDFth_Jybm"]))
+        log("Using an absolute cutoff of %.3g (%.1f x expected RMS)." % (cutoff, cutoff/mDictS["dFDFth"]))
 
     startTime = time.time()
     # Perform RM-clean on the spectrum
@@ -108,7 +108,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     mDict = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = mDictS["fwhmRMSF"],
-                              #dFDF        = mDictS["dFDFth_Jybm"],
+                              #dFDF        = mDictS["dFDFth"],
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = mDictS["lam0Sq_m2"])
     mDict["cleanCutoff"] = cutoff
@@ -119,15 +119,15 @@ def run_rmclean(mDictS, aDict, cutoff,
                                                 FDF = ccArr)
     
     #Calculating observed errors (based on dFDFcorMAD)
-    mDict["dPhiObserved_rm2"] = mDict["dPhiPeakPIfit_rm2"]*mDict["dFDFcorMAD_Jybm"]/mDictS["dFDFth_Jybm"]
-    mDict["dAmpObserved_Jybm"] = mDict["dFDFcorMAD_Jybm"]
-    mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD_Jybm"]/mDictS["dFDFth_Jybm"]
+    mDict["dPhiObserved_rm2"] = mDict["dPhiPeakPIfit_rm2"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
+    mDict["dAmpObserved"] = mDict["dFDFcorMAD"]
+    mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
     
     nChansGood = np.sum(np.where(lambdaSqArr_m2==lambdaSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lambdaSqArr_m2**2.0) -
                       np.sum(lambdaSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
     mDict["dPolAngle0ChanObserved_deg"] = \
-    np.degrees(np.sqrt( mDict["dFDFcorMAD_Jybm"]**2.0 / (4.0*(nChansGood-2.0)*mDict["ampPeakPIfit_Jybm"]**2.0) *
+    np.degrees(np.sqrt( mDict["dFDFcorMAD"]**2.0 / (4.0*(nChansGood-2.0)*mDict["ampPeakPIfit"]**2.0) *
                  ((nChansGood-1)/nChansGood + mDictS["lam0Sq_m2"]**2.0/varLamSqArr_m2) ))
 
     
@@ -162,12 +162,12 @@ def run_rmclean(mDictS, aDict, cutoff,
     log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
     log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
     log('freq0_GHz = %.4g ' % (mDictS["freq0_Hz"]/1e9))
-    log('I freq0 = %.4g mJy/beam' % (mDictS["Ifreq0_mJybm"]))
-    log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) mJy/beam' % (mDict["ampPeakPIfit_Jybm"]*1e3,mDict["dAmpObserved_Jybm"]*1e3,mDict["dAmpPeakPIfit_Jybm"]*1e3))
-    log('QU Noise = %.4g mJy/beam' % (mDictS["dQU_Jybm"]*1e3))
-    log('FDF Noise (theory)   = %.4g mJy/beam' % (mDictS["dFDFth_Jybm"]*1e3))
-    log('FDF Noise (Corrected MAD) = %.4g mJy/beam' % (mDict["dFDFcorMAD_Jybm"]*1e3))
-    log('FDF Noise (rms)   = %.4g mJy/beam' % (mDict["dFDFrms_Jybm"]*1e3))
+    log('I freq0 = %.4g %s' % (mDictS["Ifreq0"],mDictS["units"]))
+    log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
+    log('QU Noise = %.4g %s' % (mDictS["dQU"],mDictS["units"]))
+    log('FDF Noise (theory)   = %.4g %s' % (mDictS["dFDFth"],mDictS["units"]))
+    log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],mDictS["units"]))
+    log('FDF Noise (rms)   = %.4g %s' % (mDict["dFDFrms"],mDictS["units"]))
 
     log('FDF SNR = %.4g ' % (mDict["snrPIfit"]))
     log()
@@ -176,7 +176,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     # Pause to display the figure
     if showPlots:
         plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                    cutoff)
+                    cutoff,mDictS["units"])
         print("Press <RETURN> to exit ...", end=' ')
         input()
         
@@ -212,7 +212,7 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
 
 
 def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                    cutoff):
+                    cutoff,units):
     from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
 
@@ -244,7 +244,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
              label="Clean FDF")
     ax1.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
     ax1.yaxis.set_major_locator(MaxNLocator(4))
-    ax1.set_ylabel("Flux Density")
+    ax1.set_ylabel("Flux Density ("+units+')')
     leg = ax1.legend(numpoints=1, loc='upper right', shadow=False,
                      borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
     for t in leg.get_texts():
@@ -261,7 +261,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     ax2.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
     ax2.set_ylim(0, cutoff*3.0)
     ax2.yaxis.set_major_locator(MaxNLocator(4))
-    ax2.set_ylabel("Flux Density")
+    ax2.set_ylabel("Flux Density ("+units+')')
     ax2.set_xlabel("$\phi$ rad m$^{-2}$")
     leg = ax2.legend(numpoints=1, loc='upper right', shadow=False,
                      borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))

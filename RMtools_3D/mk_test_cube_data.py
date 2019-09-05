@@ -62,7 +62,7 @@ xCent_deg = 90.0
 yCent_deg = 0.0
 
 # Noise level
-rmsNoise_mJy = 0.04
+rmsNoise = 0.04
 
 # NOTE: Variations in the noise vs frequency can be specified in an external
 # file. Properties of injected sources are given by an external CSV catalogue
@@ -215,7 +215,7 @@ def main():
     
     # Call the function to create FITS data
     nSrc = create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
-                                nChans, rmsNoise_mJy, beamMinFWHM_deg,
+                                nChans, rmsNoise, beamMinFWHM_deg,
                                 beamMajFWHM_deg, beamPA_deg, pixScale_deg,
                                 xCent_deg, yCent_deg, nPixX, nPixY,
                                 coordSys, noiseTmpArr, flagRanges_Hz)
@@ -223,7 +223,7 @@ def main():
 
 #-----------------------------------------------------------------------------#
 def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
-                         rmsNoise_mJy, beamMinFWHM_deg, beamMajFWHM_deg,
+                         rmsNoise, beamMinFWHM_deg, beamMajFWHM_deg,
                          beamPA_deg, pixScale_deg, xCent_deg, yCent_deg,
                          nPixX, nPixY, coordSys="EQU", noiseTmpArr=None,
                          flagRanges_Hz=[]):
@@ -328,9 +328,9 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
             
             # Create the model spectra from multiple thin components
             # modified by external depolarisation
-            IArr_Jy, QArr_Jy, UArr_Jy = \
+            IArr, QArr, UArr = \
                 create_IQU_spectra_burn(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5]/1e3, # mJy->Jy
+                                        fluxI = preLst[5], 
                                         SI = preLst[6],
                                         fracPolArr = parmArr[0],
                                         psi0Arr_deg = parmArr[1],
@@ -346,9 +346,9 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
             
             # Create the model spectra from multiple components
             # modified by internal Faraday depolarisation
-            IArr_Jy, QArr_Jy, UArr_Jy = \
+            IArr, QArr, UArr = \
                 create_IQU_spectra_diff(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5]/1e3, # mJy->Jy
+                                        fluxI = preLst[5], 
                                         SI = preLst[6],
                                         fracPolArr = parmArr[0],
                                         psi0Arr_deg = parmArr[1],
@@ -357,9 +357,9 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
         else:
             continue
         
-        spectraILst.append(IArr_Jy)
-        spectraQLst.append(QArr_Jy)
-        spectraULst.append(UArr_Jy)
+        spectraILst.append(IArr)
+        spectraQLst.append(QArr)
+        spectraULst.append(UArr)
         coordLst_deg.append([preLst[0], preLst[1]])        
         [ (x_pix, y_pix) ] = wcs2D.wcs_world2pix([ (preLst[0], preLst[1]) ], 0)
         coordLst_pix.append([x_pix, y_pix])        
@@ -387,12 +387,11 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
             hduU.data[0, iChan, :, :] += planeU
         
         # Add the noise
-        rmsNoise_Jy = rmsNoise_mJy/1e3
-        hduI.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise_Jy,
+        hduI.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
                                       size=(nPixY, nPixX))* noiseArr[iChan])
-        hduQ.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise_Jy,
+        hduQ.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
                                       size=(nPixY, nPixX))* noiseArr[iChan])
-        hduU.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise_Jy,
+        hduU.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
                                       size=(nPixY, nPixX))* noiseArr[iChan])
 
     # DEBUG

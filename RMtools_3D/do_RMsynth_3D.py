@@ -124,9 +124,9 @@ def main():
     else:
         dataI=None
     if args.noiseFile is not None:
-        rmsArr_Jy = cl.readFitsCube(args.noiseFile, verbose)[1]
+        rmsArr = cl.readFitsCube(args.noiseFile, verbose)[1]
     else:
-        rmsArr_Jy=None
+        rmsArr=None
         
     header,dataQ=cl.readFitsCube(args.fitsQ[0], verbose)
     # Run RM-synthesis on the cubes
@@ -135,7 +135,7 @@ def main():
                 freqArr_Hz   = cl.readFreqFile(args.freqFile[0], verbose),
                 headtemplate = header,
                 dataI        = dataI,
-                rmsArr_Jy    = rmsArr_Jy,
+                rmsArr       = rmsArr,
                 phiMax_radm2 = args.phiMax_radm2,
                 dPhi_radm2   = args.dPhi_radm2,
                 nSamples     = args.nSamples,

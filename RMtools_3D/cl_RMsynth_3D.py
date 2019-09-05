@@ -47,7 +47,7 @@ from RMutils.util_misc import interp_images
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
-def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=None,
+def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", prefixOut="", outDir="",
                 fitRMSF=False, nBits=32, write_seperate_FDF=False, verbose=True, not_rmsf = True,
@@ -99,8 +99,8 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
     
         
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
-    if weightType=="variance" and rmsArr_Jy is not None:
-        weightArr = 1.0 / np.power(rmsArr_Jy, 2.0)
+    if weightType=="variance" and rmsArr is not None:
+        weightArr = 1.0 / np.power(rmsArr, 2.0)
     else:
         weightType = "uniform"
         weightArr = np.ones(freqArr_Hz.shape, dtype=dtFloat)    
@@ -158,7 +158,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr_Jy=No
         else:
             Ifreq0Arr = dataI[idx, :, :]
 
-        # Multiply the dirty FDF by Ifreq0 to recover the PI in Jy
+        # Multiply the dirty FDF by Ifreq0 to recover the PI
         FDFcube *= Ifreq0Arr
     
     
