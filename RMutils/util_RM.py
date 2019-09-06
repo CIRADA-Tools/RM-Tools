@@ -467,12 +467,14 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     if verbose:
         nPix = dirtyFDF.shape[-1]* dirtyFDF.shape[-2]
         nCleanPix = len(xyCoords)
-        log("Cleaning {:}/{:} spectra.".format(nCleanPix, nPix), end=' ')
+        log("Cleaning {:}/{:} spectra.".format(nCleanPix, nPix))
 
-    # Initialise arrays to hold the residual FDF, clean components, clean FDF (no longer needed)
-#    residFDF = dirtyFDF.copy()
-#    ccArr = np.zeros(dirtyFDF.shape, dtype=dtComplex)
-#    cleanFDF = np.zeros_like(dirtyFDF)
+    # Initialise arrays to hold the residual FDF, clean components, clean FDF
+    # Residual is initially copies of dirty FDF, so that pixels that are not
+    #  processed get correct values (but will be overridden when processed)
+    residFDF = dirtyFDF.copy()
+    ccArr = np.zeros(dirtyFDF.shape, dtype=dtComplex)
+    cleanFDF = np.zeros_like(dirtyFDF)
 
 
     # Loop through the pixels containing a polarised signal
@@ -489,7 +491,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         for pix in inputs:    
             output.append(rmc.cleanloop(pix))
             if verbose:
-                progress(40, ((i)*100.0/nPix))
+                progress(40, ((i)*100.0/nCleanPix))
                 i+=1
     else:
         if verbose:
@@ -500,9 +502,15 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                 output = list(pool.map(rmc.cleanloop, inputs))
         pool.close()
     # Put data back in correct shape
-    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
-    cleanFDF = np.reshape(np.rot90(np.stack([clean for clean, _, _ in output]), k=-1),dirtyFDF.shape)
-    residFDF = np.reshape(np.rot90(np.stack([resid for _, resid, _ in output]), k=-1),dirtyFDF.shape)
+#    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
+#    cleanFDF = np.reshape(np.rot90(np.stack([clean for clean, _, _ in output]), k=-1),dirtyFDF.shape)
+#    residFDF = np.reshape(np.rot90(np.stack([resid for _, resid, _ in output]), k=-1),dirtyFDF.shape)
+    for i in range(len(inputs)):
+        yi=inputs[i][0]
+        xi=inputs[i][1]
+        ccArr[:,yi,xi]=output[i][2]
+        cleanFDF[:,yi,xi]=output[i][0]
+        residFDF[:,yi,xi]=output[i][1]
 
     # Restore the residual to the CLEANed FDF (moved outside of loop:
     # will now work for pixels/spectra without clean components)

@@ -83,8 +83,8 @@ def main():
                         help="CLEAN loop gain [0.1].")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
-    parser.add_argument("-f", dest="write_separate_FDF", action="store_true",
-                        help="Separate complex (multi-extension) FITS files into individual files [False].")
+    parser.add_argument("-f", dest="write_separate_FDF", action="store_false",
+                        help="Store different Stokes as FITS extensions [False, store as seperate files].")
 
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
@@ -154,7 +154,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1,
     dtComplex = "complex" + str(2*nBits)
 
     # Read the FDF
-    dirtyFDF, head,FD_axis=read_FDF_cube(fitsFDF)
+    dirtyFDF, head,FD_axis=read_FDF_cubes(fitsFDF)
 
     
     
@@ -162,9 +162,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1,
     
     # Read the RMSF
 
-    RMSFArr, headRMSF,FD_axis=read_FDF_cube(fitsRMSF)
-    HDULst = pf.open(fitsRMSF, "readonly", memmap=True)
-    fwhmRMSFArr = HDULst[3].data
+    RMSFArr, headRMSF,FD_axis=read_FDF_cubes(fitsRMSF)
+    HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
+    fwhmRMSFArr = HDULst[0].data
     HDULst.close()
     phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
 
@@ -260,6 +260,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1,
     hduLst.close()
     
 
+#Old method (for multi-extension files)
 def read_FDF_cube(filename):
     """Read in a FDF/RMSF cube. Figures out which axis is Faraday depth and 
     puts it first (in numpy order) to accommodate the rest of the code.
@@ -292,6 +293,44 @@ def read_FDF_cube(filename):
 
     return complex_cube, head,FD_axis
     
+def read_FDF_cubes(filename):
+    """Read in a FDF/RMSF cube. Input filename can be any of real, imag, or tot components.
+    Figures out which axis is Faraday depth and 
+    puts it first (in numpy order) to accommodate the rest of the code.
+    Returns: (complex_cube, header,FD_axis)
+    """
+    HDUreal = pf.open(filename.replace('_tot_','_real_').replace('_im_','_real_'), "readonly", memmap=True)
+    head = HDUreal[0].header.copy()
+    FDFreal = HDUreal[0].data
+
+    HDUimag = pf.open(filename.replace('_tot_','_im_').replace('_real_','_im_'), "readonly", memmap=True)
+    FDFimag = HDUimag[0].data
+    complex_cube = FDFreal + 1j * FDFimag
+    
+    #Identify Faraday depth axis (assumed to be last one if not explicitly found)
+    Ndim=head['NAXIS']
+    FD_axis=Ndim 
+    #Check for FD axes:
+    for i in range(1,Ndim+1):
+        try:
+            if 'FARADAY' in head['CTYPE'+str(i)].upper():
+                FD_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+
+    #Move FD axis to first place in numpy order.
+    if FD_axis != Ndim:
+        complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
+
+    #Remove degenerate axes to prevent problems with later steps.
+    complex_cube=complex_cube.squeeze() 
+
+    return complex_cube, head,FD_axis
+
+
+
+
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()

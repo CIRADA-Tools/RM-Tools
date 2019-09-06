@@ -104,8 +104,8 @@ def main():
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-s", dest="nSamples", type=float, default=5,
                         help="Number of samples across the FWHM RMSF.")
-    parser.add_argument("-f", dest="write_seperate_FDF", action="store_true",
-                        help="Separate dirty FDF components into individual files [False].")
+    parser.add_argument("-f", dest="write_seperate_FDF", action="store_false",
+                        help="Store different Stokes as FITS extensions [False, store as seperate files].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
     parser.add_argument("-R", dest="not_RMSF", action="store_true",

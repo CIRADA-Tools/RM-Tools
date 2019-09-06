@@ -237,6 +237,8 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr=None,
         hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         hduLst.close()
     
+    #Header for outputs that are RM maps (peakRM, RMSF_FWHM)
+
     
     # Save the RMSF
     if not_rmsf is not True:
@@ -244,11 +246,15 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr=None,
         header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
         header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
+        rmheader=header.copy()
+        rmheader['BUNIT']='rad/m^2'
+ 
         if(write_seperate_FDF):
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
             hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
-            hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), header)
+ 
+            hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), rmheader)
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -270,7 +276,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, headtemplate, dataI=None, rmsArr=None,
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             hdu1 = pf.ImageHDU(RMSFcube.imag.astype(dtFloat), header)
             hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
-            hdu3 = pf.ImageHDU(fwhmRMSFCube.astype(dtFloat), header)
+            hdu3 = pf.ImageHDU(fwhmRMSFCube.astype(dtFloat), rmheader)
             hduLst = pf.HDUList([hdu0, hdu1, hdu2, hdu3])
             if(verbose): log("> %s" % fitsFileOut)
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
