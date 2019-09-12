@@ -270,6 +270,12 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
 
+    #Add information on nature of channels:
+    good_channels=np.where(np.logical_and(weightArr != 0,np.isfinite(qArr)))[0]
+    mDict["min_freq"]=float(np.min(freqArr_Hz[good_channels]))
+    mDict["max_freq"]=float(np.max(freqArr_Hz[good_channels]))
+    mDict["N_channels"]=good_channels.size
+    mDict["median_channel_width"]=float(np.median(np.diff(freqArr_Hz)))
         
     # Measure the complexity of the q and u spectra
     mDict["fracPol"] = mDict["ampPeakPIfit"]/(Ifreq0)
