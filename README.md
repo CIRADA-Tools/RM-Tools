@@ -6,7 +6,7 @@ RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
  polarised radio spectra.
 
 
- Initial version by Cormac R. Purcell
+ Initial version by Cormac R. Purcell  
  Currently maintained by CIRADA
 
 

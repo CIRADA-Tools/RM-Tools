@@ -212,7 +212,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                             phiArr_radm2    = phiArr_radm2, 
                                             weightArr       = weightArr,
                                             nBits           = nBits,
-                                            verbose         = True,
+                                            verbose         = verbose,
                                             log             = log)
 
     # Calculate the Rotation Measure Spread Function
@@ -226,7 +226,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                         fitRMSF         = fitRMSF, 
                         fitRMSFreal     = False, 
                         nBits           = nBits,
-                        verbose         = True,
+                        verbose         = verbose,
                         log             = log)
     fwhmRMSF = float(fwhmRMSFArr)
     
