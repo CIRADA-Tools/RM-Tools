@@ -38,12 +38,19 @@ import os
 #import time
 import argparse
 #import pdb
+
+if sys.version_info.major == 2:
+    print('RM-tools will no longer run with Python 2! Please use Python 3.')
+    exit()
+
+
 from astropy.io import fits
 from RMtools_1D.make_freq_file import get_freq_array
 import RMtools_1D.cl_RMsynth_1d as clRM
 import numpy as np
 from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
+
 
 
 #-----------------------------------------------------------------------------#

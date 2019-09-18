@@ -40,12 +40,17 @@ import argparse
 import numpy as np
 import astropy.io.fits as pf
 
+if sys.version_info.major == 2:
+    print('RM-tools will no longer run with Python 2! Please use Python 3.')
+    exit()
+
 from RMutils.util_RM import do_rmsynth_planes
 from RMutils.util_RM import get_rmsf_planes
 from RMutils.util_misc import interp_images
 import RMtools_3D.cl_RMsynth_3D as cl
 
 C = 2.997924538e8 # Speed of light [m/s]
+
 
 
 #-----------------------------------------------------------------------------#

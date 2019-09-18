@@ -38,10 +38,14 @@ import os
 #import time
 import argparse
 #import pdb
+if sys.version_info.major == 2:
+    print('RM-tools will no longer run with Python 2! Please use Python 3.')
+    exit()
 
 import RMtools_1D.cl_RMsynth_1d as clRM
 
 C = 2.997924538e8 # Speed of light [m/s]
+
 
 
 #-----------------------------------------------------------------------------#
