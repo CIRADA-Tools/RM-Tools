@@ -577,7 +577,7 @@ def merge_two_dicts(x, y):
 
 
 #-----------------------------------------------------------------------------#   
-def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
+def run_qufit_chime(data, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, debug=False, verbose=False):
     """Function controlling the fitting procedure."""
 
@@ -607,7 +607,7 @@ def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     # Read the data file in the root process
     if mpiRank==0:
         #dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
-        dataArr = dataFile.copy()
+        dataArr = data.copy()
 #    else:
 #        dataArr = None
     if mpiSwitch:
