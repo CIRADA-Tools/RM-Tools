@@ -577,8 +577,8 @@ def merge_two_dicts(x, y):
 
 
 #-----------------------------------------------------------------------------#   
-def run_qufit_chime(data, modelNum, outDir="", polyOrd=3, nBits=32,
-              noStokesI=False, showPlots=False, debug=False, verbose=False):
+def run_qufit_chime(data, modelNum, outDir=None, polyOrd=3, nBits=32,
+                    noStokesI=False, showPlots=False, debug=False, verbose=False, diagnostic_plots=False):
     """Function controlling the fitting procedure."""
 
     # Get the processing environment
@@ -594,9 +594,11 @@ def run_qufit_chime(data, modelNum, outDir="", polyOrd=3, nBits=32,
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
 
+    if outDir is None:
+        outDir=os.path.expanduser("~")
     # Output prefix is derived from the input file name
 #    prefixOut, ext  = os.path.splitext(dataFile)
-    nestOut = outDir + "_nest/"
+    nestOut = outDir + "/QUfit_nest/"
     if mpiRank==0:
         if os.path.exists(nestOut):
             shutil.rmtree(nestOut, True)
