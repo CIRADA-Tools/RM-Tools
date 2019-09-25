@@ -169,13 +169,14 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     if mpiSwitch:
         mpiComm.Barrier()
 
+    
     # Read the data file in the root process
     if mpiRank==0:
         dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
     else:
         dataArr = None
     if mpiSwitch:
-        dataArr = mpiComm.bcast(dataArr, root=0)
+        dataArr = mpiComm.bcast(dataArr, root=0)    
 
     # Parse the data array
     # freq_Hz, I, Q, U, dI, dQ, dU
@@ -433,7 +434,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         if showPlots:
             specFig.show()
             cornerFig.show()
-            print("> Press <RETURN> to exit ...", end="")
+            print("> Press <RETURN> to exit ...",)
             sys.stdout.flush()
             input()
 

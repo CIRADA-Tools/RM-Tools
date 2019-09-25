@@ -781,9 +781,9 @@ def plot_hist4_ax(ax, popLst, nBins=10, doXlog=False, doYlog=False, styIndx=0,
         print("\n#BIN, COUNTS ...")
         binCentreArr = b[:-1]+np.diff(b)/2.0
         for i in range(len(binCentreArr)):
-            print(binCentreArr[i], end=' ')
+            print(binCentreArr[i],)
             for j in range(len(nLst)):
-                print(nLst[j][i], end=' ')
+                print(nLst[j][i],)
             print()
     
     # Set the Y-axis limits

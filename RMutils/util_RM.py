@@ -60,6 +60,7 @@
 #                                                                             #
 #=============================================================================#
 
+from __future__ import print_function
 import sys
 import math as m
 import numpy as np
@@ -71,13 +72,13 @@ from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
 
-from RMutils.mpfit import mpfit
-from RMutils.util_misc import progress  
-from RMutils.util_misc import toscalar
-from RMutils.util_misc import calc_parabola_vertex
-from RMutils.util_misc import create_pqu_spectra_burn
-from RMutils.util_misc import calc_mom2_FDF
-from RMutils.util_misc import MAD
+from .mpfit import mpfit
+from .util_misc import progress  
+from .util_misc import toscalar
+from .util_misc import calc_parabola_vertex
+from .util_misc import create_pqu_spectra_burn
+from .util_misc import calc_mom2_FDF
+from .util_misc import MAD
 
 # Constants
 C = 2.99792458e8

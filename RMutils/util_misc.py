@@ -84,7 +84,7 @@ import sqlite3
 import csv
 import json
 
-from RMutils.mpfit import mpfit
+from .mpfit import mpfit
 
 C = 2.99792458e8
 
