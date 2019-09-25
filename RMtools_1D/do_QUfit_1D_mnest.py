@@ -575,6 +575,304 @@ def merge_two_dicts(x, y):
     z.update(y)
     return z
 
+
+#-----------------------------------------------------------------------------#   
+def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
+              noStokesI=False, showPlots=False, debug=False, verbose=False):
+    """Function controlling the fitting procedure."""
+
+    # Get the processing environment
+    if mpiSwitch:
+        mpiComm = MPI.COMM_WORLD
+        mpiSize = mpiComm.Get_size()
+        mpiRank = mpiComm.Get_rank()
+    else:
+        mpiSize = 1
+        mpiRank = 0
+        
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2*nBits)
+
+    # Output prefix is derived from the input file name
+    prefixOut, ext = os.path.splitext(dataFile)
+    nestOut = prefixOut + "_nest/"
+    if mpiRank==0:
+        if os.path.exists(nestOut):
+            shutil.rmtree(nestOut, True)
+        os.mkdir(nestOut)
+    if mpiSwitch:
+        mpiComm.Barrier()
+        
+    # Read the data file in the root process
+    if mpiRank==0:
+        dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
+    else:
+        dataArr = None
+    if mpiSwitch:
+        dataArr = mpiComm.bcast(dataArr, root=0)    
+
+    # Parse the data array
+    # freq_Hz, I, Q, U, dI, dQ, dU
+    try:
+        (freqArr_Hz, IArr, QArr, UArr,
+         dIArr, dQArr, dUArr) = dataArr
+        if mpiRank==0:
+            print("\nFormat [freq_Hz, I, Q, U, dI, dQ, dU]")
+    except Exception:
+        # freq_Hz, Q, U, dQ, dU
+        try:
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = dataArr
+            if mpiRank==0:
+                print("\nFormat [freq_Hz, Q, U,  dQ, dU]")
+            noStokesI = True
+        except Exception:
+            print("\nError: Failed to parse data file!")
+            if debug:
+                print(traceback.format_exc())
+            if mpiSwitch:
+                MPI.Finalize()
+            return
+
+    # If no Stokes I present, create a dummy spectrum = unity
+    if noStokesI:
+        if mpiRank==0:
+            print("Note: no Stokes I data - assuming fractional polarisation.")
+        IArr = np.ones_like(QArr)
+        dIArr = np.zeros_like(QArr)
+
+    # Convert to GHz for convenience
+    freqArr_GHz = freqArr_Hz / 1e9
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+
+    # Fit the Stokes I spectrum and create the fractional spectra
+    if mpiRank==0:
+        dataArr = create_frac_spectra(freqArr=freqArr_GHz,
+                                      IArr=IArr,
+                                      QArr=QArr,
+                                      UArr=UArr,
+                                      dIArr=dIArr,
+                                      dQArr=dQArr,
+                                      dUArr=dUArr,
+                                      polyOrd=polyOrd,
+                                      verbose=True)
+    else:
+        dataArr = None
+    if mpiSwitch:
+        dataArr = mpiComm.bcast(dataArr, root=0)
+    (IModArr, qArr, uArr, dqArr, duArr, IfitDict) = dataArr
+
+    # Plot the data and the Stokes I model fit
+    if mpiRank==0:
+        print("Plotting the input data and spectral index fit.")
+        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+        IModHirArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        specFig = plt.figure(figsize=(10, 6))
+        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                              IArr           = IArr,
+                              qArr           = qArr,
+                              uArr           = uArr,
+                              dIArr          = dIArr,
+                              dqArr          = dqArr,
+                              duArr          = duArr,
+                              freqHirArr_Hz  = freqHirArr_Hz,
+                              IModArr        = IModHirArr,
+                              fig            = specFig)
+
+        # Use the custom navigation toolbar
+        try:
+            specFig.canvas.toolbar.pack_forget()
+            CustomNavbar(specFig.canvas, specFig.canvas.toolbar.window)
+        except Exception:
+            pass
+
+        # Display the figure
+        if showPlots:
+            specFig.canvas.draw()
+            specFig.show()
+
+    #-------------------------------------------------------------------------#
+
+    # Load the model and parameters from the relevant file
+    if mpiSwitch:
+        mpiComm.Barrier()
+    if mpiRank==0:
+        print("\nLoading the model from 'models_ns/m%d.py' ..."  % modelNum)
+    mod = imp.load_source("m%d" % modelNum, "models_ns/m%d.py" % modelNum)
+    global model
+    model = mod.model
+
+    # Let's time the sampler
+    if mpiRank==0:
+        startTime = time.time()
+
+    # Unpack the inParms structure
+    parNames = [x["parname"] for x in mod.inParms]
+    labels = [x["label"] for x in mod.inParms]
+    values = [x["value"] for x in mod.inParms]
+    bounds = [x["bounds"] for x in mod.inParms]
+    priorTypes = [x["priortype"] for x in mod.inParms]
+    wraps = [x["wrap"] for x in mod.inParms]
+    nDim = len(priorTypes)
+    fixedMsk = [0 if x=="fixed" else 1 for x in priorTypes]
+    nFree = sum(fixedMsk)
+
+    # Set the prior function given the bounds of each parameter
+    prior = prior_call(priorTypes, bounds, values)
+
+    # Set the likelihood function given the data
+    lnlike = lnlike_call(parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr)
+
+    # Let's time the sampler
+    if mpiRank==0:
+        startTime = time.time()
+
+    # Run nested sampling using PyMultiNest
+    nestArgsDict = merge_two_dicts(init_mnest(), mod.nestArgsDict)
+    nestArgsDict["n_params"]             = nDim
+    nestArgsDict["n_dims"]               = nDim
+    nestArgsDict["outputfiles_basename"] = nestOut
+    nestArgsDict["LogLikelihood"]        = lnlike
+    nestArgsDict["Prior"]                = prior
+    pmn.run(**nestArgsDict)
+
+    # Do the post-processing on one processor
+    if mpiSwitch:
+        mpiComm.Barrier()
+    if mpiRank==0:
+
+        # Query the analyser object for results
+        aObj = pmn.Analyzer(n_params=nDim, outputfiles_basename=nestOut)
+        statDict = aObj.get_stats()
+        fitDict = aObj.get_best_fit()
+        endTime = time.time()
+
+        # NOTE: The Analyser methods do not work well for parameters with
+        # posteriors that overlap the wrap value. Use np.percentile instead.
+        pMed = [None]*nDim
+        for i in range(nDim):
+            pMed[i] = statDict["marginals"][i]['median']
+        lnLike = fitDict["log_likelihood"]
+        lnEvidence = statDict["nested sampling global log-evidence"]
+        dLnEvidence = statDict["nested sampling global log-evidence error"]
+
+        # Get the best-fitting values & uncertainties directly from chains
+        chains =  aObj.get_equal_weighted_posterior()
+        chains = wrap_chains(chains, wraps, bounds, pMed)
+        p = [None]*nDim
+        errPlus = [None]*nDim
+        errMinus = [None]*nDim
+        g = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
+        for i in range(nDim):
+            p[i], errPlus[i], errMinus[i] = \
+                        g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
+
+        # Calculate goodness-of-fit parameters
+        nData = 2.0 * len(lamSqArr_m2)
+        dof = nData - nFree -1
+        chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr)
+        chiSqRed = chiSq/dof
+        AIC = 2.0*nFree - 2.0 * lnLike
+        AICc = 2.0*nFree*(nFree+1)/(nData-nFree-1) - 2.0 * lnLike
+        BIC = nFree * np.log(nData) - 2.0 * lnLike
+
+        # Summary of run
+        print("")
+        print("-"*80)
+        print("SUMMARY OF SAMPLING RUN:")
+        print("#-PROCESSORS  = %d" % mpiSize)
+        print("RUN-TIME      = %.2f" % (endTime-startTime))
+        print("DOF           = %d" % dof)
+        print("CHISQ:        = %.3g" % chiSq)
+        print("CHISQ RED     = %.3g" % chiSqRed)
+        print("AIC:          = %.3g" % AIC)
+        print("AICc          = %.3g" % AICc)
+        print("BIC           = %.3g" % BIC)
+        print("ln(EVIDENCE)  = %.3g" % lnEvidence)
+        print("dLn(EVIDENCE) = %.3g" % dLnEvidence)
+        print("")
+        print("-"*80)
+        print("RESULTS:\n")
+        for i in range(len(p)):
+            print("%s = %.4g (+%3g, -%3g)" % \
+                  (parNames[i], p[i], errPlus[i], errMinus[i]))
+        print("-"*80)
+        print("")
+
+        # Create a save dictionary and store final p in values
+        outFile = prefixOut + "_m%d_nest.json" % modelNum
+        IfitDict["p"] = toscalar(IfitDict["p"].tolist())
+        saveDict = {"parNames":   toscalar(parNames),
+                    "labels":     toscalar(labels),
+                    "values":     toscalar(p),
+                    "errPlus":    toscalar(errPlus),
+                    "errMinus":   toscalar(errMinus),
+                    "bounds":     toscalar(bounds),
+                    "priorTypes": toscalar(priorTypes),
+                    "wraps":      toscalar(wraps),
+                    "dof":        toscalar(dof),
+                    "chiSq":      toscalar(chiSq),
+                    "chiSqRed":   toscalar(chiSqRed),
+                    "AIC":        toscalar(AIC),
+                    "AICc":       toscalar(AICc),
+                    "BIC":        toscalar(BIC),
+                    "IfitDict":   IfitDict}
+        json.dump(saveDict, open(outFile, "w"))
+        print("Results saved in JSON format to:\n '%s'\n" % outFile)
+
+        # Plot the data and best-fitting model
+        lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
+        freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
+        IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        pDict = {k:v for k, v in zip(parNames, p)}
+        quModArr = model(pDict, lamSqHirArr_m2)
+        specFig.clf()
+        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                              IArr           = IArr,
+                              qArr           = qArr,
+                              uArr           = uArr,
+                              dIArr          = dIArr,
+                              dqArr          = dqArr,
+                              duArr          = duArr,
+                              freqHirArr_Hz  = freqHirArr_Hz,
+                              IModArr        = IModArr,
+                              qModArr        = quModArr.real,
+                              uModArr        = quModArr.imag,
+                              fig            = specFig)
+        specFig.canvas.draw()
+
+        # Plot the posterior samples in a corner plot
+        chains =  aObj.get_equal_weighted_posterior()
+        chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
+        iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
+        chains = np.delete(chains, iFixed, 1)
+        for i in sorted(iFixed, reverse=True):
+            del(labels[i])
+            del(p[i])
+        cornerFig = corner.corner(xs      = chains,
+                                  labels  = labels,
+                                  range   = [0.99999]*nFree,
+                                  truths  = p,
+                                  quantiles = [0.1572, 0.8427],
+                                  bins    = 30)
+
+        # Save the figures
+        outFile = nestOut + "fig_m%d_specfit.pdf" % modelNum
+        specFig.savefig(outFile)
+        print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
+        outFile = nestOut + "fig_m%d_corner.pdf" % modelNum
+        cornerFig.savefig(outFile)
+        print("Plot of posterior samples saved to \n '%s'\n" % outFile)
+
+        # Display the figures
+        if showPlots:
+            specFig.show()
+            cornerFig.show()
+#             print("> Press <RETURN> to exit ...",)
+            sys.stdout.flush()
+
+
+
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()
