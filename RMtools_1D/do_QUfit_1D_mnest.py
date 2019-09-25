@@ -582,21 +582,21 @@ def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     """Function controlling the fitting procedure."""
 
     # Get the processing environment
-    if mpiSwitch:
-        mpiComm = MPI.COMM_WORLD
-        mpiSize = mpiComm.Get_size()
-        mpiRank = mpiComm.Get_rank()
-    else:
-        mpiSize = 1
-        mpiRank = 0
+#    if mpiSwitch:
+    mpiComm = MPI.COMM_WORLD
+    mpiSize = mpiComm.Get_size()
+    mpiRank = mpiComm.Get_rank()
+#    else:
+#        mpiSize = 1
+#        mpiRank = 0
         
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
 
     # Output prefix is derived from the input file name
-    prefixOut, ext = os.path.splitext(dataFile)
-    nestOut = prefixOut + "_nest/"
+#    prefixOut, ext  = os.path.splitext(dataFile)
+    nestOut = outDir + "_nest/"
     if mpiRank==0:
         if os.path.exists(nestOut):
             shutil.rmtree(nestOut, True)
@@ -606,9 +606,10 @@ def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         
     # Read the data file in the root process
     if mpiRank==0:
-        dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
-    else:
-        dataArr = None
+        #dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
+        dataArr = dataFile.copy()
+#    else:
+#        dataArr = None
     if mpiSwitch:
         dataArr = mpiComm.bcast(dataArr, root=0)    
 
@@ -800,7 +801,8 @@ def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         print("")
 
         # Create a save dictionary and store final p in values
-        outFile = prefixOut + "_m%d_nest.json" % modelNum
+#        outFile = prefixOut + "_m%d_nest.json" % modelNum
+        outFile = outDir + "_m%d_nest.json" % modelNum 
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
         saveDict = {"parNames":   toscalar(parNames),
                     "labels":     toscalar(labels),
@@ -868,11 +870,11 @@ def run_qufit_chime(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         if showPlots:
             specFig.show()
             cornerFig.show()
-#             print("> Press <RETURN> to exit ...",)
             sys.stdout.flush()
 
-
-
+        pol_prod=zip(p, errPlus, errMinus)
+        return list(pol_prod)
+        
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()
