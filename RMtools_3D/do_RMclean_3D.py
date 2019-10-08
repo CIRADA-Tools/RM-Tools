@@ -299,11 +299,11 @@ def read_FDF_cubes(filename):
     puts it first (in numpy order) to accommodate the rest of the code.
     Returns: (complex_cube, header,FD_axis)
     """
-    HDUreal = pf.open(filename.replace('_tot_','_real_').replace('_im_','_real_'), "readonly", memmap=True)
+    HDUreal = pf.open(filename.replace('_tot','_real').replace('_im','_real'), "readonly", memmap=True)
     head = HDUreal[0].header.copy()
     FDFreal = HDUreal[0].data
 
-    HDUimag = pf.open(filename.replace('_tot_','_im_').replace('_real_','_im_'), "readonly", memmap=True)
+    HDUimag = pf.open(filename.replace('_tot','_im').replace('_real','_im'), "readonly", memmap=True)
     FDFimag = HDUimag[0].data
     complex_cube = FDFreal + 1j * FDFimag
     
