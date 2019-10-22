@@ -480,6 +480,7 @@ def readFreqFile(file, verbose, log = print):
 
 #-----------------------------------------------------------------------------#
 def main():
+    import argparse
 
     """
     Start the function to perform RM-synthesis if called from the command line.
