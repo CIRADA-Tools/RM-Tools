@@ -5,7 +5,8 @@
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on a Stokes Q & U cubes.                         #
 #                                                                             #
-# MODIFIED: 22-October-2019 by A. Thomson                                     #
+# MODIFIED: 7-March-2019 by J. West                                           #
+# MODIFIED: 23-October-2019 by A. Thomson                                     #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -57,12 +58,27 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = True,
                 log = print):
 
-    """Read the Q & U data and run RM-synthesis.
+    """Run RM-synthesis on 2/3D data.
 
     Args:
-      dataQ (3darray):
-      dataU (3darray):
-      freqArr_Hz (1darray):
+      dataQ (array_like): Stokes Q intensity cube.
+      dataU (array_like): Stokes U intensity cube.
+      freqArr_Hz (array_like): Frequency of each channel in Hz.
+
+    Kwargs:
+        dataI (array_like): Model cube of Stokes I spectra (see do_fitIcube).
+        rmsArr (array_like): Cube of RMS spectra.
+        phiMax_radm2 (float): Maximum absolute Faraday depth (rad/m^2).
+        dPhi_radm2 (float): Faraday depth channel size (rad/m^2).
+        nSamples (float): Number of samples across the RMSF.
+           weightType (str): Can be "variance" or "uniform"
+            "variance" -- Weight by RMS.
+            "uniform" -- Weight uniformly (i.e. with 1s)
+        fitRMSF (bool): Fit a Gaussian to the RMSF?
+        nBits (int): Precision of floating point numbers.
+        verbose (bool): Verbosity.
+        not_rmsf (bool): Just do RM synthesis and ignore RMSF?
+        log (function): Which logging function to use.
 
     Returns:
       dataArr (list): FDF and RMSF information
@@ -191,7 +207,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     return dataArr
 
 def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
-                write_seperate_FDF=False, not_rmsf=True, verbose=True, log=print):
+                nBits = 32, write_seperate_FDF=False, not_rmsf=True, verbose=True, log=print):
     """Write data to disk in FITS
 
 
@@ -212,11 +228,19 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
       dataArr (list): FDF and RMSF information
         if not_rmsf:
             dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
-
         else:
             dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
 
-    headtemplate: FITS header template
+        headtemplate: FITS header template
+
+    Kwargs:
+        fitRMSF (bool): Fit a Gaussian to the RMSF?
+        prefixOut (str): Prefix for filenames.
+        outDir (str): Directory to save files.
+        write_seperate_FDF (bool): Write Q, U, and PI separately?
+        verbose (bool): Verbosity.
+        not_rmsf (bool): Just do RM synthesis and ignore RMSF?
+        log (function): Which logging function to use.
 
     """
     if not_rmsf:
@@ -224,6 +248,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
     else:
         FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2 = dataArr
+
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2*nBits)
 
     if(verbose): log("Saving the dirty FDF, RMSF and ancillary FITS files.")
     # Make a copy of the Q header and alter frequency-axis as Faraday depth
@@ -584,7 +612,8 @@ def main():
               outDir             = dataDir,
               write_seperate_FDF = args.write_seperate_FDF,
               not_rmsf           = args.not_RMSF,
-              Verbose            = verbose)
+              nBits              = 32,
+              verbose            = verbose)
 
 
 #-----------------------------------------------------------------------------#

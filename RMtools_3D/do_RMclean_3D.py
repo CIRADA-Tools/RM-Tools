@@ -6,6 +6,7 @@
 # PURPOSE:  Run RM-clean on a  cube of dirty Faraday dispersion functions.    #
 #                                                                             #
 # MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 23-October-2019 by A. Thomson                                     #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -54,7 +55,33 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
                 pool=None, chunksize=None, verbose = True, log = print):
-    """Run RM-CLEAN on a FDF cube given a RMSF cube."""
+    """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
+
+    Args:
+        fitsFDF (str): Name of FDF FITS file.
+        fitsRMSF (str): Name of RMSF FITS file
+        cutoff (float): CLEAN cutoff in flux units
+
+    Kwargs:
+        maxIter (int): Maximum number of CLEAN iterations per pixel.
+        gain (float): CLEAN loop gain.
+        nBits (int): Precision of floating point numbers.
+        pool (multiprocessing Pool): Pool function from multiprocessing
+            or schwimmbad
+        chunksize (int): Number of chunks which it submits to the process pool
+            as separate tasks. The (approximate) size of these chunks can be
+            specified by setting chunksize to a positive integer.
+        verbose (bool): Verbosity.
+        log (function): Which logging function to use.
+
+    Returns:
+        cleanFDF (ndarray): Cube of RMCLEANed FDFs.
+        ccArr (ndarray): Cube of RMCLEAN components (i.e. the model).
+        iterCountArr (ndarray): Cube of number of RMCLEAN iterations.
+        residFDF (ndarray): Cube of residual RMCLEANed FDFs.
+        head (fits.header): Header of FDF FITS file for template.
+
+    """
 
 
     # Default data types
@@ -62,7 +89,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
     dtComplex = "complex" + str(2*nBits)
 
     # Read the FDF
-    dirtyFDF, head,FD_axis = read_FDF_cubes(fitsFDF)
+    dirtyFDF, head, FD_axis = read_FDF_cubes(fitsFDF)
 
 
 
@@ -72,7 +99,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
 
     RMSFArr, headRMSF,FD_axis = read_FDF_cubes(fitsRMSF)
     HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
-    fwhmRMSFArr = HDULst[0].data
+    fwhmRMSFArr = HDULst[3].data
     HDULst.close()
     phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
 
@@ -107,10 +134,45 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
     cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
     ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
 
-    return cleanFDF, ccArr, iterCountArr, residFDF
+    return cleanFDF, ccArr, iterCountArr, residFDF, head
 
-def writefits(cleanFDF, ccArr, iterCountArr, residFDF,
-            prefixOut="", outDir="", write_separate_FDF=False, verbose=True):
+def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
+            prefixOut="", outDir="", write_separate_FDF=False, verbose=True, log=print):
+    """Write data to disk in FITS
+
+
+    Output files:
+        Default:
+            FDF_clean.fits: RMCLEANed FDF, in 3 extensions: Q,U, and PI.
+            FDF_CC.fits: RMCLEAN components, in 3 extensions: Q,U, and PI.
+            CLEAN_nIter.fits: RMCLEAN iterations.
+
+        write_seperate_FDF=True:
+            FDF_clean_real.fits and FDF_CC.fits are split into
+            three constituent components:
+                FDF_clean_real.fits: Stokes Q
+                FDF_clean_im.fits: Stokes U
+                FDF_clean_tot.fits: Polarized Intensity (sqrt(Q^2+U^2))
+                FDF_CC_real.fits: Stokes Q
+                FDF_CC_im.fits: Stokes U
+                FDF_CC_tot.fits: Polarized Intensity (sqrt(Q^2+U^2))
+                CLEAN_nIter.fits: RMCLEAN iterations.
+    Args:
+        cleanFDF (ndarray): Cube of RMCLEANed FDFs.
+        ccArr (ndarray): Cube of RMCLEAN components (i.e. the model).
+        iterCountArr (ndarray): Cube of number of RMCLEAN iterations.
+        residFDF (ndarray): Cube of residual RMCLEANed FDFs.
+
+    Kwargs:
+        prefixOut (str): Prefix for filenames.
+        outDir (str): Directory to save files.
+        write_seperate_FDF (bool): Write Q, U, and PI separately?
+        verbose (bool): Verbosity.
+        log (function): Which logging function to use.
+    """
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2*nBits)
 
     if outDir=='':  #To prevent code breaking if file is in current directory
         outDir='.'
@@ -118,22 +180,22 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF,
     if not write_separate_FDF:
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean.fits"
         if(verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), head)
-        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), head)
-        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), head)
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
+        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), headtemp)
+        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
         hduLst = pf.HDUList([hdu0, hdu1, hdu2])
         hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         hduLst.close()
     else:
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), head)
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_real.fits"
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), head)
+        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_im.fits"
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), head)
+        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_tot.fits"
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
@@ -142,22 +204,22 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF,
     #Save the complex clean components as another file.
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC.fits"
         if (verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), head)
-        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), head)
-        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), head)
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
+        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), headtemp)
+        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), headtemp)
         hduLst = pf.HDUList([hdu0, hdu1, hdu2])
         hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         hduLst.close()
     else:
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), head)
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_real.fits"
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), head)
+        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_im.fits"
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), head)
+        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_tot.fits"
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
@@ -166,8 +228,8 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF,
     # Save the iteration count mask
     fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
     if (verbose): log("> %s" % fitsFileOut)
-    head["BUNIT"] = "Iterations"
-    hdu0 = pf.PrimaryHDU(iterCountArr.astype(dtFloat), head)
+    headtemp["BUNIT"] = "Iterations"
+    hdu0 = pf.PrimaryHDU(iterCountArr.astype(dtFloat), headtemp)
     hduLst = pf.HDUList([hdu0])
     hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
     hduLst.close()
@@ -275,7 +337,7 @@ def main():
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-f", dest="write_separate_FDF", action="store_false",
-                        help="Store different Stokes as FITS extensions [False, store as seperate files].")
+                        help="Store different Stokes as FITS extensions [False, store as separate files].")
 
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
@@ -320,7 +382,7 @@ def main():
     dataDir, dummy = os.path.split(args.fitsFDF[0])
 
     # Run RM-CLEAN on the cubes
-    cleanFDF, ccArr, iterCountArr, residFDF = run_rmclean(fitsFDF     = args.fitsFDF[0],
+    cleanFDF, ccArr, iterCountArr, residFDF, headtemp = run_rmclean(fitsFDF     = args.fitsFDF[0],
                                                         fitsRMSF    = args.fitsRMSF[0],
                                                         cutoff      = args.cutoff,
                                                         maxIter     = args.maxIter,
@@ -334,6 +396,7 @@ def main():
             ccArr,
             iterCountArr,
             residFDF,
+            headtemp,
             prefixOut           = args.prefixOut,
             outDir              = dataDir,
             write_separate_FDF  = args.write_separate_FDF,
