@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     cl_RMsynth_1D.py                                                  #
+# NAME:     do_RMsynth_1D.py                                                  #
 #                                                                             #
 # PURPOSE: API for runnning RM-synthesis on an ASCII Stokes I, Q & U spectrum.#
 #                                                                             #

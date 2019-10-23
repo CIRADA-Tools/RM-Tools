@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     cl_RMclean_1D.py                                                  #
+# NAME:     do_RMclean_1D.py                                                  #
 #                                                                             #
 # PURPOSE:  Command line functions for RM-clean                               #
 #           on a dirty Faraday dispersion function.                           #

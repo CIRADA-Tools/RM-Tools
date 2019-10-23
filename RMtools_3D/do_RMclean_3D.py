@@ -57,6 +57,8 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
                 pool=None, chunksize=None, verbose = True, log = print):
     """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
 
+    If you want to run RM-CLEAN on arrays, just use util_RM.do_rmclean_hogbom.
+
     Args:
         fitsFDF (str): Name of FDF FITS file.
         fitsRMSF (str): Name of RMSF FITS file

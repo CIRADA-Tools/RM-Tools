@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     cl_RMsynth_3D.py                                                  #
+# NAME:     do_RMsynth_3D.py                                                  #
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on a Stokes Q & U cubes.                         #
 #                                                                             #
