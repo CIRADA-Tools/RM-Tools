@@ -101,7 +101,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
 
     RMSFArr, headRMSF,FD_axis = read_FDF_cubes(fitsRMSF)
     HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
-    fwhmRMSFArr = HDULst[3].data
+    fwhmRMSFArr = HDULst[0].data
     HDULst.close()
     phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
 

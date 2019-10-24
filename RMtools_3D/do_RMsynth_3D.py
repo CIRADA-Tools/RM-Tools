@@ -55,7 +55,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
-                weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = True,
+                weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = False,
                 log = print):
 
     """Run RM-synthesis on 2/3D data.
@@ -271,7 +271,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
-    header["CTYPE"+str(freq_axis)] = "FARADAY DEPTH"
+    header["CTYPE"+str(freq_axis)] = "FDEP"
     header["CDELT"+str(freq_axis)] = np.diff(phiArr_radm2)[0]
     header["CRPIX"+str(freq_axis)] = 1.0
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
