@@ -9,8 +9,6 @@ class test_imports(unittest.TestCase):
         # have not worked before.
         modules = [
             'RMtools_1D.calculate_RMSF',
-            'RMtools_1D.cl_RMclean_1D',
-            'RMtools_1D.cl_RMsynth_1d',
             # 'RMtools_1D.do_QUfit_1D_mnest',
             'RMtools_1D.do_RMclean_1D',
             'RMtools_1D.do_RMsynth_1D_fromFITS',
@@ -18,7 +16,6 @@ class test_imports(unittest.TestCase):
             'RMtools_1D.make_freq_file',
             'RMtools_1D.mk_test_ascii_data',
             'RMtools_3D.assemble_chunks',
-            'RMtools_3D.cl_RMsynth_3D',
             'RMtools_3D.create_chunks',
             'RMtools_3D.do_fitIcube',
             'RMtools_3D.do_RMclean_3D',

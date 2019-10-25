@@ -46,7 +46,7 @@ if sys.version_info.major == 2:
 
 from astropy.io import fits
 from RMtools_1D.make_freq_file import get_freq_array
-import RMtools_1D.cl_RMsynth_1d as clRM
+from RMtools_1D.do_RMsynth_1D import run_rmsynth
 import numpy as np
 from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
@@ -168,7 +168,7 @@ def main():
         dI_array = np.full(freq_array.shape, 1 * 10 ** (-3))
         data.append(I_array, dI_array)
     # Run RM-synthesis on the spectra
-    dict, aDict = clRM.run_rmsynth(data           = data,
+    dict, aDict = run_rmsynth(data           = data,
                 polyOrd        = args.polyOrd,
                 phiMax_radm2   = args.phiMax_radm2,
                 dPhi_radm2     = args.dPhi_radm2,
