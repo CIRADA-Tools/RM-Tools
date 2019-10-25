@@ -46,7 +46,7 @@ if sys.version_info.major == 2:
 
 from astropy.io import fits
 from RMtools_1D.make_freq_file import get_freq_array
-from RMtools_1D.do_RMsynth_1D import run_rmsynth
+from RMtools_1D.do_RMsynth_1D import run_rmsynth, saveOutput
 import numpy as np
 from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
@@ -183,7 +183,7 @@ def main():
                 units          = args.units)
     #pdb.set_trace()
     if args.saveOutput:
-        clRM.saveOutput(dict, aDict, prefixOut, verbose)
+        saveOutput(dict, aDict, prefixOut, verbose)
 
 def get_data_Q_U(filename, ycoords, xcoords):
     hduList = fits.open(filename)

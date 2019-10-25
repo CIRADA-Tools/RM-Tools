@@ -141,7 +141,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
-        log("Warn: no Stokes I data in use.")
+        if verbose: log("Warn: no Stokes I data in use.")
         IArr = np.ones_like(QArr)
         dIArr = np.zeros_like(QArr)
 
