@@ -526,16 +526,19 @@ def main():
     epilog_text="""
     Output files:
         Default:
-        FDF_dirty.fits: FDF, in 3 extensions: Q,U, and PI.
+        FDF_real_dirty.fits: real (Stokes Q) component of the FDF
+        FDF_im_dirty.fits: imaginary (Stokes U) component of the FDF
+        FDF_tot_dirty.fits: polarized intnsity (Stokes P) component of the FDF
         FDF_maxPI.fits: 2D map of peak polarized intensity per pixel.
         FDF_peakRM.fits: 2D map of Faraday depth of highest peak, per pixel.
-        RMSF.fits: 4 extensions; first 3 are RMSF cubes [Q, U, PI]
-                                 4th is 2D map of RMSF FWHM.
-        With -f flag:
-        FDF_dirty.fits is split into three constituent components:
-            FDF_real_dirty.fits: Stokes Q
-            FDF_im_dirty.fits: Stokes U
-            FDF_tot_dirty.fits: Polarizd Intensity (sqrt(Q^2+U^2))
+        RMSF_real_dirty.fits: real (Stokes Q) component of the RMSF
+        RMSF_im_dirty.fits: imaginary (Stokes U) component of the RMSF
+        RMSF_tot_dirty.fits: polarized intnsity (Stokes P) component of the RMSF
+        RMSF_FWHM: 2D map of RMSF FWHM per pixel.
+
+        With -f flag, the 3 FDF cubes are combined in a single file with 3 extensions.
+            and the RMSF files are combined in a single file with 4 extensions.
+        
     """
 
     # Parse the command line options

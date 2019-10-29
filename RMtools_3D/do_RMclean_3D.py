@@ -317,19 +317,22 @@ def main():
     descStr = """
     Run RM-CLEAN on a cube of Faraday dispersion functions (FDFs), applying
     a cube of rotation measure spread functions created by the script
-    'do_RMsynth_3D.py'. Saves a cube of deconvolved FDFs & clean-component
+    'do_RMsynth_3D.py'. Saves cubes of deconvolved FDFs & clean-component
     spectra, and a pixel map showing the number of iterations performed.
     Set any of the multiprocessing options to enable parallelization
     (otherwise, pixels will be processed serially).
+    
+    Expects that the input is in the form of the Stokes-separated 
+    (single extension) FITS cubes produced by do_RMsynth_3D.
     """
 
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("fitsFDF", metavar="FDF_dirty.fits", nargs=1,
-                        help="FITS cube containing the dirty FDF.\n(Must be the single-file output from do_RMsynth_3D.py)")
+                        help="FITS cube containing the dirty FDF.\n(Can be any of the FDF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("fitsRMSF", metavar="RMSF.fits", nargs=1,
-                        help="FITS cube containing the RMSF and FWHM image.\n(Must be the single-file output from do_RMsynth_3D.py)")
+                        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("-c", dest="cutoff", type=float, nargs=1,
                         default=1.0, help="CLEAN cutoff in flux units")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
@@ -389,7 +392,7 @@ def main():
                                                         cutoff      = args.cutoff,
                                                         maxIter     = args.maxIter,
                                                         gain        = args.gain,
-
+                                                        chunksize   = chunksize,
                                                         nBits       = 32,
 
                                                         verbose = verbose)
