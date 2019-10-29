@@ -144,25 +144,20 @@ def create_3D_data(freq_arr,N_side=100):
         f.write('Point source:\n')
         f.write('RM = {} rad/m^2\n'.format(src_RM))
         f.write('Intrsinsic polarization angle = {} deg\n'.format(src_pol_angle_deg))
-        f.write('Polarized Flux = {} %\n'.format(src_flux))
+        f.write('Polarized Flux = {} Jy/beam\n'.format(src_flux))
         f.write('x position = {} pix\n'.format(src_x))
         f.write('y position = {} pix\n'.format(src_y))
         f.write('\n')
         f.write('Diffuse emission:\n')
         f.write('RM = {} rad/m^2\n'.format(diffuse_RM))
         f.write('Intrsinsic polarization angle = {} deg\n'.format(diffuse_pol_angle_deg))
-        f.write('Polarized Flux = {} %\n'.format(diffuse_flux))
+        f.write('Polarized Flux = {} Jy/beam\n'.format(diffuse_flux))
         f.write('\n')
         f.write('Other:\n')
         f.write('Actual error per channel = {} Jy/beam\n'.format(noise_amplitude))
         f.write('Beam FWHM = {} pix\n'.format(beam_size_pix))
 
         
-def create_2D_data(freq_arr,N_side=100):
-    pass #placeholder for future, maybe?
-
-def create_4D_data(freq_arr,N_side=100):
-    pass #placeholder for future, maybe?
 
 
 class test_RMtools(unittest.TestCase):
@@ -205,6 +200,16 @@ class test_RMtools(unittest.TestCase):
             create_3D_data(self.freq_arr)
         returncode=subprocess.call('rmsynth1dFITS simdata/3D/Q_cube.fits simdata/3D/U_cube.fits 25 25 -l 600 -d 3 -S',shell=True)
         self.assertEqual(returncode, 0, 'RMsynth1D_fromFITS failed to run.')
+        
+    def test_f_QUfitting(self):
+        if not os.path.exists('simdata/1D/simsource.dat'):
+            create_1D_data(self.freq_arr)
+        if not os.path.exists('models_ns'):            
+            shutil.copytree('../RMtools_1D/models_ns','models_ns')
+        returncode=subprocess.call('python ../RMtools_1D/do_QUfit_1D_mnest.py simdata/1D/simsource.dat',shell=True)
+        self.assertEqual(returncode, 0, 'QU fitting failed to run.')
+        shutil.rmtree('models_ns')
+
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
