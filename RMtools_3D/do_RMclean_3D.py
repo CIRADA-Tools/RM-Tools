@@ -101,7 +101,7 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
 
     RMSFArr, headRMSF,FD_axis = read_FDF_cubes(fitsRMSF)
     HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
-    fwhmRMSFArr = HDULst[0].data
+    fwhmRMSFArr = np.squeeze(HDULst[0].data)
     HDULst.close()
     phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
 
@@ -176,6 +176,7 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
 
+
     if outDir=='':  #To prevent code breaking if file is in current directory
         outDir='.'
     # Save the clean FDF
@@ -226,12 +227,17 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
 
+    #Because there can be problems with different axes having different FITS keywords,
+    #don't try to remove the FD axis, but just make it degenerate.
+    # Also requires np.expand_dims to set the correct NAXIS.
+    headtemp["NAXIS3"] = 1
 
     # Save the iteration count mask
     fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
     if (verbose): log("> %s" % fitsFileOut)
     headtemp["BUNIT"] = "Iterations"
-    hdu0 = pf.PrimaryHDU(iterCountArr.astype(dtFloat), headtemp)
+    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), axis=0),
+                        headtemp)
     hduLst = pf.HDUList([hdu0])
     hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
     hduLst.close()
@@ -321,8 +327,8 @@ def main():
     spectra, and a pixel map showing the number of iterations performed.
     Set any of the multiprocessing options to enable parallelization
     (otherwise, pixels will be processed serially).
-    
-    Expects that the input is in the form of the Stokes-separated 
+
+    Expects that the input is in the form of the Stokes-separated
     (single extension) FITS cubes produced by do_RMsynth_3D.
     """
 

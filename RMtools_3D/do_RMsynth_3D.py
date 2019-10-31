@@ -271,10 +271,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
-    header["CTYPE"+str(freq_axis)] = "FDEP"
-    header["CDELT"+str(freq_axis)] = np.diff(phiArr_radm2)[0]
+    header["CTYPE"+str(freq_axis)] = ("FDEP", 'Faraday depth (linear)')
+    header["CDELT"+str(freq_axis)] = (np.diff(phiArr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
     header["CRPIX"+str(freq_axis)] = 1.0
-    header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
     header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
@@ -335,18 +335,24 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save the RMSF
     if not_rmsf is not True:
         header["NAXIS"+str(freq_axis)] = phi2Arr_radm2.size
-        header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
+        header["CRVAL"+str(freq_axis)] = (phi2Arr_radm2[0],'[rad/m^2] Coordinate value at reference point')
         header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
         rmheader=header.copy()
         rmheader['BUNIT']='rad/m^2'
+        #Because there can be problems with different axes having different FITS keywords,
+        #don't try to remove the FD axis, but just make it degenerate.
+        # Also requires np.expand_dims to set the correct NAXIS.
+        rmheader["NAXIS"+str(freq_axis)] = 1
+        rmheader["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
 
         if(write_seperate_FDF):
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
             hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
+            hdu3 = pf.PrimaryHDU(np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0),
+                                rmheader)
 
-            hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), rmheader)
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -378,8 +384,9 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
+    # Also requires np.expand_dims to set the correct NAXIS.
     header["NAXIS"+str(freq_axis)] = 1
-    header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:
@@ -390,9 +397,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), header,
+    pf.writeto(fitsFileOut,
+                np.expand_dims(np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), axis=0),
+                header,
                overwrite=True, output_verify="fix")
-
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
@@ -400,7 +408,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     peakFDFmap = header["CRVAL"+str(freq_axis)] + (peakFDFmap + 1
                                      - header["CRPIX"+str(freq_axis)]) * header["CDELT"+str(freq_axis)]
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, peakFDFmap, header, overwrite=True,
+    pf.writeto(fitsFileOut, np.expand_dims(peakFDFmap,axis=0), header, overwrite=True,
                output_verify="fix")
 
 #   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
@@ -538,7 +546,7 @@ def main():
 
         With -f flag, the 3 FDF cubes are combined in a single file with 3 extensions.
             and the RMSF files are combined in a single file with 4 extensions.
-        
+
     """
 
     # Parse the command line options
