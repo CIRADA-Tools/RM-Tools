@@ -321,8 +321,8 @@ def main():
     spectra, and a pixel map showing the number of iterations performed.
     Set any of the multiprocessing options to enable parallelization
     (otherwise, pixels will be processed serially).
-    
-    Expects that the input is in the form of the Stokes-separated 
+
+    Expects that the input is in the form of the Stokes-separated
     (single extension) FITS cubes produced by do_RMsynth_3D.
     """
 

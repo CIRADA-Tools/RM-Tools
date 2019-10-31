@@ -538,7 +538,7 @@ def main():
 
         With -f flag, the 3 FDF cubes are combined in a single file with 3 extensions.
             and the RMSF files are combined in a single file with 4 extensions.
-        
+
     """
 
     # Parse the command line options
