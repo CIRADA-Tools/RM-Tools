@@ -272,9 +272,9 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
     header["CTYPE"+str(freq_axis)] = ("FDEP", 'Faraday depth (linear)')
-    header["CDELT"+str(freq_axis)] = np.diff(phiArr_radm2)[0]
+    header["CDELT"+str(freq_axis)] = (np.diff(phiArr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
     header["CRPIX"+str(freq_axis)] = 1.0
-    header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
     header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
