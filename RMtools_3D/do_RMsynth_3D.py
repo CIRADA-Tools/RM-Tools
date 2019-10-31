@@ -340,6 +340,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
         rmheader=header.copy()
         rmheader['BUNIT']='rad/m^2'
+        #Because there can be problems with different axes having different FITS keywords,
+        #don't try to remove the FD axis, but just make it degenerate.
+        rmheader["NAXIS"+str(freq_axis)] = 1
+        rmheader["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
 
         if(write_seperate_FDF):
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
