@@ -271,7 +271,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
-    header["CTYPE"+str(freq_axis)] = "FDEP"
+    header["CTYPE"+str(freq_axis)] = ["FDEP", 'Faraday depth (linear)']
     header["CDELT"+str(freq_axis)] = np.diff(phiArr_radm2)[0]
     header["CRPIX"+str(freq_axis)] = 1.0
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
@@ -335,7 +335,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save the RMSF
     if not_rmsf is not True:
         header["NAXIS"+str(freq_axis)] = phi2Arr_radm2.size
-        header["CRVAL"+str(freq_axis)] = phi2Arr_radm2[0]
+        header["CRVAL"+str(freq_axis)] = [phi2Arr_radm2[0],'[rad/m^2] Coordinate value at reference point']
         header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
         rmheader=header.copy()
@@ -386,7 +386,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     #don't try to remove the FD axis, but just make it degenerate.
     # Also requires np.expand_dims to set the correct NAXIS.
     header["NAXIS"+str(freq_axis)] = 1
-    header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+    header["CRVAL"+str(freq_axis)] = [phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point']
     if "DATAMAX" in header:
         del header["DATAMAX"]
     if "DATAMIN" in header:
