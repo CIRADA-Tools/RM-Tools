@@ -395,8 +395,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), header,
-               overwrite=True, output_verify="fix")
-
+               overwrite=True, output_verify="fix+warn")
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
@@ -404,7 +403,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     peakFDFmap = header["CRVAL"+str(freq_axis)] + (peakFDFmap + 1
                                      - header["CRPIX"+str(freq_axis)]) * header["CDELT"+str(freq_axis)]
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, peakFDFmap, header, overwrite=True,
+    pf.writeto(fitsFileOut, np.expand_dims(peakFDFmap,axis=0), header, overwrite=True,
                output_verify="fix")
 
 #   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
