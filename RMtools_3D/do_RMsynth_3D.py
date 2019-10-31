@@ -342,6 +342,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         rmheader['BUNIT']='rad/m^2'
         #Because there can be problems with different axes having different FITS keywords,
         #don't try to remove the FD axis, but just make it degenerate.
+        # Also requires np.expand_dims to set the correct NAXIS.
         rmheader["NAXIS"+str(freq_axis)] = 1
         rmheader["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
 
@@ -349,8 +350,9 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
             hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
+            hdu3 = pf.PrimaryHDU(np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0),
+                                rmheader)
 
-            hdu3 = pf.PrimaryHDU(fwhmRMSFCube.astype(dtFloat), rmheader)
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -382,6 +384,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
+    # Also requires np.expand_dims to set the correct NAXIS.
     header["NAXIS"+str(freq_axis)] = 1
     header["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
     if "DATAMAX" in header:
@@ -394,8 +397,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), header,
-               overwrite=True, output_verify="fix+warn")
+    pf.writeto(fitsFileOut,
+                np.expand_dims(np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), axis=0),
+                header,
+               overwrite=True, output_verify="fix")
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
