@@ -261,7 +261,7 @@ def read_FDF_cube(filename):
     #Check for FD axes:
     for i in range(1,Ndim+1):
         try:
-            if 'FARADAY' in head['CTYPE'+str(i)].upper():
+            if 'FDEP' in head['CTYPE'+str(i)].upper():
                 FD_axis=i
         except:
             pass #The try statement is needed for if the FITS header does not
@@ -296,7 +296,7 @@ def read_FDF_cubes(filename):
     #Check for FD axes:
     for i in range(1,Ndim+1):
         try:
-            if 'FARADAY' in head['CTYPE'+str(i)].upper():
+            if 'FDEP' in head['CTYPE'+str(i)].upper():
                 FD_axis=i
         except:
             pass #The try statement is needed for if the FITS header does not
@@ -400,7 +400,6 @@ def main():
                                                         gain        = args.gain,
                                                         chunksize   = chunksize,
                                                         nBits       = 32,
-
                                                         verbose = verbose)
     # Write results to disk
     writefits(cleanFDF,

@@ -24,11 +24,11 @@
 ./mk_test_ascii_data.py cats/catalogue.csv
 
 # Perform RM-synthesis on the sources
-./do_RMsynth_1D.py data/Source1.dat -p
-./do_RMsynth_1D.py data/Source2.dat -p
-./do_RMsynth_1D.py data/Source3.dat -p
-./do_RMsynth_1D.py data/Source4.dat -p
-./do_RMsynth_1D.py data/Source5.dat -p
+./do_RMsynth_1D.py data/Source1.dat -p -S
+./do_RMsynth_1D.py data/Source2.dat -p -S
+./do_RMsynth_1D.py data/Source3.dat -p -S
+./do_RMsynth_1D.py data/Source4.dat -p -S
+./do_RMsynth_1D.py data/Source5.dat -p -S
 
 # Perform RM-clean on the sources
 ./do_RMclean_1D.py data/Source1.dat -p

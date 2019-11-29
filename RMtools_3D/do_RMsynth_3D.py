@@ -594,7 +594,7 @@ def main():
     else:
         dataI=None
     if args.noiseFile is not None:
-        rmsArr = readFitsCube(args.noiseFile, verbose)[1]
+        rmsArr = readFreqFile(args.noiseFile, verbose)
     else:
         rmsArr=None
 
