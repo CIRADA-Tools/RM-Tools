@@ -189,12 +189,12 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     fitsFileOut = outDir + "/"  + prefixOut + "IskyMask.fits"
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
-               clobber=True)
+               overwrite=True)
     mskArr = np.where(mskSrc>0, 1.0, np.nan)
     fitsFileOut = outDir + "/"  + prefixOut + "IsrcMask.fits"
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
-               clobber=True)
+               overwrite=True)
         
     # Create a blank FITS file on disk using the large file method
     # http://docs.astropy.org/en/stable/io/fits/appendix/faq.html
@@ -214,10 +214,10 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         nVoxels *= headI["NAXIS4"]
     while len(headModel) < (36 * 4 - 1):
         headModel.append()
-    headModel.tofile(fitsModelFile, clobber=True)
+    headModel.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
         f.seek(len(headModel.tostring()) + (nVoxels*int(nBits/8)) - 1)
-        f.write("\0")
+        f.write(b"\0")
 
     # Feeback to user
     srcIdx = np.where(mskSrc>0)
