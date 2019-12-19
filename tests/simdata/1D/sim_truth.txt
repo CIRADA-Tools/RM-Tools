@@ -1,8 +1,0 @@
-RM = 200 rad/m^2
-Intrsinsic polarization angle = 50 deg
-Fractional polarization = 70.0 %
-Stokes I = 1 Jy/beam
-Reference frequency for I = 0.944 GHz
-Spectral index = -0.7
-Actual error per channel = 0.1 Jy/beam
-Input assumed error = 0.1 Jy/beam
