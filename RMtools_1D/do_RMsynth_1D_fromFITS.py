@@ -166,7 +166,7 @@ def main():
     if args.StokesI_fits is not None:
         I_array = get_data_Q_U(args.StokesI_fits, ycoords, xcoords)
         dI_array = np.full(freq_array.shape, 1 * 10 ** (-3))
-        data.append(I_array, dI_array)
+        data=[freq_array,I_array, Q_array, U_array, dI_array, dQ_array, dU_array]
     # Run RM-synthesis on the spectra
     dict, aDict = run_rmsynth(data           = data,
                 polyOrd        = args.polyOrd,
