@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     do_RMsynth_1D.py                                                  #
+# NAME:     do_RMsynth_1D_fromFITS.py                                         #
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 15-Nov-2018 by J. West                                            #
+# MODIFIED: Summer 2019, by Boris Gbeasor                                     #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -64,7 +64,7 @@ def main():
     *** PROTOTYPE! FUNCTIONALITY NOT GUARANTEED! PLEASE TEST AND SUBMIT BUG REPORTS!***
 
     Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in a FITS
-    file. Does not correct for Stokes I spectrum, and does not account for errors.
+    file. Does not currently account for errors.
     If these features are needed, please use the standard 1D function.
     """
 

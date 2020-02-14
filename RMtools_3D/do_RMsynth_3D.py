@@ -123,10 +123,10 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
 
     # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0
+    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2))) * 2 + 1
     startPhi_radm2 = - (nChanRM-1.0) * dPhi_radm2 / 2.0
     stopPhi_radm2 = + (nChanRM-1.0) * dPhi_radm2 / 2.0
-    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
+    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, int(nChanRM))
     phiArr_radm2 = phiArr_radm2.astype(dtFloat)
     if(verbose): log("PhiArr = %.2f to %.2f by %.2f (%d chans)." % (phiArr_radm2[0],
                                                         phiArr_radm2[-1],

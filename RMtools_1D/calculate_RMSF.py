@@ -90,6 +90,17 @@ def main():
     determine_RMSF_parameters(freq_array,weights_array,args.phiMax_radm2,args.dphi_radm2,args.plotfile,args.plotname)
     
 def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None):
+    """
+    Characterizes an RMSF given the supplied frequency and weight arrays.
+    Prints the results to terminal.
+    Inputs:
+        freq_array: array of frequency values (in Hz)
+        weights_array: array of channel weights (arbitrary units)
+        phi_max (float): maximum Faraday depth to compute RMSF out to.
+        dphi (float): step size in Faraday depth
+        plotfile (str): file name and path to save RMSF plot.
+        plotname (str): title of plot
+    """
     lambda2_array=C**2/freq_array**2
     l2_min=np.min(lambda2_array)
     l2_max=np.max(lambda2_array)

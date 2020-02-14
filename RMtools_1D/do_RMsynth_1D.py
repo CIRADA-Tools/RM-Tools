@@ -423,6 +423,17 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 def readFile(dataFile, nBits, verbose=True, debug=False):
     """
     Read the I, Q & U data from the ASCII file.
+    
+    Inputs:
+        datafile (str): relative or absolute path to file.
+        nBits (int): number of bits to store the data as.
+        verbose (bool): Print verbose messages to terminal?
+        debug (bool): Print full traceback in case of failure?
+        
+    Returns:
+        data (list of arrays): List containing the columns found in the file.
+        If Stokes I is present, this will be [freq_Hz, I, Q, U, dI, dQ, dU], 
+        else [freq_Hz, q, u,  dq, du].
     """
 
     # Default data types
@@ -517,6 +528,8 @@ def main():
     OR
     [freq_Hz, Q, U, Q_err, U_err]
 
+
+    To get outputs, one or more of the following flags must be set: -S, -p, -v.
     """
 
     epilog_text="""

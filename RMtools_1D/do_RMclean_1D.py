@@ -194,7 +194,19 @@ def run_rmclean(mDictS, aDict, cutoff,
     return mDict, arrdict
 
 
-def saveOutput(outdict, arrdict, prefixOut="", outDir="", verbose=False, log=print):
+def saveOutput(outdict, arrdict, prefixOut="", verbose=False, log=print):
+    """
+    Saves RM-CLEAN results to text files. The clean (restored) FDF, model FDF 
+    (clean components) are saved, as is two files (.dat and .json)
+    reporting the fitting results as key-value pairs.
+    Inputs:
+        outdict: the results dictionary (mDict) from RM-CLEAN.
+        arrdict: the array dictionary (aDict) from RM-CLEAN.
+        prefixOut (str): name prefix to be given to output files 
+            (including relative/absolute directory to save to)
+        verbose (bool): print verbose messages?
+        log (function): function to use when printing verbose messages.
+    """
     # Get data
     phiArr_radm2 = arrdict["phiArr_radm2"]
     cleanFDF = arrdict["cleanFDF"]
@@ -222,6 +234,15 @@ def saveOutput(outdict, arrdict, prefixOut="", outDir="", verbose=False, log=pri
     json.dump(outdict, open(outFile, "w"))
 
 def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
+    """
+    Read in the RM-synthesis output files and assemble back into dictionaries.
+    Inputs:
+        fdfFile (str): file path to the FDF.
+        rmsfFile (str): file path to the RMSF.
+        weightfile (str): file path to the channel weights.
+        rmSynthFile (str): file path to the RMsynth json file.
+        nBits (int): number of bits to use when storing the data.
+    """
 
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -252,6 +273,17 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
 
 def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
                     cutoff,units):
+    """
+    Plotting code for CLEANed Faraday depth spectra.
+    Inputs: 
+        phiArr_radm2 (array): array of Faraday depth values.
+        dirty FDF (array): dirty Faraday depth spectrum.
+        cleanFDF (array): cleaned (restored) Faraday depth spectrum
+        ccArr (array): clean component array
+        residFDF (array): residual Faraday depth spectrum
+        cutoff (float): clean threshold
+        units (str): name of flux unit
+    """
     from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
 
@@ -379,7 +411,6 @@ def main():
     saveOutput(outdict,
             arrdict,
             prefixOut    = fileRoot,
-            outDir       = dataDir,
             verbose      = args.verbose)
 
 
