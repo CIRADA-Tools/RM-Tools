@@ -41,6 +41,8 @@ import traceback
 import json
 import math as m
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from RMutils.util_RM import do_rmsynth
@@ -179,6 +181,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                               IModArr        = IModHirArr,
                               fig            = specFig,
                               units          = units)
+        plt.savefig(dataFile+'.spec.png', dpi=200, bbox_inches='tight')
 
         # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
@@ -401,6 +404,8 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                           vLine      = mDict["phiPeakPIfit_rm2"],
                           fig        = fdfFig,
                           units      = units)
+        
+        plt.savefig(dataFile+'.fdf.png', dpi=200, bbox_inches='tight')
 
         # Use the custom navigation toolbar
 #        try:
