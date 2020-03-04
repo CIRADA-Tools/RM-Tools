@@ -69,7 +69,7 @@ if sys.version_info.major == 2:
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
-def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
+def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam'):
@@ -594,7 +594,7 @@ def main():
     data = readFile(args.dataFile[0],nBits, verbose=verbose, debug=args.debug)
 
     # Run RM-synthesis on the spectra
-    mDict, aDict = run_rmsynth(data           = data,
+    mDict, aDict = run_rmsynth(data           = data, dataFile = dataFile,
                 polyOrd        = args.polyOrd,
                 phiMax_radm2   = args.phiMax_radm2,
                 dPhi_radm2     = args.dPhi_radm2,
