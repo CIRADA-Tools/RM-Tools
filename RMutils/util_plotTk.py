@@ -1985,3 +1985,268 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
                     wspace=0.25, hspace=0.05)
 
     return fig
+
+
+#-----------------------------------------------------------------------------#
+def plot_Ipqu_spectra_chime(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
+                          dqArr=None, duArr=None, freqHirArr_Hz=None,
+                          IModArr=None, qModArr=None, uModArr=None,
+                          fig=None,units=''):
+
+    """Plot the Stokes I, Q/I & U/I spectral summary plots."""
+
+    # Default to a pyplot figure
+    if fig==None:
+        fig = plt.figure(figsize=(16, 8))
+
+    # Default to non-high-resolution inputs
+    if freqHirArr_Hz is None:
+        freqHirArr_Hz =  freqArr_Hz
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(C/freqHirArr_Hz, 2.0)
+
+    # Plot I versus nu axis
+    ax1 = fig.add_subplot(411)
+    plot_I_vs_nu_ax(ax=ax1,
+                    freqArr_Hz   = freqArr_Hz,
+                    IArr         = IArr,
+                    dIArr        = dIArr,
+                    freqHirArr_Hz= freqHirArr_Hz,
+                    IModArr      = IModArr,
+                    axisXtop     = True,
+                    units        = units)
+
+    # Plot p, q, u versus lambda^2 axis
+    ax2 = fig.add_subplot(412)
+    plot_pqu_vs_lamsq_ax(ax=ax2,
+                         lamSqArr_m2 = lamSqArr_m2,
+                         qArr        = qArr,
+                         uArr        = uArr,
+                         dqArr       = dqArr,
+                         duArr       = duArr,
+                         lamSqHirArr_m2 = lamSqHirArr_m2,
+                         qModArr     = qModArr,
+                         uModArr     = uModArr)
+    
+    # Plot psi versus lambda^2 axis
+    ax3 = fig.add_subplot(223, sharex=ax2)
+    plot_psi_vs_lamsq_ax(ax=ax3,
+                         lamSqArr_m2 = lamSqArr_m2,
+                         qArr        = qArr,
+                         uArr        = uArr,
+                         dqArr       = dqArr,
+                         duArr       = duArr,
+                         lamSqHirArr_m2 = lamSqHirArr_m2,
+                         qModArr     = qModArr,
+                         uModArr     = uModArr,
+                         axisYright=False,
+                         axisXtop=False)
+    
+    # Plot q versus u axis
+    ax4 = fig.add_subplot(224)
+    plot_q_vs_u_ax(ax=ax4,
+                   lamSqArr_m2 = lamSqArr_m2,
+                   qArr        = qArr,
+                   uArr        = uArr,
+                   dqArr       = dqArr,
+                   duArr       = duArr,
+                   lamSqHirArr_m2 = lamSqHirArr_m2,
+                   qModArr     = qModArr,
+                   uModArr     = uModArr, 
+                   axisYright  = True)
+
+    # Adjust subplot spacing
+    fig.subplots_adjust(left=0.1, bottom=0.08, right=0.90, top=0.92,
+                        wspace=0.08, hspace=0.08)
+  
+    return fig
+
+
+#-----------------------------------------------------------------------------#
+def plot_pqu_spectra_chime(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
+                          dqArr=None, duArr=None, freqHirArr_Hz=None,
+                          IModArr=None, qModArr=None, uModArr=None,
+                          fig=None,units=''):
+    """Plot the Stokes Q/L & U/L spectral summary plots."""
+
+    # Default to a pyplot figure
+    if fig==None:
+        fig = plt.figure(figsize=(16, 8))
+
+    # Default to non-high-resolution inputs
+    if freqHirArr_Hz is None:
+        freqHirArr_Hz =  freqArr_Hz
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(C/freqHirArr_Hz, 2.0)
+
+    # Plot p, q, u versus lambda^2 axis
+    ax1 = fig.add_subplot(211)
+    plot_pqu_vs_lamsq_ax_chime(ax=ax1,
+                         lamSqArr_m2 = lamSqArr_m2,
+                         qArr        = qArr,
+                         uArr        = uArr,
+                         dqArr       = dqArr,
+                         duArr       = duArr,
+                         lamSqHirArr_m2 = lamSqHirArr_m2,
+                         qModArr     = qModArr,
+                         uModArr     = uModArr)
+    
+    # Plot psi versus lambda^2 axis
+    ax2 = fig.add_subplot(313, sharex=ax1)
+    plot_psi_vs_lamsq_ax(ax=ax2,
+                         lamSqArr_m2 = lamSqArr_m2,
+                         qArr        = qArr,
+                         uArr        = uArr,
+                         dqArr       = dqArr,
+                         duArr       = duArr,
+                         lamSqHirArr_m2 = lamSqHirArr_m2,
+                         qModArr     = qModArr,
+                         uModArr     = uModArr,
+                         axisYright=False,
+                         axisXtop=False)
+      
+    # Adjust subplot spacing
+    fig.subplots_adjust(left=0.1, bottom=0.08, right=0.90, top=0.92,
+                        wspace=0.08, hspace=0.0)
+
+    return fig
+
+
+#-----------------------------------------------------------------------------#
+
+def plot_pqu_vs_lamsq_ax_chime(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
+                         duArr=None, dpArr=None,
+                         lamSqHirArr_m2=None, qModArr=None, uModArr=None,
+                         axisYright=False, axisXtop=False):
+
+    # Set the axis positions
+    if axisYright:
+        ax.yaxis.tick_right()
+        ax.yaxis.set_label_position("right")
+    if axisXtop:
+        ax.xaxis.tick_top()
+        ax.xaxis.set_label_position("top")    
+        
+    # Default to non-high-resolution inputs
+    if lamSqHirArr_m2 is None:
+        lamSqHirArr_m2 = lamSqArr_m2
+
+    # Calculate p and errors
+    if pArr is None:
+        pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
+    if dpArr is None:
+        if dqArr is None or duArr is None:
+            dpArr = None
+        else:
+            dpArr = np.sqrt(dqArr**2.0 + duArr**2.0 )
+        
+    cm_q = plt.cm.get_cmap('Blues')
+    cm_u = plt.cm.get_cmap('Greens')
+    snr_qArr=1/np.sqrt((dqArr/qArr)**2+(dpArr/pArr)**2)
+    snr_uArr=1/np.sqrt((duArr/uArr)**2+(dpArr/pArr)**2)
+    # Plot p, q, u versus lambda^2
+    ax.scatter(x=lamSqArr_m2, y=qArr/pArr, color='b', alpha=0.5, label='Stokes Q/L')
+    ax.scatter(x=lamSqArr_m2, y=uArr/pArr, color='r', alpha=0.5, label='Stokes U/L')
+    #ax.scatter(x=lamSqArr_m2, y=qArr/pArr, c=snr_qArr, vmin=snr_qArr.min(), vmax=snr_qArr.max(), cmap=cm_q, label='Stokes Q/L')
+    #ax.scatter(x=lamSqArr_m2, y=uArr/pArr, c=snr_uArr, vmin=snr_uArr.min(), vmax=snr_uArr.max(), cmap=cm_u, label='Stokes U/L')    
+
+    # Plot the models
+    if qModArr is not None and uModArr is not None:
+        pModArr = np.sqrt(qModArr**2.0 + uModArr**2.0 )
+    if qModArr is not None:
+        ax.plot(lamSqHirArr_m2, qModArr/pModArr, color='b', alpha=0.5, lw=1.5, label='Model Q/L')
+    if uModArr is not None:
+        ax.plot(lamSqHirArr_m2, uModArr/pModArr, color='r', alpha=0.5, lw=1.5, label='Model U/L')
+   
+
+    # Formatting
+#    ax.yaxis.set_major_locator(MaxNLocator(4))
+#    ax.xaxis.set_major_locator(MaxNLocator(4))
+
+#    xRange = np.nanmax(lamSqArr_m2)-np.nanmin(lamSqArr_m2)
+#    ax.set_xlim( np.nanmin(lamSqArr_m2) - xRange*0.05,
+#                 np.nanmax(lamSqArr_m2) + xRange*0.05)
+#    yDataMax = max(np.nanmax(pArr), np.nanmax(qArr), np.nanmax(uArr))
+#    yDataMin = min(np.nanmin(pArr), np.nanmin(qArr), np.nanmin(uArr))
+#    yRange = yDataMax - yDataMin
+#    medErrBar = np.max([float(nanmedian(dpArr)), float(nanmedian(dqArr)),
+#                           float(nanmedian(duArr))])
+#    ax.set_ylim( yDataMin - 2*medErrBar - yRange*0.05,yDataMax + 2*medErrBar + yRange*0.1)
+    ax.set_xlabel('$\\lambda^2$ (m$^2$)')
+    ax.set_ylabel('Q/L, U/L')
+    ax.axhline(0, color='grey')
+    ax.legend()
+
+    # Format tweaks
+    ax = tweakAxFormat(ax)
+
+
+#-----------------------------------------------------------------------------#
+def plot_q_vs_u_ax_chime(freqArr_Hz, qArr, uArr, dqArr=None, duArr=None,
+                   freqHirArr_Hz=None, qModArr=None, uModArr=None,
+                         axisYright=False, axisXtop=False, smooth_fact=None):
+
+    """Plot the Stokes Q vs. U summary plot."""
+
+    # Default to a pyplot figure                                                                                                               
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    # Default to non-high-resolution inputs                                                                                                    
+    if freqHirArr_Hz is None:
+        freqHirArr_Hz =  freqArr_Hz
+    lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(C/freqHirArr_Hz, 2.0)
+
+    # Set the axis positions
+    if axisYright:
+        ax.yaxis.tick_right()
+        ax.yaxis.set_label_position("right")
+    if axisXtop:
+        ax.xaxis.tick_top()
+        ax.xaxis.set_label_position("top")    
+
+    if smooth_fact is not None:
+        nbins = lamSqArr_m2.size
+        remainder = nbins % smooth_fact
+        freqArr_Hz = freqArr_Hz[..., :nbins - remainder]
+        qArr = qArr[..., :nbins - remainder]
+        uArr = qArr[..., :nbins - remainder]
+        dqArr = dqArr[..., :nbins - remainder]
+        duArr = duArr[..., :nbins - remainder]
+
+        freqArr_Hz = np.nanmean(freqArr_Hz.reshape(freqArr_Hz.shape[:-1] + (nbins // smooth_fact, smooth_fact)), axis=-1)
+        qArr = np.nanmean(qArr.reshape(qArr.shape[:-1] + (nbins // smooth_fact, smooth_fact)), axis=-1)
+        uArr = np.nanmean(uArr.reshape(uArr.shape[:-1] + (nbins // smooth_fact, smooth_fact)), axis=-1)
+        dqArr = np.nanmean(dqArr.reshape(dqArr.shape[:-1] + (nbins // smooth_fact, smooth_fact)), axis=-1)
+        duArr = np.nanmean(duArr.reshape(duArr.shape[:-1] + (nbins // smooth_fact, smooth_fact)), axis=-1)
+
+    # Plot u versus q
+    ax.errorbar(x=qArr, y=uArr, xerr=dqArr, yerr=duArr, mec="grey", mfc="none",
+                ms=1, fmt=".", ecolor="grey", elinewidth=1.0, capsize=2,
+                zorder=1)
+    #freqArr_Hz = C/np.sqrt(lamSqArr_m2)
+    ax.scatter(x=qArr, y=uArr, c=freqArr_Hz, cmap="jet_r", s=30,
+               marker="D", edgecolor="none", linewidth=0.5, zorder=2)
+
+    # Plot the model
+    if qModArr is not None and uModArr is not None:
+        ax.plot(qModArr, uModArr, color="k", lw=2.5, label='Model q & u',
+                zorder=2)
+    
+    # Formatting
+    ax.yaxis.set_major_locator(MaxNLocator(4))
+    ax.xaxis.set_major_locator(MaxNLocator(4))
+    xRange = np.nanmax(qArr)-np.nanmin(qArr)
+    ax.set_xlim( np.nanmin(qArr) - xRange*0.05,
+                 np.nanmax(qArr) + xRange*0.05)
+    yRange = np.nanmax(uArr)-np.nanmin(uArr)
+    ax.set_ylim( np.nanmin(uArr) - yRange*0.05,
+                 np.nanmax(uArr) + yRange*0.05)
+    ax.set_xlabel('Stokes q')
+    ax.set_ylabel('Stokes u')
+    ax.axhline(0, color='grey')
+    ax.axvline(0, color='grey')
+    
+    # Format tweaks
+#    ax = tweakAxFormat(ax, showLeg=False)
+    return fig 
