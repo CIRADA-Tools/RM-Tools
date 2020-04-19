@@ -361,6 +361,76 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
 
     return IModArr, qArr, uArr, dqArr, duArr, fitDict
 
+#-----------------------------------------------------------------------------#
+
+def create_frac_spectra_test(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr, VArr=None, dVArr=None,
+                        polyOrd=5, IModArr=None, verbose=False, debug=False):
+    """Fit the Stokes I spectrum with a polynomial and divide into the Q & U
+    spectra to create fractional spectra."""
+
+    ### TODO: loop to decrease order if chiSq<1 to guard against over-fitting
+
+    # Fit a <=5th order polynomial model to the Stokes I spectrum
+    # Frequency axis must be in GHz to avoid overflow errors
+    fitDict = {"fitStatus": 0,
+               "chiSq": 0.0,
+               "dof": len(freqArr)-polyOrd-1,
+               "chiSqRed": 0.0,
+               "nIter": 0,
+               "p": None}
+        
+    try:
+        if IModArr is None:
+            mp = fit_spec_poly5(freqArr, IArr, dIArr, polyOrd)
+            fitDict["p"] = mp.params
+            fitDict["fitStatus"] = mp.status
+            fitDict["chiSq"] = mp.fnorm
+            fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
+            fitDict["nIter"] = mp.niter
+            IModArr = poly5(fitDict["p"])(freqArr)
+
+        #if verbose:                                                                                                                       
+        #    print("\n")                                                                                                                   
+        #    print("-"*80)                                                                                                                 
+        #    print("Details of the polynomial fit to the spectrum:")                                                                       
+        #    for key, val in fitDict.iteritems():                                                                                          
+        #        print(" %s = %s" % (key, val))                                                                                            
+        #    print("-"*80)                                                                                                                 
+        #    print("\n")                                                                                                                   
+        else:
+            print ("calculating fractional stokes q,u spectrum using model I spectrum provided...")
+            fitDict["p"]=99
+    except Exception:
+        print("Err: Failed to fit polynomial to Stokes I spectrum.")
+        if debug:
+            print("\nTRACEBACK:")
+            print(("-" * 80))
+            print((traceback.format_exc()))
+            print(("-" * 80))
+            print("\n")
+        print("> Setting Stokes I spectrum to unity.\n")
+        fitDict["p"] = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        IModArr = np.ones_like(IArr)
+   
+        # Calculate the fractional spectra and errors
+    with np.errstate(divide='ignore', invalid='ignore'):
+            qArr = np.true_divide(QArr, IModArr)
+            uArr = np.true_divide(UArr, IModArr)
+            dqArr = qArr * np.sqrt( np.true_divide(dQArr, QArr)**2.0 +
+                                    np.true_divide(dIArr, IArr)**2.0 )
+            duArr = uArr * np.sqrt( np.true_divide(dUArr, UArr)**2.0 +
+                                    np.true_divide(dIArr, IArr)**2.0 )
+    
+    if VArr is None:
+        return IModArr, qArr, uArr, dqArr, duArr, fitDict
+
+    else:
+        with np.errstate(divide='ignore', invalid='ignore'):
+            vArr = np.true_divide(VArr, IModArr)
+            dvArr = vArr * np.sqrt( np.true_divide(dVArr, VArr)**2.0 +
+                                    np.true_divide(dIArr, IArr)**2.0 )
+
+        return IModArr, qArr, uArr, vArr, dqArr, duArr, dvArr, fitDict
 
 #-----------------------------------------------------------------------------#
 def interp_images(arr1, arr2, f=0.5):
@@ -817,3 +887,84 @@ def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
     y = norm.cdf(x, loc=mean, scale=std)
     
     return x, y
+
+
+
+
+
+
+
+# NEW FUNCTIONS ADDED ON 2019-11-14 (DEPRECTATED)
+#-----------------------------------------------------------------------------#
+def fit_spec_poly10(xData, yData, dyData=None, order=5):
+    """Fit a 5th order polynomial to a spectrum. To avoid overflow errors the
+    X-axis data should not be large numbers (e.g.: x10^9 Hz; use GHz
+    instead)."""
+
+    # Impose limits on polynomial order
+    if order<1:
+        order = 1
+    if order>10:
+        order = 10
+    if dyData is None:
+        dyData = np.ones_like(yData)
+    if np.all(dyData==0):
+        dyData = np.ones_like(yData)
+        
+    # Estimate starting coefficients
+    C1 = nanmean(np.diff(yData)) / nanmedian(np.diff(xData))
+    ind = int(np.median(np.where(~np.isnan(yData))))
+    C0 = yData[ind] - (C1 * xData[ind])
+    C10 = 0.0
+    C9 = 0.0
+    C8 = 0.0
+    C7 = 0.0
+    C6 = 0.0
+    C5 = 0.0
+    C4 = 0.0
+    C3 = 0.0
+    C2 = 0.0
+    inParms=[ {'value': C10, 'parname': 'C10', 'fixed': False},
+              {'value': C9, 'parname': 'C9', 'fixed': False},
+              {'value': C8, 'parname': 'C8', 'fixed': False},
+              {'value': C7, 'parname': 'C7', 'fixed': False},
+              {'value': C6, 'parname': 'C6', 'fixed': False},
+              {'value': C5, 'parname': 'C5', 'fixed': False},
+              {'value': C4, 'parname': 'C4', 'fixed': False},
+              {'value': C3, 'parname': 'C3', 'fixed': False},
+              {'value': C2, 'parname': 'C2', 'fixed': False},
+              {'value': C1, 'parname': 'C1', 'fixed': False},
+              {'value': C0, 'parname': 'C0', 'fixed': False} ]
+    
+    # Set the parameters as fixed of > order
+    for i in range(len(inParms)):
+        if len(inParms)-i-1>order:
+            inParms[i]['fixed'] = True
+
+    # Function to evaluate the difference between the model and data.
+    # This is minimised in the least-squared sense by the fitter
+    def errFn(p, fjac=None):
+        status = 0
+        return status, (poly10(p)(xData) - yData)/dyData
+
+    # Use MPFIT to perform the LM-minimisation
+    mp = mpfit(errFn, parinfo=inParms, quiet=True)
+    
+    return mp
+
+
+#-----------------------------------------------------------------------------
+def poly10(p):
+    """Returns a function to evaluate a polynomial. The subfunction can be
+    accessed via 'argument unpacking' like so: 'y = poly10(p)(*x)', 
+    where x is a vector of X values and p is a vector of coefficients."""
+
+    # Fill out the vector to length 6 if necessary
+    p = np.append(np.zeros((11-len(p))), p)
+    
+    def rfunc(x):
+        y = (p[0]*x**10.0 + p[1]*x**9.0 + p[2]*x**8.0 + p[3]*x**7.0 + p[4]*x**6.0
+             + p[5]*x**5.0 + p[6]*x**4.0 + p[7]*x**3.0 + p[8]*x**2.0 + p[9]*x**1.0 + p[10])
+        return y
+             
+    return rfunc
