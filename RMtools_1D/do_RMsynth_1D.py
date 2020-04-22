@@ -312,6 +312,13 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["dQU"] = toscalar(nanmedian(dQUArr))
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
+    
+    if fitDict["fitStatus"] >= 128:
+        log("WARNING: Stokes I model contains negative values!")
+    elif fitDict["fitStatus"] >= 64:
+        log("Caution: Stokes I model has low signal-to-noise.")
+
+
 
     #Add information on nature of channels:
     good_channels=np.where(np.logical_and(weightArr != 0,np.isfinite(qArr)))[0]

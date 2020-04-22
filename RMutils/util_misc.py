@@ -324,11 +324,16 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     try:
         mp = fit_spec_poly5(freqArr, IArr, dIArr, polyOrd)
         fitDict["p"] = mp.params
-        fitDict["fitStatus"] = mp.status
+        fitDict["fitStatus"] = np.abs(mp.status)
         fitDict["chiSq"] = mp.fnorm
         fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
         fitDict["nIter"] = mp.niter
         IModArr = poly5(fitDict["p"])(freqArr)
+        
+        if np.min(IModArr) < 0:   #Flag sources with negative models.
+            fitDict["fitStatus"] += 128
+        if (IModArr < dIArr).sum() > 0:  #Flag sources with models with S/N < 1.
+            fitDict["fitStatus"] += 64
 
         #if verbose:
         #    print("\n")
@@ -348,6 +353,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
             print("\n")
         print("> Setting Stokes I spectrum to unity.\n")
         fitDict["p"] = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        fitDict['fitStatus']=9
         IModArr = np.ones_like(IArr)
     
     # Calculate the fractional spectra and errors
@@ -360,6 +366,33 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
                                 np.true_divide(dIArr, IArr)**2.0 )
 
     return IModArr, qArr, uArr, dqArr, duArr, fitDict
+
+#Documenting fitStatus return values:
+#0  Improper input parameters.
+#1  Both actual and predicted relative reductions in the sum of squares
+#		   are at most ftol.
+#2  Relative error between two consecutive iterates is at most xtol
+#3  Conditions for status = 1 and status = 2 both hold.
+#4  The cosine of the angle between fvec and any column of the jacobian
+#		   is at most gtol in absolute value.
+#5  The maximum number of iterations has been reached.
+#6  ftol is too small. No further reduction in the sum of squares is
+#		   possible.
+#7  xtol is too small. No further improvement in the approximate solution
+#		   x is possible.
+#8  gtol is too small. fvec is orthogonal to the columns of the jacobian
+#		   to machine precision.
+#9 Fit failed; reason unknown (check log/terminal)
+#16 		   A parameter or function value has become infinite or an undefined
+#		   number.  This is usually a consequence of numerical overflow in the
+#		   user's model function, which must be avoided.
+#The following can be added to the previous flags:
+#64 Model contains one or more channels with S:N < 1
+#128 Model contains negative Stokes I values.
+
+#All flags greater the 80 indicate questionable/low-signal Stokes I models.
+#All flags greater than 128 indicate bad Stokes I model (negative values)
+
 
 
 #-----------------------------------------------------------------------------#
