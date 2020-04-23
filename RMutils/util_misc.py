@@ -322,9 +322,10 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
                "nIter": 0,
                "p": None}
     try:
-        mp = fit_spec_poly5(freqArr, IArr, dIArr, polyOrd)
+        goodchan=np.logical_and(np.isfinite(IArr),np.isfinite(dIArr)) #Ignore NaN channels!
+        mp = fit_spec_poly5(freqArr[goodchan], IArr[goodchan], dIArr[goodchan], polyOrd)
         fitDict["p"] = mp.params
-        fitDict["fitStatus"] = np.abs(mp.status)
+        fitDict["fitStatus"] = int(np.abs(mp.status))
         fitDict["chiSq"] = mp.fnorm
         fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
         fitDict["nIter"] = mp.niter
