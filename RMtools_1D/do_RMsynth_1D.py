@@ -291,7 +291,8 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
-    dFDFth = np.sqrt( np.sum(weightArr**2 * dQUArr**2) / (np.sum(weightArr))**2 )
+    weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+    dFDFth = np.sqrt( np.sum(weightArr**2 * np.nan_to_num(dQUArr)**2) / (np.sum(weightArr))**2 )
 
 
     # Measure the parameters of the dirty FDF
