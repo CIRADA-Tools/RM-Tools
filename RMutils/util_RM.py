@@ -794,12 +794,12 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     peakFDFimagChan = FDF.imag[indxPeakPIchan]
     peakFDFrealChan = FDF.real[indxPeakPIchan]
     polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
-                                         peakFDFrealChan))
+                                         peakFDFrealChan)) % 180
     dPolAngleChan_deg = np.degrees(dFDF / (2.0 * ampPeakPIchan))
 
     # Calculate the derotated polarisation angle and uncertainty
     polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
-                                  phiPeakPIchan * lam0Sq)
+                                  phiPeakPIchan * lam0Sq) % 180
     nChansGood = np.sum(np.where(lamSqArr_m2==lamSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
@@ -851,13 +851,13 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         peakFDFimagFit = np.interp(phiPeakPIfit, phiArr, FDF.imag)
         peakFDFrealFit = np.interp(phiPeakPIfit, phiArr, FDF.real)
         polAngleFit_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagFit,
-                                                  peakFDFrealFit))
+                                                  peakFDFrealFit)) % 180
         dPolAngleFit_deg = np.degrees(dFDF / (2.0 * ampPeakPIfit))
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
-                                      phiPeakPIfit * lam0Sq)) % 180.0
+                                      phiPeakPIfit * lam0Sq)) % 180
         dPolAngle0Fit_rad = \
             np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
