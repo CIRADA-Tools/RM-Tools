@@ -92,7 +92,7 @@ def main():
 def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None):
     """
     Characterizes an RMSF given the supplied frequency and weight arrays.
-    Prints the results to terminal.
+    Prints the results to terminal and produces a plot.
     Inputs:
         freq_array: array of frequency values (in Hz)
         weights_array: array of channel weights (arbitrary units)

@@ -9,7 +9,8 @@ values are produced.
 
 Random values are necessary to simulate noise, which is expected for different
 parts of the code. I have forced the random seed to be the same each run,
-in order to make the tests deterministic.
+in order to make the tests deterministic. This works for everything except
+QU fitting, which uses random numbers internally that can't be controlled.
 
 Created on Fri Oct 25 10:00:24 2019
 @author: Cameron Van Eck

@@ -5,6 +5,8 @@ Created on Thu May 30 10:44:28 2019
 
 Extract subregion of a FITS file, with option to extract a plane.
 
+There are many cutout tools like it, but this one is mine.
+
 
 @author: cvaneck
 May 2019
@@ -17,9 +19,9 @@ import os
 
 
 def main():
-    """This function will extract a region from an FITS file and save it to
-    a new file. Command line options will allow the user to select the region
-    in either pixel or sky coordinates.
+    """This function will extract a region ('cutout) from an FITS file and save
+    it to a new file. Command line options will allow the user to select the 
+    region in either pixel or sky coordinates.
     """
     
     descStr="""

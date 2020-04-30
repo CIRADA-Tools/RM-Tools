@@ -423,33 +423,6 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #               output_verify="fix")
 
 
-def readFitsCube_old(file, verbose, log = print):
-
-    if not os.path.exists(file):
-        log("Err: File not found")
-
-    if(verbose): log("Reading " + file + " ...")
-    data = pf.getdata(file)
-    head = pf.getheader(file)
-    if(verbose): log("done.")
-
-    if head['CTYPE3']=='FREQ':
-        freqAx=3
-        data=data[:,:,:]
-        # Feeback
-        if(verbose): log("The first 3 dimensions of the cubes are [X=%d, Y=%d, Z=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"]))
-
-    elif head["NAXIS"]==4:
-        # Feeback
-        if(verbose): log("The first 4 dimensions of the cubes are [X=%d, Y=%d, Z=%d, F=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"], head["NAXIS4"]))
-        if(head['CTYPE4']=='FREQ'):
-            freqAx=4
-            data=data[:,0,:,:]
-        else: log("Err: No frequency axis found")
-
-    return head, data
 
 
 def readFitsCube(file, verbose, log = print):

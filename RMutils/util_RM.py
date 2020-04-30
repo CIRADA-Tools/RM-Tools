@@ -101,6 +101,7 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     weightArr       ... vector of weights, default [None] is Uniform (all 1s)
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
+    log             ... function to be used to output messages [print]
     
     """
     
@@ -212,7 +213,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
-    
+    log             ... function to be used to output messages [print]
+
     """
     
     # Default data types
@@ -406,6 +408,9 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     nBits          ... precision of data arrays [32]
     verbose        ... print feedback during calculation [False]
     doPlots        ... plot the final CLEAN FDF [False]
+    pool           ... thread pool for multithreading (from schwimmbad) [None]
+    chunksize      ... number of pixels to be given per thread (for 3D) [None]
+    log            ... function to be used to output messages [print]
 
     """
 
@@ -528,7 +533,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
 class RMcleaner:
     """Allows do_rmclean_hogbom to be run in parallel
-
+    Designed around use of schwimmbad parallelization tools.
     """
 
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
@@ -754,6 +759,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     Measure standard parameters from a complex Faraday Dispersion Function.
     Currently this function assumes that the noise levels in the Stokes Q
     and U spectra are the same.
+    Returns a dictionary containing measured parameters.
     """
     
     # Determine the peak channel in the FDF, its amplitude and index
