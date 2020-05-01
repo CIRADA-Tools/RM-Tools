@@ -8,11 +8,12 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 
-NAME = 'RM-tools'
+NAME = 'RM-Tools'
 DESCRIPTION = 'RM-synthesis, RM-clean and QU-fitting on polarised radio spectra'
-URL = 'https://github.com/CIRADA-Tools/RM'
+URL = 'https://github.com/CIRADA-Tools/RM-Tools'
 REQUIRES_PYTHON = '>=3.5.0'
-VERSION = '0.1.0'
+VERSION = '1.0.0'
+DOWNLOAD_URL = 'https://github.com/CIRADA-Tools/RM-Tools/archive/v1.0.0.tar.gz'
 
 REQUIRED = [
     'numpy', 'scipy', 'matplotlib', 'astropy',
@@ -36,6 +37,7 @@ setup(
     long_description_content_type='text/markdown',
     python_requires=REQUIRES_PYTHON,
     url=URL,
+    download_url=DOWNLOAD_URL,
     packages=['RMtools_1D', 'RMtools_3D', 'RMutils'],
     entry_points={
         'console_scripts': ['rmsynth3d=RMtools_3D.do_RMsynth_3D:main',
@@ -49,6 +51,7 @@ setup(
     include_package_data=True,
     license='MIT',
     classifiers=[
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
@@ -56,5 +59,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
+    maintainer='Cameron Van Eck',
+    maintainer_email='cameron.van.eck@dunlap.utoronto.ca',
     test_suite='tests',
 )
