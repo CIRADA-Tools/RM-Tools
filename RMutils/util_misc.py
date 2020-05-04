@@ -399,7 +399,7 @@ def create_frac_spectra_test(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr, VAr
         #    print("\n")                                                                                                                   
         else:
             print ("calculating fractional stokes q,u spectrum using model I spectrum provided...")
-            fitDict["p"]=99
+            fitDict["p"]=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     except Exception:
         print("Err: Failed to fit polynomial to Stokes I spectrum.")
         if debug:
