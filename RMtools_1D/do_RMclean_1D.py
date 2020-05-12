@@ -128,7 +128,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     mDict = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = mDictS["fwhmRMSF"],
-                              #dFDF        = mDictS["dFDFth"],
+                              dFDF        = mDictS["dFDFth"],
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = mDictS["lam0Sq_m2"])
     mDict["cleanCutoff"] = cutoff
@@ -160,12 +160,16 @@ def run_rmclean(mDictS, aDict, cutoff,
         log('-'*80)
         log('RESULTS:\n')
         log('FWHM RMSF = %.4g rad/m^2' % (mDictS["fwhmRMSF"]))
-        log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
-        log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
-        log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
+        log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
+            (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
+        log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
+            (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
+        log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % 
+            (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
         log('freq0_GHz = %.4g ' % (mDictS["freq0_Hz"]/1e9))
         log('I freq0 = %.4g %s' % (mDictS["Ifreq0"],mDictS["units"]))
-        log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
+        log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % 
+            (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
         log('QU Noise = %.4g %s' % (mDictS["dQU"],mDictS["units"]))
         log('FDF Noise (theory)   = %.4g %s' % (mDictS["dFDFth"],mDictS["units"]))
         log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],mDictS["units"]))
