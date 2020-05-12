@@ -120,7 +120,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         dPhi_radm2 = fwhmRMSF_radm2 / nSamples
     if phiMax_radm2 is None:
         phiMax_radm2 = m.sqrt(3.0) / dLambdaSqMax_m2
-        phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
+        phiMax_radm2 = max(phiMax_radm2, fwhmRMSF_radm2*10.)    # Force the minimum phiMax to 10 FWHM
 
     # Faraday depth sampling. Zero always centred on middle channel
     nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2))) * 2 + 1
