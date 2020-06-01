@@ -70,7 +70,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
-                debug=False, verbose=False, log=print,units='Jy/beam'):
+                debug=False, verbose=False, log=print,units='Jy/beam', prefixOut="prefixOut", args=None):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -114,6 +114,11 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         aDict (dict): Data output by RM synthesis.
 
     """
+    # Sanity checks
+    if not os.path.exists(args.dataFile[0]):
+        print("File does not exist: '%s'." % args.dataFile[0])
+        sys.exit()
+    prefixOut, ext = os.path.splitext(args.dataFile[0])
 
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -163,50 +168,49 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                  debug    = debug)
 
     # Plot the data and the Stokes I model fit
-    if showPlots:
-        if verbose: log("Plotting the input data and spectral index fit.")
-        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)
-        specFig = plt.figure(figsize=(12.0, 8))
-        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr           = IArr,
-                              qArr           = qArr,
-                              uArr           = uArr,
-                              dIArr          = dIArr,
-                              dqArr          = dqArr,
-                              duArr          = duArr,
-                              freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr        = IModHirArr,
-                              fig            = specFig,
-                              units          = units)
+    if verbose: log("Plotting the input data and spectral index fit.")
+    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+    IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)
+    specFig = plt.figure(figsize=(12.0, 8))
+    plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                          IArr           = IArr,
+                          qArr           = qArr,
+                          uArr           = uArr,
+                          dIArr          = dIArr,
+                          dqArr          = dqArr,
+                          duArr          = duArr,
+                          freqHirArr_Hz  = freqHirArr_Hz,
+                          IModArr        = IModHirArr,
+                          fig            = specFig,
+                          units          = units)
 
-        # Use the custom navigation toolbar (does not work on Mac OS X)
+    # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
 #            specFig.canvas.toolbar.pack_forget()
 #            CustomNavbar(specFig.canvas, specFig.canvas.toolbar.window)
 #        except Exception:
 #            pass
 
-        # Display the figure
+    # Display the figure
 #        if not plt.isinteractive():
 #            specFig.show()
 
-        # DEBUG (plot the Q, U and average RMS spectrum)
-        if debug:
-            rmsFig = plt.figure(figsize=(12.0, 8))
-            ax = rmsFig.add_subplot(111)
-            ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
-                    label='rms <QU>')
-            ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
-                    label='rms Q')
-            ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
-                    label='rms U')
-            xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
-            ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                         np.max(freqArr_Hz)/1e9 + xRange*0.05)
-            ax.set_xlabel('$\\nu$ (GHz)')
-            ax.set_ylabel('RMS '+units)
-            ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
+    # DEBUG (plot the Q, U and average RMS spectrum)
+    if debug:
+        rmsFig = plt.figure(figsize=(12.0, 8))
+        ax = rmsFig.add_subplot(111)
+        ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
+                label='rms <QU>')
+        ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
+                label='rms Q')
+        ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
+                label='rms U')
+        xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
+        ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
+                     np.max(freqArr_Hz)/1e9 + xRange*0.05)
+        ax.set_xlabel('$\\nu$ (GHz)')
+        ax.set_ylabel('RMS '+units)
+        ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
 #            rmsFig.show()
 
     #-------------------------------------------------------------------------#
@@ -354,7 +358,13 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      chiSqReduArr=pD["chiSqRedArrU"],
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
-        tmpFig.show()
+        if saveOutput:
+            if verbose: print("Saving RMSF and dirty FDF plot:")
+            outFilePlot = prefixOut + ".RMSF-dirtyFDF-plots.pdf"
+            if verbose: print("> " + outFilePlot)
+            tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
+        else:
+            tmpFig.show()
 
     #add array dictionary
     aDict = dict()
@@ -399,7 +409,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
 
     # Plot the RM Spread Function and dirty FDF
-    if showPlots:
+    if showPlots or saveOutput:
         fdfFig = plt.figure(figsize=(12.0, 8))
         plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = dirtyFDF,
@@ -421,8 +431,13 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 #        fdfFig.show()
 
     # Pause if plotting enabled
-    if showPlots or debug:
+    if showPlots:
         plt.show()
+    elif saveOutput or debug:
+        if verbose: print("Saving debug plots:")
+        outFilePlot = prefixOut + ".debug-plots.pdf"
+        if verbose: print("> " + outFilePlot)
+        tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
         #        #if verbose: print "Press <RETURN> to exit ...",
 #        input()
 
@@ -576,7 +591,7 @@ def main():
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="verbose output [False].")
     parser.add_argument("-S", dest="saveOutput", action="store_true",
-                        help="save the arrays [False].")
+                        help="save the arrays and plots [False].")
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
@@ -609,7 +624,10 @@ def main():
                 showPlots      = args.showPlots,
                 debug          = args.debug,
                 verbose        = verbose,
-                units          = args.units)
+                units          = args.units,
+                prefixOut      = prefixOut,
+                args           = args,
+                )
 
     if args.saveOutput:
         saveOutput(mDict, aDict, prefixOut, verbose)

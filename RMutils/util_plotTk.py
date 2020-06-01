@@ -106,6 +106,16 @@ mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['font.size'] = 12.0
 
+# Quick workaround to check if there is a chance for matplotlin to catch an
+# X DISPLAY
+try:
+    if os.environ["rmsy_mpl_backend"] == "Agg":
+        print('Environment variable rmsy_mpl_backend="Agg" detected.')
+        print('Using matplotlib "Agg" backend in order to save the plots.')
+        mpl.use("Agg")
+except Exception as e:
+    pass
+
 # Constants
 C = 2.99792458e8
 
