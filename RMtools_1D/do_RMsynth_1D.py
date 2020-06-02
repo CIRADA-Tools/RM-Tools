@@ -359,8 +359,8 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
         if saveOutput:
-            if verbose: print("Saving RMSF and dirty FDF plot:")
-            outFilePlot = prefixOut + ".RMSF-dirtyFDF-plots.pdf"
+            if verbose: print("Saving debug plots:")
+            outFilePlot = prefixOut + ".debug-plots.pdf"
             if verbose: print("> " + outFilePlot)
             tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
         else:
@@ -434,10 +434,10 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     if showPlots:
         plt.show()
     elif saveOutput or debug:
-        if verbose: print("Saving debug plots:")
-        outFilePlot = prefixOut + ".debug-plots.pdf"
+        if verbose: print("Saving RMSF and dirty FDF plot:")
+        outFilePlot = prefixOut + ".RMSF-dirtyFDF-plots.pdf"
         if verbose: print("> " + outFilePlot)
-        tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
+        fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
         #        #if verbose: print "Press <RETURN> to exit ...",
 #        input()
 
