@@ -25,5 +25,5 @@
 ./do_RMsynth_3D.py data/StokesQ.fits data/StokesU.fits data/freqs_Hz.dat -i data/Imodel.fits -o "WithI_"
 
 # Perform RM-clean on the dirty FDF
-./do_RMclean_3D.py -c 0.12 data/FDF_dirty.fits data/RMSF.fits
+./do_RMclean_3D.py -c 0.12 data/FDF_tot_dirty.fits data/RMSF_tot.fits
 

@@ -102,6 +102,7 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     weightArr       ... vector of weights, default [None] is Uniform (all 1s)
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
+    log             ... function to be used to output messages [print]
     
     """
     
@@ -213,7 +214,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
-    
+    log             ... function to be used to output messages [print]
+
     """
     
     # Default data types
@@ -407,6 +409,9 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     nBits          ... precision of data arrays [32]
     verbose        ... print feedback during calculation [False]
     doPlots        ... plot the final CLEAN FDF [False]
+    pool           ... thread pool for multithreading (from schwimmbad) [None]
+    chunksize      ... number of pixels to be given per thread (for 3D) [None]
+    log            ... function to be used to output messages [print]
 
     """
 
@@ -529,7 +534,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
 class RMcleaner:
     """Allows do_rmclean_hogbom to be run in parallel
-
+    Designed around use of schwimmbad parallelization tools.
     """
 
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
@@ -755,6 +760,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     Measure standard parameters from a complex Faraday Dispersion Function.
     Currently this function assumes that the noise levels in the Stokes Q
     and U spectra are the same.
+    Returns a dictionary containing measured parameters.
     """
     
     # Determine the peak channel in the FDF, its amplitude and index
@@ -795,12 +801,12 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     peakFDFimagChan = FDF.imag[indxPeakPIchan]
     peakFDFrealChan = FDF.real[indxPeakPIchan]
     polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
-                                         peakFDFrealChan))
+                                         peakFDFrealChan)) % 180
     dPolAngleChan_deg = np.degrees(dFDF / (2.0 * ampPeakPIchan))
 
     # Calculate the derotated polarisation angle and uncertainty
     polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
-                                  phiPeakPIchan * lam0Sq)
+                                  phiPeakPIchan * lam0Sq) % 180
     nChansGood = np.sum(np.where(lamSqArr_m2==lamSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
@@ -852,13 +858,13 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         peakFDFimagFit = np.interp(phiPeakPIfit, phiArr, FDF.imag)
         peakFDFrealFit = np.interp(phiPeakPIfit, phiArr, FDF.real)
         polAngleFit_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagFit,
-                                                  peakFDFrealFit))
+                                                  peakFDFrealFit)) % 180
         dPolAngleFit_deg = np.degrees(dFDF / (2.0 * ampPeakPIfit))
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
-                                      phiPeakPIfit * lam0Sq)) % 180.0
+                                      phiPeakPIfit * lam0Sq)) % 180
         dPolAngle0Fit_rad = \
             np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )

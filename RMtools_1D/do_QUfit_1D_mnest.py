@@ -51,7 +51,7 @@ import os
 import shutil
 import copy
 import time
-import imp
+import importlib
 import json
 import argparse
 import traceback
@@ -84,6 +84,24 @@ C = 2.997924538e8 # Speed of light [m/s]
 def main():
     """
     Start the run_qufit procedure if called from the command line.
+    
+    Run QU-fitting on polarised spectra (1D) stored in an ASCII file. The
+    Stokes I spectra is first fit with a polynomial and the resulting model
+    used to create fractional q = Q/I and u = U/I spectra. If the 'noStokesI'
+    option is given, the input data are assumed to be fractional already.
+
+    The script uses the Nested Sampling algorithm (Skilling 2004) to find
+    the best fitting parameters, given a prior function on each free parameter.
+    The sampling algorithm also calculates the Bayesian evidence, which can
+    be used for model comparison. Factors of >10 between models mean that one
+    model is strongly favoured over the other.
+
+    Models and priors are  specified as Python code in files called 'mX.py'
+    within the 'models_ns' directory. See the existing files for examples
+    drawn from the paper Sokoloff et al. 1998, MNRAS 229, pg 189.
+
+    Main algorithm handles the command line interface, passing all arguments
+    one to run_qufit().
     """
 
     # Help string to be shown using the -h option
@@ -144,7 +162,24 @@ def main():
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, debug=False, verbose=False):
-    """Function controlling the fitting procedure."""
+    """Carry out QU-fitting using the supplied parameters:
+        dataFile (str, required): relative or absolute path of file containing 
+            frequencies and Stokes parameters with errors.
+        modelNum (int, required): number of model to be fit to data. Models and
+             priors are specified as Python code in files called 'mX.py' within  
+            the 'models_ns' directory.
+        outDir (str): relative or absolute path to save outputs to. Defaults to
+            working directory.
+        polyOrd (int): Order of polynomial to fit to Stokes I spectrum (used to
+            normalize Q and U values). Defaults to 3 (cubic).
+        nBits (int): number of bits to use in internal calculations.
+        noStokesI (bool): set True if the Stokes I spectrum should be ignored.
+        showPlots (bool): Set true if the spectrum and parameter space plots
+            should be displayed.
+        debug (bool): Display debug messages.
+        verbose (bool): Print verbose messages/results to terminal.
+        
+        Returns: nothing. Results saved to files and/or printed to terminal."""
 
     # Get the processing environment
     if mpiSwitch:
@@ -264,9 +299,26 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         mpiComm.Barrier()
     if mpiRank==0:
         print("\nLoading the model from 'models_ns/m%d.py' ..."  % modelNum)
-    mod = imp.load_source("m%d" % modelNum, "models_ns/m%d.py" % modelNum)
+    #First check the working directory for a model. Failing that, try the install directory.
+    try:
+        spec=importlib.util.spec_from_file_location("m%d" % modelNum,"models_ns/m%d.py" % modelNum)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[mod] = mod
+        spec.loader.exec_module(mod)
+    except FileNotFoundError:
+        try:
+            RMtools_dir=os.path.dirname(importlib.util.find_spec('RMtools_1D').origin)
+            spec=importlib.util.spec_from_file_location("m%d" % modelNum,RMtools_dir+"/models_ns/m%d.py" % modelNum)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod] = mod
+            spec.loader.exec_module(mod)
+        except:
+            print('Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/RMtools_1D/models_ns/'.format(os.getcwd(),RMtools_dir))
+            sys.exit()
+
     global model
     model = mod.model
+
 
     # Let's time the sampler
     if mpiRank==0:

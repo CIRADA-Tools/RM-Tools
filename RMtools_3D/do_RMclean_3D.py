@@ -6,6 +6,7 @@
 # PURPOSE:  Run RM-clean on a  cube of dirty Faraday dispersion functions.    #
 #                                                                             #
 # MODIFIED: 15-May-2016 by C. Purcell                                         #
+# MODIFIED: 23-October-2019 by A. Thomson                                     #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -36,7 +37,6 @@
 import sys
 import os
 import time
-import argparse
 import numpy as np
 import astropy.io.fits as pf
 
@@ -51,9 +51,270 @@ from RMutils.util_RM import fits_make_lin_axis
 
 C = 2.997924538e8 # Speed of light [m/s]
 
+
+#-----------------------------------------------------------------------------#
+def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
+                pool=None, chunksize=None, verbose = True, log = print):
+    """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
+
+    If you want to run RM-CLEAN on arrays, just use util_RM.do_rmclean_hogbom.
+
+    Args:
+        fitsFDF (str): Name of FDF FITS file.
+        fitsRMSF (str): Name of RMSF FITS file
+        cutoff (float): CLEAN cutoff in flux units
+
+    Kwargs:
+        maxIter (int): Maximum number of CLEAN iterations per pixel.
+        gain (float): CLEAN loop gain.
+        nBits (int): Precision of floating point numbers.
+        pool (multiprocessing Pool): Pool function from multiprocessing
+            or schwimmbad
+        chunksize (int): Number of chunks which it submits to the process pool
+            as separate tasks. The (approximate) size of these chunks can be
+            specified by setting chunksize to a positive integer.
+        verbose (bool): Verbosity.
+        log (function): Which logging function to use.
+
+    Returns:
+        cleanFDF (ndarray): Cube of RMCLEANed FDFs.
+        ccArr (ndarray): Cube of RMCLEAN components (i.e. the model).
+        iterCountArr (ndarray): Cube of number of RMCLEAN iterations.
+        residFDF (ndarray): Cube of residual RMCLEANed FDFs.
+        head (fits.header): Header of FDF FITS file for template.
+
+    """
+
+
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2*nBits)
+
+    # Read the FDF
+    dirtyFDF, head, FD_axis = read_FDF_cubes(fitsFDF)
+
+
+
+    phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1, dtype=dtFloat)
+
+    # Read the RMSF
+
+    RMSFArr, headRMSF,FD_axis = read_FDF_cubes(fitsRMSF)
+    HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
+    fwhmRMSFArr = np.squeeze(HDULst[0].data)
+    HDULst.close()
+    phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
+
+    startTime = time.time()
+
+    # Do the clean
+    cleanFDF, ccArr, iterCountArr, residFDF  = \
+        do_rmclean_hogbom(dirtyFDF         = dirtyFDF,
+                          phiArr_radm2     = phiArr_radm2,
+                          RMSFArr          = RMSFArr,
+                          phi2Arr_radm2    = phi2Arr_radm2,
+                          fwhmRMSFArr      = fwhmRMSFArr,
+                          cutoff           = cutoff,
+                          maxIter          = maxIter,
+                          gain             = gain,
+                          verbose          = verbose,
+                          doPlots          = False,
+                          pool             = pool,
+                          chunksize        = chunksize)
+
+
+    endTime = time.time()
+    cputime = (endTime - startTime)
+    if (verbose): log("> RM-clean completed in %.2f seconds." % cputime)
+    if (verbose): log("Saving the clean FDF and ancillary FITS files")
+
+
+
+
+    #Move FD axis back to original position:
+    Ndim=cleanFDF.ndim
+    cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
+    ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
+
+    return cleanFDF, ccArr, iterCountArr, residFDF, head
+
+def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
+            prefixOut="", outDir="", write_separate_FDF=False, verbose=True, log=print):
+    """Write data to disk in FITS
+
+
+    Output files:
+        Default:
+            FDF_clean.fits: RMCLEANed FDF, in 3 extensions: Q,U, and PI.
+            FDF_CC.fits: RMCLEAN components, in 3 extensions: Q,U, and PI.
+            CLEAN_nIter.fits: RMCLEAN iterations.
+
+        write_seperate_FDF=True:
+            FDF_clean_real.fits and FDF_CC.fits are split into
+            three constituent components:
+                FDF_clean_real.fits: Stokes Q
+                FDF_clean_im.fits: Stokes U
+                FDF_clean_tot.fits: Polarized Intensity (sqrt(Q^2+U^2))
+                FDF_CC_real.fits: Stokes Q
+                FDF_CC_im.fits: Stokes U
+                FDF_CC_tot.fits: Polarized Intensity (sqrt(Q^2+U^2))
+                CLEAN_nIter.fits: RMCLEAN iterations.
+    Args:
+        cleanFDF (ndarray): Cube of RMCLEANed FDFs.
+        ccArr (ndarray): Cube of RMCLEAN components (i.e. the model).
+        iterCountArr (ndarray): Cube of number of RMCLEAN iterations.
+        residFDF (ndarray): Cube of residual RMCLEANed FDFs.
+
+    Kwargs:
+        prefixOut (str): Prefix for filenames.
+        outDir (str): Directory to save files.
+        write_seperate_FDF (bool): Write Q, U, and PI separately?
+        verbose (bool): Verbosity.
+        log (function): Which logging function to use.
+    """
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2*nBits)
+
+
+    if outDir=='':  #To prevent code breaking if file is in current directory
+        outDir='.'
+    # Save the clean FDF
+    if not write_separate_FDF:
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean.fits"
+        if(verbose): log("> %s" % fitsFileOut)
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
+        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), headtemp)
+        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
+        hduLst = pf.HDUList([hdu0, hdu1, hdu2])
+        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        hduLst.close()
+    else:
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_real.fits"
+        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_im.fits"
+        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_tot.fits"
+        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+
+    if not write_separate_FDF:
+    #Save the complex clean components as another file.
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC.fits"
+        if (verbose): log("> %s" % fitsFileOut)
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
+        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), headtemp)
+        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), headtemp)
+        hduLst = pf.HDUList([hdu0, hdu1, hdu2])
+        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        hduLst.close()
+    else:
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_real.fits"
+        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_im.fits"
+        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), headtemp)
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_tot.fits"
+        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if (verbose): log("> %s" % fitsFileOut)
+
+    #Because there can be problems with different axes having different FITS keywords,
+    #don't try to remove the FD axis, but just make it degenerate.
+    # Also requires np.expand_dims to set the correct NAXIS.
+    headtemp["NAXIS3"] = 1
+
+    # Save the iteration count mask
+    fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
+    if (verbose): log("> %s" % fitsFileOut)
+    headtemp["BUNIT"] = "Iterations"
+    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), axis=0),
+                        headtemp)
+    hduLst = pf.HDUList([hdu0])
+    hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+    hduLst.close()
+
+
+#Old method (for multi-extension files)
+def read_FDF_cube(filename):
+    """Read in a FDF/RMSF cube. Figures out which axis is Faraday depth and
+    puts it first (in numpy order) to accommodate the rest of the code.
+    Returns: (complex_cube, header,FD_axis)
+    """
+    HDULst = pf.open(filename, "readonly", memmap=True)
+    head = HDULst[0].header.copy()
+    FDFreal = HDULst[0].data
+    FDFimag = HDULst[1].data
+    complex_cube = FDFreal + 1j * FDFimag
+
+    #Identify Faraday depth axis (assumed to be last one if not explicitly found)
+    Ndim=head['NAXIS']
+    FD_axis=Ndim
+    #Check for FD axes:
+    for i in range(1,Ndim+1):
+        try:
+            if 'FDEP' in head['CTYPE'+str(i)].upper():
+                FD_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+
+    #Move FD axis to first place in numpy order.
+    if FD_axis != Ndim:
+        complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
+
+    #Remove degenerate axes to prevent problems with later steps.
+    complex_cube=complex_cube.squeeze()
+
+    return complex_cube, head,FD_axis
+
+def read_FDF_cubes(filename):
+    """Read in a FDF/RMSF cube. Input filename can be any of real, imag, or tot components.
+    Figures out which axis is Faraday depth and
+    puts it first (in numpy order) to accommodate the rest of the code.
+    Returns: (complex_cube, header,FD_axis)
+    """
+    HDUreal = pf.open(filename.replace('_tot','_real').replace('_im','_real'), "readonly", memmap=True)
+    head = HDUreal[0].header.copy()
+    FDFreal = HDUreal[0].data
+
+    HDUimag = pf.open(filename.replace('_tot','_im').replace('_real','_im'), "readonly", memmap=True)
+    FDFimag = HDUimag[0].data
+    complex_cube = FDFreal + 1j * FDFimag
+
+    #Identify Faraday depth axis (assumed to be last one if not explicitly found)
+    Ndim=head['NAXIS']
+    FD_axis=Ndim
+    #Check for FD axes:
+    for i in range(1,Ndim+1):
+        try:
+            if 'FDEP' in head['CTYPE'+str(i)].upper():
+                FD_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+
+    #Move FD axis to first place in numpy order.
+    if FD_axis != Ndim:
+        complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
+
+    #Remove degenerate axes to prevent problems with later steps.
+    complex_cube=complex_cube.squeeze()
+
+    return complex_cube, head,FD_axis
+
+
 #-----------------------------------------------------------------------------#
 def main():
-    
+    import argparse
     """
     Start the function to perform RM-clean if called from the command line.
     """
@@ -62,19 +323,22 @@ def main():
     descStr = """
     Run RM-CLEAN on a cube of Faraday dispersion functions (FDFs), applying
     a cube of rotation measure spread functions created by the script
-    'do_RMsynth_3D.py'. Saves a cube of deconvolved FDFs & clean-component
+    'do_RMsynth_3D.py'. Saves cubes of deconvolved FDFs & clean-component
     spectra, and a pixel map showing the number of iterations performed.
-    Set any of the multiprocessing options to enable parallelization 
+    Set any of the multiprocessing options to enable parallelization
     (otherwise, pixels will be processed serially).
+
+    Expects that the input is in the form of the Stokes-separated
+    (single extension) FITS cubes produced by do_RMsynth_3D.
     """
-    
+
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("fitsFDF", metavar="FDF_dirty.fits", nargs=1,
-                        help="FITS cube containing the dirty FDF.\n(Must be the single-file output from do_RMsynth_3D.py)")
+                        help="FITS cube containing the dirty FDF.\n(Can be any of the FDF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("fitsRMSF", metavar="RMSF.fits", nargs=1,
-                        help="FITS cube containing the RMSF and FWHM image.\n(Must be the single-file output from do_RMsynth_3D.py)")
+                        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("-c", dest="cutoff", type=float, nargs=1,
                         default=1.0, help="CLEAN cutoff in flux units")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
@@ -84,7 +348,7 @@ def main():
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-f", dest="write_separate_FDF", action="store_false",
-                        help="Store different Stokes as FITS extensions [False, store as seperate files].")
+                        help="Store different Stokes as FITS extensions [False, store as separate files].")
 
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
@@ -103,7 +367,7 @@ def main():
     #Check if the user is trying to use parallelization without installing it:
     if parallel_available==False and (args.n_cores != 1 or args.chunk != None or args.mpi != False):
         raise Exception('Parallel processing not available. Please install the schwimmbad module to enable parallel processing.')
-        
+
     #If parallelization requested use it, otherwise use the old-fashioned way.
     if parallel_available==True and (args.n_cores != 1 or args.chunk != None or args.mpi != False):
         pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
@@ -129,207 +393,24 @@ def main():
     dataDir, dummy = os.path.split(args.fitsFDF[0])
 
     # Run RM-CLEAN on the cubes
-    run_rmclean(fitsFDF     = args.fitsFDF[0],
-                fitsRMSF    = args.fitsRMSF[0],
-                cutoff      = args.cutoff,
-                maxIter     = args.maxIter,
-                gain        = args.gain,
-                prefixOut   = args.prefixOut,
-                outDir      = dataDir,
-                nBits       = 32,
-                write_separate_FDF=args.write_separate_FDF,
-                verbose = verbose)
-
-
-
-#-----------------------------------------------------------------------------#
-def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1,
-                prefixOut="", outDir="", nBits=32,write_separate_FDF=False, 
-                pool=None, chunksize=None, verbose = True, log = print):
-    """Run RM-CLEAN on a FDF cube given a RMSF cube."""
-
-
-    # Default data types
-    dtFloat = "float" + str(nBits)
-    dtComplex = "complex" + str(2*nBits)
-
-    # Read the FDF
-    dirtyFDF, head,FD_axis=read_FDF_cubes(fitsFDF)
-
-    
-    
-    phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1, dtype=dtFloat)
-    
-    # Read the RMSF
-
-    RMSFArr, headRMSF,FD_axis=read_FDF_cubes(fitsRMSF)
-    HDULst = pf.open(fitsRMSF.replace('_real','_FWHM').replace('_im','_FWHM').replace('_tot','_FWHM'), "readonly", memmap=True)
-    fwhmRMSFArr = HDULst[0].data
-    HDULst.close()
-    phi2Arr_radm2 = fits_make_lin_axis(headRMSF, axis=FD_axis-1, dtype=dtFloat)
-
-    startTime = time.time()
-    
-    # Do the clean
-    cleanFDF, ccArr, iterCountArr, residFDF  = \
-        do_rmclean_hogbom(dirtyFDF         = dirtyFDF,
-                          phiArr_radm2     = phiArr_radm2,
-                          RMSFArr          = RMSFArr,
-                          phi2Arr_radm2    = phi2Arr_radm2,
-                          fwhmRMSFArr      = fwhmRMSFArr,
-                          cutoff           = cutoff,
-                          maxIter          = maxIter,
-                          gain             = gain,
-                          verbose          = verbose,
-                          doPlots          = False,
-                          pool             = pool,
-                          chunksize        = chunksize)
-
-        
-    endTime = time.time()
-    cputime = (endTime - startTime)
-    if (verbose): log("> RM-clean completed in %.2f seconds." % cputime)
-    if (verbose): log("Saving the clean FDF and ancillary FITS files")
-
-
-    if outDir=='':  #To prevent code breaking if file is in current directory
-        outDir='.'
-
-    #Move FD axis back to original position:
-    Ndim=cleanFDF.ndim
-    cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
-    ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
-    
-
-    # Save the clean FDF
-    if not write_separate_FDF:
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean.fits"
-        if(verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), head)
-        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), head)
-        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), head)
-        hduLst = pf.HDUList([hdu0, hdu1, hdu2])
-        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        hduLst.close()
-    else:
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_real.fits"
-        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_im.fits"
-        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_tot.fits"
-        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-
-    if not write_separate_FDF:
-    #Save the complex clean components as another file.
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC.fits"
-        if (verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), head)
-        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), head)
-        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), head)
-        hduLst = pf.HDUList([hdu0, hdu1, hdu2])
-        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        hduLst.close()
-    else:
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_real.fits"
-        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_im.fits"
-        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), head)
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_tot.fits"
-        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        if (verbose): log("> %s" % fitsFileOut)
-
-
-    # Save the iteration count mask
-    fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
-    if (verbose): log("> %s" % fitsFileOut)
-    head["BUNIT"] = "Iterations"
-    hdu0 = pf.PrimaryHDU(iterCountArr.astype(dtFloat), head)
-    hduLst = pf.HDUList([hdu0])
-    hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-    hduLst.close()
-    
-
-#Old method (for multi-extension files)
-def read_FDF_cube(filename):
-    """Read in a FDF/RMSF cube. Figures out which axis is Faraday depth and 
-    puts it first (in numpy order) to accommodate the rest of the code.
-    Returns: (complex_cube, header,FD_axis)
-    """
-    HDULst = pf.open(filename, "readonly", memmap=True)
-    head = HDULst[0].header.copy()
-    FDFreal = HDULst[0].data
-    FDFimag = HDULst[1].data
-    complex_cube = FDFreal + 1j * FDFimag
-    
-    #Identify Faraday depth axis (assumed to be last one if not explicitly found)
-    Ndim=head['NAXIS']
-    FD_axis=Ndim 
-    #Check for FD axes:
-    for i in range(1,Ndim+1):
-        try:
-            if 'FARADAY' in head['CTYPE'+str(i)].upper():
-                FD_axis=i
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                 # have CTYPE keywords.
-
-    #Move FD axis to first place in numpy order.
-    if FD_axis != Ndim:
-        complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
-
-    #Remove degenerate axes to prevent problems with later steps.
-    complex_cube=complex_cube.squeeze() 
-
-    return complex_cube, head,FD_axis
-    
-def read_FDF_cubes(filename):
-    """Read in a FDF/RMSF cube. Input filename can be any of real, imag, or tot components.
-    Figures out which axis is Faraday depth and 
-    puts it first (in numpy order) to accommodate the rest of the code.
-    Returns: (complex_cube, header,FD_axis)
-    """
-    HDUreal = pf.open(filename.replace('_tot_','_real_').replace('_im_','_real_'), "readonly", memmap=True)
-    head = HDUreal[0].header.copy()
-    FDFreal = HDUreal[0].data
-
-    HDUimag = pf.open(filename.replace('_tot_','_im_').replace('_real_','_im_'), "readonly", memmap=True)
-    FDFimag = HDUimag[0].data
-    complex_cube = FDFreal + 1j * FDFimag
-    
-    #Identify Faraday depth axis (assumed to be last one if not explicitly found)
-    Ndim=head['NAXIS']
-    FD_axis=Ndim 
-    #Check for FD axes:
-    for i in range(1,Ndim+1):
-        try:
-            if 'FARADAY' in head['CTYPE'+str(i)].upper():
-                FD_axis=i
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                 # have CTYPE keywords.
-
-    #Move FD axis to first place in numpy order.
-    if FD_axis != Ndim:
-        complex_cube=np.moveaxis(complex_cube,Ndim-FD_axis,0)
-
-    #Remove degenerate axes to prevent problems with later steps.
-    complex_cube=complex_cube.squeeze() 
-
-    return complex_cube, head,FD_axis
-
-
-
+    cleanFDF, ccArr, iterCountArr, residFDF, headtemp = run_rmclean(fitsFDF     = args.fitsFDF[0],
+                                                        fitsRMSF    = args.fitsRMSF[0],
+                                                        cutoff      = args.cutoff,
+                                                        maxIter     = args.maxIter,
+                                                        gain        = args.gain,
+                                                        chunksize   = chunksize,
+                                                        nBits       = 32,
+                                                        verbose = verbose)
+    # Write results to disk
+    writefits(cleanFDF,
+            ccArr,
+            iterCountArr,
+            residFDF,
+            headtemp,
+            prefixOut           = args.prefixOut,
+            outDir              = dataDir,
+            write_separate_FDF  = args.write_separate_FDF,
+            verbose             = verbose)
 
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":

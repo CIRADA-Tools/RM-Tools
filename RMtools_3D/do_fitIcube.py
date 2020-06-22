@@ -100,13 +100,12 @@ def main():
                  prefixOut    = args.prefixOut,
                  outDir       = dataDir,
                  debug        = args.debug,
-                 nBits        = 32,
                  buffCols     = args.buffCols)
 
 
 #-----------------------------------------------------------------------------#
 def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
-                 outDir="", debug=True, nBits=32, verbose=True, buffCols=10):
+                 outDir="", debug=True, verbose=True, buffCols=10):
     """
     Detect emission in a cube and fit a polynomial model spectrum to the
     emitting pixels. Create a representative noise spectrum using the residual
@@ -114,20 +113,38 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     """
 
     # Default data type
-    dtFloat = "float" + str(nBits)
     
     # Sanity check on header dimensions
     print("Reading FITS cube header from '%s':" % fitsI)
     headI = pf.getheader(fitsI, 0)
     nDim = headI["NAXIS"]
     if nDim < 3 or nDim > 4:
-        print("Err: only 3 or 4 dimensions supported: D = %d." % headQ["NAXIS"])
+        print("Err: only 3 or 4 dimensions supported: D = %d." % headI["NAXIS"])
         sys.exit()
     nDim = headI["NAXIS"]
-    nChan = headI["NAXIS3"]
+
+    #Idenfitify frequency axis:
+    freq_axis=0 #Default for 'frequency axis not identified'
+    #Check for frequency axes. Because I don't know what different formatting
+    #I might get ('FREQ' vs 'OBSFREQ' vs 'Freq' vs 'Frequency'), convert to
+    #all caps and check for 'FREQ' anywhere in the axis name. Shouldn't be more
+    #than one axis like that, right?
+    for i in range(1,nDim+1):
+        try:
+            if 'FREQ' in headI['CTYPE'+str(i)].upper():
+                freq_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+
+    nBits=np.abs(headI['BITPIX'])    
+    dtFloat = "float" + str(nBits)
+
+    
+    nChan = headI["NAXIS"+str(freq_axis)]
     
     # Read the frequency vector
-    print("Reading frequency vector from '%s':" % freqFile)
+    print("Reading frequency vector from '%s'." % freqFile)
     freqArr_Hz = np.loadtxt(freqFile, dtype=dtFloat)
     freqArr_GHz = freqArr_Hz/1e9
     if nChan!=len(freqArr_Hz):
@@ -144,7 +161,9 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         HDULst = pf.open(fitsI, "readonly", memmap=True)
         if nDim==3:
             dataPlane = HDULst[0].data[i,:,:]
-        elif nDim==4:
+        elif nDim==4 and freq_axis == 4:
+            dataPlane = HDULst[0].data[i,0,:,:]
+        elif nDim==4 and freq_axis == 3:
             dataPlane = HDULst[0].data[0,i,:,:]
         if cutoff>0:
             idxSky = np.where(dataPlane<cutoff)
@@ -153,11 +172,11 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         
         # Pass 1
         rmsTmp = MAD(dataPlane[idxSky])
-        medTmp = np.median(dataPlane[idxSky])
+        medTmp = np.nanmedian(dataPlane[idxSky])
         
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
         idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
-        medSky = np.median(dataPlane[idxSky])
+        medSky = np.nanmedian(dataPlane[idxSky])
         rmsArr[i] = MAD(dataPlane[idxSky])
         mskSky[idxSky] +=1
         
@@ -174,6 +193,8 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         del HDULst
 
     # Save the noise spectrum
+    if outDir == '':
+        outDir='.'
     print("Saving the RMS noise spectrum in an ASCII file:")
     outFile = outDir + "/"  + prefixOut + "Inoise.dat"
     print("> %s" % outFile)
@@ -189,12 +210,12 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     fitsFileOut = outDir + "/"  + prefixOut + "IskyMask.fits"
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
-               clobber=True)
+               overwrite=True)
     mskArr = np.where(mskSrc>0, 1.0, np.nan)
     fitsFileOut = outDir + "/"  + prefixOut + "IsrcMask.fits"
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
-               clobber=True)
+               overwrite=True)
         
     # Create a blank FITS file on disk using the large file method
     # http://docs.astropy.org/en/stable/io/fits/appendix/faq.html
@@ -214,10 +235,10 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         nVoxels *= headI["NAXIS4"]
     while len(headModel) < (36 * 4 - 1):
         headModel.append()
-    headModel.tofile(fitsModelFile, clobber=True)
+    headModel.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
         f.seek(len(headModel.tostring()) + (nVoxels*int(nBits/8)) - 1)
-        f.write("\0")
+        f.write(b"\0")
 
     # Feeback to user
     srcIdx = np.where(mskSrc>0)
@@ -247,10 +268,13 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         HDULst = pf.open(fitsI, "readonly", memmap=True)
         if nDim==3:
             IArr = HDULst[0].data[:, :, i:i+buffCols]
-        elif nDim==4:
+        elif nDim==4 and freq_axis == 3:
             IArr = HDULst[0].data[0,:, :, i:i+buffCols]
+        elif nDim==4 and freq_axis == 4:
+            IArr = HDULst[0].data[:,0, :, i:i+buffCols]
+
         HDULst.close()
-        IModArr = np.ones_like(IArr)*medSky
+        IModArr = np.ones_like(IArr,dtype=dtFloat)*medSky
 
         # Fit the spectra in turn
         for yi, xi in srcCoords:
@@ -294,8 +318,10 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         HDULst = pf.open(fitsModelFile, "update", memmap=True)
         if nDim==3:            
             HDULst[0].data[:, :, i:i+buffCols] = IModArr
-        elif nDim==4:
+        elif nDim==4 and freq_axis == 3:
             HDULst[0].data[0, :, :, i:i+buffCols] = IModArr
+        elif nDim==4 and freq_axis == 4:
+            HDULst[0].data[:, 0, :, i:i+buffCols] = IModArr
         HDULst.close()
         
     endTime = time.time()

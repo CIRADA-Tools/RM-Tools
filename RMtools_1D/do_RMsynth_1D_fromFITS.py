@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #=============================================================================#
 #                                                                             #
-# NAME:     do_RMsynth_1D.py                                                  #
+# NAME:     do_RMsynth_1D_fromFITS.py                                         #
 #                                                                             #
 # PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 15-Nov-2018 by J. West                                            #
+# MODIFIED: Summer 2019, by Boris Gbeasor                                     #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -46,7 +46,7 @@ if sys.version_info.major == 2:
 
 from astropy.io import fits
 from RMtools_1D.make_freq_file import get_freq_array
-import RMtools_1D.cl_RMsynth_1d as clRM
+from RMtools_1D.do_RMsynth_1D import run_rmsynth, saveOutput
 import numpy as np
 from astropy import wcs
 C = 2.997924538e8 # Speed of light [m/s]
@@ -64,7 +64,7 @@ def main():
     *** PROTOTYPE! FUNCTIONALITY NOT GUARANTEED! PLEASE TEST AND SUBMIT BUG REPORTS!***
 
     Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in a FITS
-    file. Does not correct for Stokes I spectrum, and does not account for errors.
+    file. Does not currently account for errors.
     If these features are needed, please use the standard 1D function.
     """
 
@@ -166,9 +166,9 @@ def main():
     if args.StokesI_fits is not None:
         I_array = get_data_Q_U(args.StokesI_fits, ycoords, xcoords)
         dI_array = np.full(freq_array.shape, 1 * 10 ** (-3))
-        data.append(I_array, dI_array)
+        data=[freq_array,I_array, Q_array, U_array, dI_array, dQ_array, dU_array]
     # Run RM-synthesis on the spectra
-    dict, aDict = clRM.run_rmsynth(data           = data,
+    dict, aDict = run_rmsynth(data           = data,
                 polyOrd        = args.polyOrd,
                 phiMax_radm2   = args.phiMax_radm2,
                 dPhi_radm2     = args.dPhi_radm2,
@@ -183,7 +183,7 @@ def main():
                 units          = args.units)
     #pdb.set_trace()
     if args.saveOutput:
-        clRM.saveOutput(dict, aDict, prefixOut, verbose)
+        saveOutput(dict, aDict, prefixOut, verbose)
 
 def get_data_Q_U(filename, ycoords, xcoords):
     hduList = fits.open(filename)
