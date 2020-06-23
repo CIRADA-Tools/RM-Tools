@@ -2237,11 +2237,13 @@ def plot_q_vs_u_ax_chime(freqArr_Hz, qArr, uArr, dqArr=None, duArr=None,
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
     xRange = np.nanmax(qArr)-np.nanmin(qArr)
-    ax.set_xlim( np.nanmin(qArr) - xRange*0.05,
-                 np.nanmax(qArr) + xRange*0.05)
+    #ax.set_xlim( np.nanmin(qArr) - xRange*0.05,
+    #             np.nanmax(qArr) + xRange*0.05)
+    ax.set_xlim([-1.25,1.25])
     yRange = np.nanmax(uArr)-np.nanmin(uArr)
-    ax.set_ylim( np.nanmin(uArr) - yRange*0.05,
-                 np.nanmax(uArr) + yRange*0.05)
+    #ax.set_ylim( np.nanmin(uArr) - yRange*0.05,
+    #             np.nanmax(uArr) + yRange*0.05)
+    ax.set_ylim([-1.25,1.25])
     ax.set_xlabel('Stokes q')
     ax.set_ylabel('Stokes u')
     ax.axhline(0, color='grey')

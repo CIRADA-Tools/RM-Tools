@@ -23,13 +23,12 @@ def corner(xs, bins=20, range=None, weights=None, color="k",
            show_titles=False, title_fmt=".2f", title_kwargs=None,
            truths=None, truth_color="#4682b4",
            scale_hist=False, quantiles=None, verbose=False, fig=None,
-           max_n_ticks=5, top_ticks=False, use_math_text=False, reverse=False,
+           max_n_ticks=5, top_ticks=False, use_math_text=False, reverse=False, factor=3, diagnostic_plots=True,
            hist_kwargs=None, **hist2d_kwargs):
     """
     Make a *sick* corner plot showing the projections of a data set in a
     multi-dimensional space. kwargs are passed to hist2d() or used for
     `matplotlib` styling.
-
     Parameters
     ----------
     xs : array_like[nsamples, ndim]
@@ -37,71 +36,54 @@ def corner(xs, bins=20, range=None, weights=None, color="k",
         array this results in a simple histogram. For a 2-D array, the zeroth
         axis is the list of samples and the next axis are the dimensions of
         the space.
-
     bins : int or array_like[ndim,]
         The number of bins to use in histograms, either as a fixed value for
         all dimensions, or as a list of integers for each dimension.
-
     weights : array_like[nsamples,]
         The weight of each sample. If `None` (default), samples are given
         equal weight.
-
     color : str
         A ``matplotlib`` style color for all histograms.
-
     smooth, smooth1d : float
        The standard deviation for Gaussian kernel passed to
        `scipy.ndimage.gaussian_filter` to smooth the 2-D and 1-D histograms
        respectively. If `None` (default), no smoothing is applied.
-
     labels : iterable (ndim,)
         A list of names for the dimensions. If a ``xs`` is a
         ``pandas.DataFrame``, labels will default to column names.
-
     label_kwargs : dict
         Any extra keyword arguments to send to the `set_xlabel` and
         `set_ylabel` methods.
-
     show_titles : bool
         Displays a title above each 1-D histogram showing the 0.5 quantile
         with the upper and lower errors supplied by the quantiles argument.
-
     title_fmt : string
         The format string for the quantiles given in titles. If you explicitly
         set ``show_titles=True`` and ``title_fmt=None``, the labels will be
         shown as the titles. (default: ``.2f``)
-
     title_kwargs : dict
         Any extra keyword arguments to send to the `set_title` command.
-
     range : iterable (ndim,)
         A list where each element is either a length 2 tuple containing
         lower and upper bounds or a float in range (0., 1.)
         giving the fraction of samples to include in bounds, e.g.,
         [(0.,10.), (1.,5), 0.999, etc.].
         If a fraction, the bounds are chosen to be equal-tailed.
-
     truths : iterable (ndim,)
         A list of reference values to indicate on the plots.  Individual
         values can be omitted by using ``None``.
-
     truth_color : str
         A ``matplotlib`` style color for the ``truths`` makers.
-
     scale_hist : bool
         Should the 1-D histograms be scaled in such a way that the zero line
         is visible?
-
     quantiles : iterable
         A list of fractional quantiles to show on the 1-D histograms as
         vertical dashed lines.
-
     verbose : bool
         If true, print the values of the computed quantiles.
-
     plot_contours : bool
         Draw contours for dense regions of the plot.
-
     use_math_text : bool
         If true, then axis tick labels for very large or small exponents will
         be displayed as powers of 10 rather than using `e`.
@@ -109,23 +91,20 @@ def corner(xs, bins=20, range=None, weights=None, color="k",
     reverse : bool
         If true, plot the corner plot starting in the upper-right corner instead 
         of the usual bottom-left corner
+    factor : int
+        size of one side of one panel 
         
     max_n_ticks: int
         Maximum number of ticks to try to use
-
     top_ticks : bool
         If true, label the top ticks of each axis
-
     fig : matplotlib.Figure
         Overplot onto the provided figure object.
-
     hist_kwargs : dict
         Any extra keyword arguments to send to the 1-D histogram plots.
-
     **hist2d_kwargs
         Any remaining keyword arguments are sent to `corner.hist2d` to generate
         the 2-D histogram plots.
-
     """
     if quantiles is None:
         quantiles = []
@@ -199,7 +178,6 @@ def corner(xs, bins=20, range=None, weights=None, color="k",
 
     # Some magic numbers for pretty axis layout.
     K = len(xs)
-    factor = 2.0           # size of one side of one panel
     if reverse:
         lbdim = 0.2 * factor   # size of left/bottom margin
         trdim = 0.5 * factor   # size of top/right margin
