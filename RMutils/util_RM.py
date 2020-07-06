@@ -810,7 +810,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
     dPolAngle0Chan_rad = \
-        np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
+        np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
                  ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
     dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
     
@@ -865,7 +865,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
                                       phiPeakPIfit * lam0Sq)) % 180
         dPolAngle0Fit_rad = \
-            np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
+            np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
