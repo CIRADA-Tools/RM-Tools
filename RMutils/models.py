@@ -54,7 +54,7 @@ def get_model(name):
 
         return model
 
-    if (name == None) or (name == 'cable_delay+response'):
+    if (name == 'cable_delay+response'):
 
         def model(pDict, lamSqArr_m2, IModArr):
             """Simple Faraday thin source + cable delay + I->V leakage"""
