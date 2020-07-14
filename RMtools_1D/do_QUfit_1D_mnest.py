@@ -437,27 +437,6 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
 
-        # Plot the data and best-fitting model
-        lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
-        freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-        IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
-        pDict = {k:v for k, v in zip(parNames, p)}
-        quModArr = model(pDict, lamSqHirArr_m2)
-        specFig.clf()
-        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr           = IArr,
-                              qArr           = qArr,
-                              uArr           = uArr,
-                              dIArr          = dIArr,
-                              dqArr          = dqArr,
-                              duArr          = duArr,
-                              freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr        = IModArr,
-                              qModArr        = quModArr.real,
-                              uModArr        = quModArr.imag,
-                              fig            = specFig)
-        specFig.canvas.draw()
-
         # Plot the posterior samples in a corner plot
         chains =  aObj.get_equal_weighted_posterior()
         chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
@@ -473,11 +452,46 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                                   quantiles = [0.1572, 0.8427],
                                   bins    = 30)
 
+        # Save the posterior chains to ASCII file
+        if verbose: print("Saving the posterior chains to ASCII file.")
+        outFile = prefixOut + "_posteriorChains.dat"
+        if verbose: print("> %s" % outFile)
+        np.savetxt(outFile, chains)
+
+        # Plot the data and best-fitting model
+        lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
+        freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
+        IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        pDict = {k:v for k, v in zip(parNames, p)}
+        quModArr = model(pDict, lamSqHirArr_m2)
+        model_dict = {
+            'chains': chains,
+            'model': model,
+            'parNames': parNames,
+            'values': values
+        }
+        specFig.clf()
+        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                              IArr           = IArr,
+                              qArr           = qArr,
+                              uArr           = uArr,
+                              dIArr          = dIArr,
+                              dqArr          = dqArr,
+                              duArr          = duArr,
+                              freqHirArr_Hz  = freqHirArr_Hz,
+                              IModArr        = IModArr,
+                              qModArr        = quModArr.real,
+                              uModArr        = quModArr.imag,
+                              model_dict     = model_dict,
+                              fig            = specFig)
+        specFig.canvas.draw()
+
+        #from IPython import embed; embed()
         # Save the figures
-        outFile = nestOut + "fig_m%d_specfit.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
         specFig.savefig(outFile)
         print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
-        outFile = nestOut + "fig_m%d_corner.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
         cornerFig.savefig(outFile)
         print("Plot of posterior samples saved to \n '%s'\n" % outFile)
 
