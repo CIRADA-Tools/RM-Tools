@@ -235,7 +235,7 @@ def plot_I_vs_nu_ax(ax, freqArr_Hz, IArr, dIArr=None,
     
     # Plot the model
     if IModArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, IModArr, color="r", lw=2.5,
+        ax.plot(freqHirArr_Hz/1e9, IModArr, color="tab:red", lw=2.5,
                 label="I Model")
 
     # Scaling & formatting
@@ -279,11 +279,11 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr, UArr, dQArr=None,
         dPArr = np.sqrt(np.power(dQArr,2) + np.power(dUArr,2))
         
     # Plot P, Q, U versus frequency
-    ax.errorbar(x=freqArr_Hz/1e9, y=QArr, yerr=dQArr, mec='b',
+    ax.errorbar(x=freqArr_Hz/1e9, y=QArr, yerr=dQArr, mec='tab:blue',
                 mfc='none', ms=2, fmt='D', color='g', elinewidth=1.0,
                 capsize=2, label='Stokes Q')
-    ax.errorbar(x=freqArr_Hz/1e9, y=UArr, yerr=dUArr, mec='r',
-                mfc='none', ms=2, fmt='D', color='r', elinewidth=1.0,
+    ax.errorbar(x=freqArr_Hz/1e9, y=UArr, yerr=dUArr, mec='tab:red',
+                mfc='none', ms=2, fmt='D', color='tab:red', elinewidth=1.0,
                 capsize=2, label='Stokes U')
     ax.errorbar(x=freqArr_Hz/1e9, y=PArr, yerr=dPArr, mec='k',
                 mfc='none', ms=2, fmt='D', color='k', elinewidth=1.0,
@@ -291,9 +291,9 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr, UArr, dQArr=None,
     
     # Plot the models
     if QmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='b', lw=0.5, label='Model Q')
+        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='tab:blue', lw=0.5, label='Model Q')
     if UmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='r', lw=0.5, label='Model U')
+        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='tab:red', lw=0.5, label='Model U')
     if QmodArr is not None and UmodArr is not None:
         PmodArr = np.sqrt(QmodArr**2.0 + UmodArr**2.0 )
         ax.plot(freqHirArr_Hz/1e9, PmodArr, color='k', lw=0.5, label='Model P')
@@ -329,9 +329,9 @@ def plot_rmsIQU_vs_nu_ax(ax, freqArr_Hz, rmsIArr,  rmsQArr,
     # Plot the rms spectra in GHz and flux units
     ax.plot(freqArr_Hz/1e9, rmsIArr, marker='o', color='k', lw=0.5,
              label='rms I')
-    ax.plot(freqArr_Hz/1e9, rmsQArr, marker='o', color='b', lw=0.5,
+    ax.plot(freqArr_Hz/1e9, rmsQArr, marker='o', color='tab:blue', lw=0.5,
              label='rms Q')
-    ax.plot(freqArr_Hz/1e9, rmsUArr, marker='o', color='r', lw=0.5,
+    ax.plot(freqArr_Hz/1e9, rmsUArr, marker='o', color='tab:red', lw=0.5,
              label='rms U')
     #ax.text(0.05, 0.94, 'I, Q & U RMS', transform=ax.transAxes)
 
@@ -378,34 +378,34 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
         
     # Plot p, q, u versus lambda^2
 #    """
-    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='b', mfc='none', ms=2,
-                fmt='D', ecolor='b', alpha=0.5, elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='tab:blue', mfc='none', ms=2,
+                fmt='D', ecolor='tab:blue', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes q')
-    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='r', mfc='none', ms=2,
-                fmt='D', ecolor='r', alpha=0.5, elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='tab:red', mfc='none', ms=2,
+                fmt='D', ecolor='tab:red', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes u')
     ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='none', ms=2,
                 fmt='D', ecolor='k', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Intensity p')
     """
-    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='r', ms=2,
+    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='tab:red', ms=2,
                 fmt='D', ecolor='k', elinewidth=1.0, capsize=2,
                 label='Intensity p')
 
-    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='b', mfc='r', ms=2,
-                fmt='D', ecolor='b', elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='tab:blue', mfc='tab:red', ms=2,
+                fmt='D', ecolor='tab:blue', elinewidth=1.0, capsize=2,
                 label='Stokes q')
     
-    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='r', mfc='b', ms=2,
-                fmt='D', ecolor='r', elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='tab:red', mfc='tab:blue', ms=2,
+                fmt='D', ecolor='tab:red', elinewidth=1.0, capsize=2,
                 label='Stokes u')
     """
     
     # Plot the models
     if qModArr is not None:
-        ax.plot(lamSqHirArr_m2, qModArr, color='b', alpha=1, lw=0.1, label='Model q')
+        ax.plot(lamSqHirArr_m2, qModArr, color='tab:blue', alpha=1, lw=0.1, label='Model q')
     if uModArr is not None:
-        ax.plot(lamSqHirArr_m2, uModArr, color='r', alpha=1, lw=0.1, label='Model u')
+        ax.plot(lamSqHirArr_m2, uModArr, color='tab:red', alpha=1, lw=0.1, label='Model u')
     if qModArr is not None and uModArr is not None:
         pModArr = np.sqrt(qModArr**2.0 + uModArr**2.0 )
         ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=1, lw=0.1, label='Model p')
@@ -418,9 +418,9 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
                 errDict[model_dict['parNames'][j]] = model_dict['chains'][idx,j] 
             QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2) 
             ax.plot(lamSqHirArr_m2, np.real(QUerrmodel),  
-                    '-', color='b', linewidth=0.1, alpha=0.5)
+                    '-', color='tab:blue', linewidth=0.1, alpha=0.5)
             ax.plot(lamSqHirArr_m2, np.imag(QUerrmodel),  
-                    '-', color='r', linewidth=0.1, alpha=0.5)
+                    '-', color='tab:red', linewidth=0.1, alpha=0.5)
             if qModArr is not None and uModArr is not None:
                 ax.plot(lamSqHirArr_m2, np.abs(QUerrmodel),  
                     '-', color='k', linewidth=0.1, alpha=0.5)
@@ -484,7 +484,7 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     # Plot the model
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees( np.arctan2(uModArr, qModArr) / 2.0 )
-        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='r', lw=0.1,
+        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='tab:red', lw=0.1,
                  label='Model $\psi$')
     if model_dict is not None:
         errDict = {}
@@ -498,7 +498,7 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
             Uerrmodel = np.imag(QUerrmodel)
             psi_errmodel = np.degrees( np.arctan2(Uerrmodel, Qerrmodel) / 2.0 )
             ax.plot(lamSqHirArr_m2, psi_errmodel,  
-                    '-', color='r', linewidth=0.1, alpha=0.5)
+                    '-', color='tab:red', linewidth=0.1, alpha=0.5)
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -598,9 +598,9 @@ def plot_RMSF_ax(ax, phiArr, RMSFArr, fwhmRMSF=None, axisYright=False,
         ax.xaxis.set_label_position("top")    
         
     # Plot the RMSF
-    ax.step(phiArr, RMSFArr.real, where='mid', color='b', lw=0.5,
+    ax.step(phiArr, RMSFArr.real, where='mid', color='tab:blue', lw=0.5,
             label='Real')
-    ax.step(phiArr, RMSFArr.imag, where='mid', color='r', lw=0.5,
+    ax.step(phiArr, RMSFArr.imag, where='mid', color='tab:red', lw=0.5,
             label='Imaginary')
     ax.step(phiArr, np.abs(RMSFArr) , where='mid', color='k', lw=1.0,
             label='PI')
@@ -661,9 +661,9 @@ def plot_dirtyFDF_ax(ax, phiArr, FDFArr, gaussParm=[], vLine=None,
     # Plot the FDF
     FDFpiArr = np.sqrt( np.power(FDFArr.real, 2.0) +
                             np.power(FDFArr.imag, 2.0) )
-    ax.step(phiArr, FDFArr.real, where='mid', color='b', lw=0.5,
+    ax.step(phiArr, FDFArr.real, where='mid', color='tab:blue', lw=0.5,
             label='Real')
-    ax.step(phiArr, FDFArr.imag, where='mid', color='r', lw=0.5,
+    ax.step(phiArr, FDFArr.imag, where='mid', color='tab:red', lw=0.5,
             label='Imaginary')
     ax.step(phiArr, FDFpiArr, where='mid', color='k', lw=1.0,
             label='PI')
@@ -727,9 +727,9 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr=None, ccFDFArr=None,
         ax.step(phiArr, np.abs(cleanFDFArr), where='mid', color='k',
                 lw=1.0, label='PI')
         if showComplex:
-            ax.step(phiArr, cleanFDFArr.real, where='mid', color='b',
+            ax.step(phiArr, cleanFDFArr.real, where='mid', color='tab:blue',
                     lw=0.5, label='Real')
-            ax.step(phiArr, cleanFDFArr.imag, where='mid', color='r',
+            ax.step(phiArr, cleanFDFArr.imag, where='mid', color='tab:red',
                     lw=0.5, label='Imaginary')
             #ax.text(0.05, 0.94, title, transform=ax.transAxes)
 
@@ -751,7 +751,7 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr=None, ccFDFArr=None,
 
     # Plot the clean cutoff line
     if not cutoff is None:
-        ax.axhline(cutoff, color="r", ls='--')
+        ax.axhline(cutoff, color="tab:red", ls='--')
 
     # Scaling
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -1926,9 +1926,9 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax1.xaxis.tick_top()
     ax1.xaxis.set_label_position("top")
     ax1.xaxis.set_major_locator(MaxNLocator(7))
-    ax1.errorbar(x=xArr, y=qArr, yerr=dqArr, ms=3, color="b", fmt='o',
+    ax1.errorbar(x=xArr, y=qArr, yerr=dqArr, ms=3, color="tab:blue", fmt='o',
                  alpha=0.5, capsize=0 )
-    ax1.errorbar(x=xArr, y=uArr, yerr=duArr, ms=3, color="r", fmt='o',
+    ax1.errorbar(x=xArr, y=uArr, yerr=duArr, ms=3, color="tab:red", fmt='o',
                  alpha=0.5, capsize=0)
     ax1.axhline(med, color='grey', zorder=10)
     ax1.axhline(1.0, color='k', linestyle="--", zorder=10)
@@ -1947,10 +1947,10 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     yMin = np.nanmin([np.nanmin(qArr), np.nanmin(uArr)])
     yMax = np.nanmax([np.nanmax(qArr), np.nanmax(uArr)])
     n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), normed=1,
-                       histtype='step', color='b', linewidth=1.0)
+                       histtype='step', color='tab:blue', linewidth=1.0)
     ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=1.5)
     n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), normed=1,
-                       histtype='step', color='r', linewidth=1.0)
+                       histtype='step', color='tab:red', linewidth=1.0)
     ax2.axvline(med, color='grey', zorder=11)
     ax2.set_title(r'Distribution of Data vs Normal')
     ax2.set_ylabel(r'Normalised Counts')
@@ -1961,8 +1961,8 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     qSrtArr = np.sort(qArr)
     uSrtArr = np.sort(uArr)
     ax3 = fig.add_subplot(235, sharex=ax2)
-    ax3.step(qSrtArr, ecdfArr, where="mid", color='b')
-    ax3.step(uSrtArr, ecdfArr, where="mid", color='r')
+    ax3.step(qSrtArr, ecdfArr, where="mid", color='tab:blue')
+    ax3.step(uSrtArr, ecdfArr, where="mid", color='tab:red')
     x, y = norm_cdf(mean=med, std=noise, N=1000)
     ax3.plot(x, y, color='k', linewidth=1.5, linestyle="--", zorder=1)
     ax3.set_ylim(0, 1.05)
@@ -1972,9 +1972,9 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
 
     # Plot reduced chi-squared
     ax4 = fig.add_subplot(234)
-    ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='b', linewidth=1.0,
+    ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='tab:blue', linewidth=1.0,
              where="mid")
-    ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='r', linewidth=1.0,
+    ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='tab:red', linewidth=1.0,
              where="mid")
     ax4.axhline(1.0, color='k', linestyle="--")
     ax4.set_xlabel(r'$\sigma_{\rm add}$')
@@ -1983,19 +1983,19 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     # Plot the probability distribution function
     ax5 = fig.add_subplot(233)
     ax5.tick_params(labelbottom='off')  
-    ax5.step(x=sigmaAddqArr, y=probqArr, linewidth=1.0, where="mid", color="b",
+    ax5.step(x=sigmaAddqArr, y=probqArr, linewidth=1.0, where="mid", color="tab:blue",
              alpha=0.5)
-    ax5.step(x=sigmaAdduArr, y=probuArr, linewidth=1.0, where="mid", color="r",
+    ax5.step(x=sigmaAdduArr, y=probuArr, linewidth=1.0, where="mid", color="tab:red",
              alpha=0.5)
-    ax5.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
-    ax5.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+    ax5.axvline(mDict["sigmaAddQ"], color='tab:blue', linestyle="-", linewidth=1.5)    
+    ax5.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+    ax5.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
-    ax5.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+    ax5.axvline(mDict["sigmaAddU"], color='tab:red', linestyle="-", linewidth=1.5)
+    ax5.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+    ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
     ax5.set_title('Likelihood Distribution')
     ax5.set_ylabel(r"P($\sigma_{\rm add}$|data)")
@@ -2004,19 +2004,19 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     CPDFq = np.cumsum(probqArr)/np.sum(probqArr)
     CPDFu = np.cumsum(probuArr)/np.sum(probuArr)
     ax6 = fig.add_subplot(236, sharex=ax5)
-    ax6.step(x=sigmaAddqArr, y=CPDFq, linewidth=1.0, where="mid", color="b")
-    ax6.step(x=sigmaAdduArr, y=CPDFu, linewidth=1.0, where="mid", color="r")
+    ax6.step(x=sigmaAddqArr, y=CPDFq, linewidth=1.0, where="mid", color="tab:blue")
+    ax6.step(x=sigmaAdduArr, y=CPDFu, linewidth=1.0, where="mid", color="tab:red")
     ax6.set_ylim(0, 1.05)
     ax6.axhline(0.5, color='grey', linestyle="-", linewidth=1.5)
-    ax6.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
-    ax6.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+    ax6.axvline(mDict["sigmaAddQ"], color='tab:blue', linestyle="-", linewidth=1.5)    
+    ax6.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+    ax6.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
-    ax6.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+    ax6.axvline(mDict["sigmaAddU"], color='tab:red', linestyle="-", linewidth=1.5)
+    ax6.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+    ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
     ax6.set_xlabel(r"$\sigma_{\rm add}$")
     ax6.set_ylabel(r"Cumulative Likelihood")
