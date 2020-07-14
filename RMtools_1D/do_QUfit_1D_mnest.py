@@ -488,10 +488,10 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
 
         #from IPython import embed; embed()
         # Save the figures
-        outFile = nestOut + "fig_m%d_specfit.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
         specFig.savefig(outFile)
         print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
-        outFile = nestOut + "fig_m%d_corner.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
         cornerFig.savefig(outFile)
         print("Plot of posterior samples saved to \n '%s'\n" % outFile)
 
