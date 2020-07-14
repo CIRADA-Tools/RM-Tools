@@ -452,6 +452,12 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                                   quantiles = [0.1572, 0.8427],
                                   bins    = 30)
 
+        # Save the posterior chains to ASCII file
+        if verbose: print("Saving the posterior chains to ASCII file.")
+        outFile = prefixOut + "_posteriorChains.dat"
+        if verbose: print("> %s" % outFile)
+        np.savetxt(outFile, chains)
+
         # Plot the data and best-fitting model
         lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
         freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
