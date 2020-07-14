@@ -3,3 +3,4 @@ build/*
 RM.egg-info/*
 RM_tools.egg-info/*
 tests/simdata
+tests/models_ns
