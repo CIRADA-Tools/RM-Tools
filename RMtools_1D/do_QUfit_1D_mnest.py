@@ -351,7 +351,12 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     nestArgsDict["outputfiles_basename"] = nestOut
     nestArgsDict["LogLikelihood"]        = lnlike
     nestArgsDict["Prior"]                = prior
+    # Look for multiple modes
+    nestArgsDict['multimodal']           = True
+    nestArgsDict['n_clustering_params']  = nDim
     pmn.run(**nestArgsDict)
+    # Save parnames for use with PyMultinest tools
+    json.dump(parNames, open(f'{nestOut}/params.json', 'w'))
 
     # Do the post-processing on one processor
     if mpiSwitch:
@@ -376,13 +381,23 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Get the best-fitting values & uncertainties directly from chains
         chains =  aObj.get_equal_weighted_posterior()
         chains = wrap_chains(chains, wraps, bounds, pMed)
+        # Find the mode with the highest evidence
+        mode_evidence = [mode['strictly local log-evidence'] for mode in statDict['modes']]
+        # Get the max and std for modal value
+        modes = np.array(statDict['modes'][np.argmax(mode_evidence)]['maximum a posterior'])
+        sigmas = np.array(statDict['modes'][np.argmax(mode_evidence)]['sigma'])
+        upper = modes + 5 * sigmas
+        lower = modes - 5 * sigmas
+
         p = [None]*nDim
         errPlus = [None]*nDim
         errMinus = [None]*nDim
         g = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
         for i in range(nDim):
+            # Get stats around modal value
+            idx = (chains[:,i] > lower[i]) & (chains[:,i] < upper[i])
             p[i], errPlus[i], errMinus[i] = \
-                        g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
+                        g(np.percentile(chains[idx, i], [15.72, 50, 84.27]))
 
         # Calculate goodness-of-fit parameters
         nData = 2.0 * len(lamSqArr_m2)
@@ -392,7 +407,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         AIC = 2.0*nFree - 2.0 * lnLike
         AICc = 2.0*nFree*(nFree+1)/(nData-nFree-1) - 2.0 * lnLike
         BIC = nFree * np.log(nData) - 2.0 * lnLike
-
+        
         # Summary of run
         print("")
         print("-"*80)
@@ -415,7 +430,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                   (parNames[i], p[i], errPlus[i], errMinus[i]))
         print("-"*80)
         print("")
-
+        
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
@@ -433,6 +448,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                     "AIC":        toscalar(AIC),
                     "AICc":       toscalar(AICc),
                     "BIC":        toscalar(BIC),
+                    "nFree":      toscalar(nFree),
                     "IfitDict":   IfitDict}
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
@@ -445,9 +461,10 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         for i in sorted(iFixed, reverse=True):
             del(labels[i])
             del(p[i])
+
         cornerFig = corner.corner(xs      = chains,
                                   labels  = labels,
-                                  range   = [0.99999]*nFree,
+                                  range   = [(l,u) for l,u in zip(upper,lower)],
                                   truths  = p,
                                   quantiles = [0.1572, 0.8427],
                                   bins    = 30)
@@ -486,7 +503,6 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                               fig            = specFig)
         specFig.canvas.draw()
 
-        #from IPython import embed; embed()
         # Save the figures
         outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
         specFig.savefig(outFile)
