@@ -180,7 +180,8 @@ def main():
                 showPlots      = args.showPlots,
                 debug          = args.debug,
                 verbose        = verbose,
-                units          = args.units)
+                units          = args.units,
+                args           = args)
     #pdb.set_trace()
     if args.saveOutput:
         saveOutput(dict, aDict, prefixOut, verbose)

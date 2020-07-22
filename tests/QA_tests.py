@@ -220,7 +220,7 @@ class test_RMtools(unittest.TestCase):
         mDict = json.load(open('simdata/1D/simsource_RMclean.json', "r"))
         self.assertEqual(mDict['dFDFcorMAD'], 0.004037752747535706, 'dFDFcorMAD differs from expectation.')
         self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
-        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.15784329777032025, 'dPhiPeakPIchan_rm2 differs from expectation.')
+        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.2303510495843434, 'dPhiPeakPIchan_rm2 differs from expectation.')
         self.assertEqual(mDict['ampPeakPIchan'], 0.6868723630905151, 'ampPeakPIchan differs from expectation.')
         self.assertEqual(mDict['ampPeakPIchanEff'], 0.6868450664079003, 'ampPeakPIchanEff differs from expectation.')
         self.assertEqual(mDict['dAmpPeakPIchan'], 0.004037752747535706, 'dAmpPeakPIchan differs from expectation.')
