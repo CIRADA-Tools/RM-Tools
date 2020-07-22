@@ -183,6 +183,10 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                           IModArr        = IModHirArr,
                           fig            = specFig,
                           units          = units)
+    if args.saveOutput:
+        outFilePlot = prefixOut + "_spectra-plots.pdf"
+        specFig.savefig(outFilePlot, bbox_inches = 'tight')
+
 
     # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
@@ -358,7 +362,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      chiSqReduArr=pD["chiSqRedArrU"],
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
-        if saveOutput:
+        if args.saveOutput:
             if verbose: print("Saving debug plots:")
             outFilePlot = prefixOut + ".debug-plots.pdf"
             if verbose: print("> " + outFilePlot)
@@ -409,7 +413,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
 
     # Plot the RM Spread Function and dirty FDF
-    if showPlots or saveOutput:
+    if showPlots or args.saveOutput:
         fdfFig = plt.figure(figsize=(12.0, 8))
         plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = dirtyFDF,
@@ -433,9 +437,9 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     # Pause if plotting enabled
     if showPlots:
         plt.show()
-    elif saveOutput or debug:
+    elif args.saveOutput or debug:
         if verbose: print("Saving RMSF and dirty FDF plot:")
-        outFilePlot = prefixOut + ".RMSF-dirtyFDF-plots.pdf"
+        outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
         if verbose: print("> " + outFilePlot)
         fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
         #        #if verbose: print "Press <RETURN> to exit ...",
