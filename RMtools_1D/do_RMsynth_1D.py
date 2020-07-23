@@ -70,7 +70,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
-                debug=False, verbose=False, log=print,units='Jy/beam', prefixOut="prefixOut", args=None):
+                debug=False, verbose=False, log=print,units='Jy/beam', prefixOut="prefixOut", saveFigures=None):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -114,11 +114,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         aDict (dict): Data output by RM synthesis.
 
     """
-    # Sanity checks
-    if not os.path.exists(args.dataFile[0]):
-        print("File does not exist: '%s'." % args.dataFile[0])
-        sys.exit()
-    prefixOut, ext = os.path.splitext(args.dataFile[0])
+
 
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -171,19 +167,20 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     if verbose: log("Plotting the input data and spectral index fit.")
     freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
     IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)
-    specFig = plt.figure(figsize=(12.0, 8))
-    plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                          IArr           = IArr,
-                          qArr           = qArr,
-                          uArr           = uArr,
-                          dIArr          = dIArr,
-                          dqArr          = dqArr,
-                          duArr          = duArr,
-                          freqHirArr_Hz  = freqHirArr_Hz,
-                          IModArr        = IModHirArr,
-                          fig            = specFig,
-                          units          = units)
-    if args.saveOutput:
+    if showPlots or saveFigures:
+        specFig = plt.figure(figsize=(12.0, 8))
+        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                              IArr           = IArr,
+                              qArr           = qArr,
+                              uArr           = uArr,
+                              dIArr          = dIArr,
+                              dqArr          = dqArr,
+                              duArr          = duArr,
+                              freqHirArr_Hz  = freqHirArr_Hz,
+                              IModArr        = IModHirArr,
+                              fig            = specFig,
+                              units          = units)
+    if saveFigures:
         outFilePlot = prefixOut + "_spectra-plots.pdf"
         specFig.savefig(outFilePlot, bbox_inches = 'tight')
 
@@ -362,7 +359,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      chiSqReduArr=pD["chiSqRedArrU"],
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
-        if args.saveOutput:
+        if saveFigures:
             if verbose: print("Saving debug plots:")
             outFilePlot = prefixOut + ".debug-plots.pdf"
             if verbose: print("> " + outFilePlot)
@@ -413,7 +410,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
 
     # Plot the RM Spread Function and dirty FDF
-    if showPlots or args.saveOutput:
+    if showPlots or saveFigures:
         fdfFig = plt.figure(figsize=(12.0, 8))
         plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = dirtyFDF,
@@ -437,7 +434,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     # Pause if plotting enabled
     if showPlots:
         plt.show()
-    elif args.saveOutput or debug:
+    elif saveFigures or debug:
         if verbose: print("Saving RMSF and dirty FDF plot:")
         outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
         if verbose: print("> " + outFilePlot)
@@ -630,7 +627,7 @@ def main():
                 verbose        = verbose,
                 units          = args.units,
                 prefixOut      = prefixOut,
-                args           = args,
+                saveFigures    = args.saveOutput,
                 )
 
     if args.saveOutput:

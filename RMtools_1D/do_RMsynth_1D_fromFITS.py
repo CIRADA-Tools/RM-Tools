@@ -181,7 +181,7 @@ def main():
                 debug          = args.debug,
                 verbose        = verbose,
                 units          = args.units,
-                args           = args)
+                saveFigures    = args.saveOutput)
     #pdb.set_trace()
     if args.saveOutput:
         saveOutput(dict, aDict, prefixOut, verbose)

@@ -216,17 +216,17 @@ class test_RMtools(unittest.TestCase):
         returncode=subprocess.call('rmclean1d simdata/1D/simsource.dat -n 10',shell=True)
         self.assertEqual(returncode, 0, 'RMclean1D failed to run.')
 
-    def test_b2_1D_synth_values(self):
+    def test_b2_1D_clean_values(self):
         mDict = json.load(open('simdata/1D/simsource_RMclean.json', "r"))
         self.assertEqual(mDict['dFDFcorMAD'], 0.004037752747535706, 'dFDFcorMAD differs from expectation.')
         self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
         self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.2303510495843434, 'dPhiPeakPIchan_rm2 differs from expectation.')
         self.assertEqual(mDict['ampPeakPIchan'], 0.6868723630905151, 'ampPeakPIchan differs from expectation.')
-        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6868450664079003, 'ampPeakPIchanEff differs from expectation.')
-        self.assertEqual(mDict['dAmpPeakPIchan'], 0.004037752747535706, 'dAmpPeakPIchan differs from expectation.')
+        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6868142267462297, 'ampPeakPIchanEff differs from expectation.')
+        self.assertEqual(mDict['dAmpPeakPIchan'], 0.005892556709695188, 'dAmpPeakPIchan differs from expectation.')
         self.assertEqual(mDict['peakFDFimagChan'], -0.5498998165130615, 'peakFDFimagChan differs from expectation.')
         self.assertEqual(mDict['peakFDFrealChan'], 0.4115869402885437, 'peakFDFrealChan differs from expectation.')
-        self.assertEqual(mDict['dPolAngleChan_deg'], 0.16840551722755925, 'dPolAngleChan_deg differs from expectation.')
+        self.assertEqual(mDict['dPolAngleChan_deg'], 0.24576518735442152, 'dPolAngleChan_deg differs from expectation.')
         self.assertEqual(mDict['nIter'], 11, 'nIter differs from expectation.')
         self.assertEqual(mDict['mom2CCFDF'], 0.9521022439002991, 'mom2CCFDF differs from expectation.')
         self.assertEqual(mDict['cleanCutoff'], 0.017677670129085565, 'cleanCutoff differs from expectation.')
