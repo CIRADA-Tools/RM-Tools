@@ -361,10 +361,23 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     with np.errstate(divide='ignore', invalid='ignore'):
         qArr = np.true_divide(QArr, IModArr)
         uArr = np.true_divide(UArr, IModArr)
-        dqArr = qArr * np.sqrt( np.true_divide(dQArr, QArr)**2.0 +
-                                np.true_divide(dIArr, IArr)**2.0 )
-        duArr = uArr * np.sqrt( np.true_divide(dUArr, UArr)**2.0 +
-                                np.true_divide(dIArr, IArr)**2.0 )
+        
+
+## These errors only apply when dividing by channel Stokes I values, but
+## not when dividing by a Stokes I model (the errors on which are more difficult
+## to determine). Also assumes errors in Q,U are uncorrelated with errors in I,
+## which I'm skeptical about. For now, replacing with what I think is a better
+## approximation. I'm leaving this here in case we ever decide to implement
+## channel-wise Stokes I normalization.
+        # dqArr = np.abs(qArr) * np.sqrt( np.true_divide(dQArr, QArr)**2.0 +
+        #                         np.true_divide(dIArr, IArr)**2.0 )
+        # duArr = np.abs(uArr) * np.sqrt( np.true_divide(dUArr, UArr)**2.0 +
+        #                         np.true_divide(dIArr, IArr)**2.0 )
+
+#Alternative scheme: assume errors in Stokes I don't propagate through
+# (i.e., that the model has no errors.)
+        dqArr=dQArr / IModArr
+        duArr=dUArr / IModArr
 
     return IModArr, qArr, uArr, dqArr, duArr, fitDict
 

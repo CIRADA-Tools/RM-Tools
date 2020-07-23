@@ -162,6 +162,9 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                  polyOrd  = polyOrd,
                                  verbose  = True,
                                  debug    = debug)
+             
+    dquArr = (dqArr + duArr)/2.0
+
 
     # Plot the data and the Stokes I model fit
     if verbose: log("Plotting the input data and spectral index fit.")
@@ -245,7 +248,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
     if weightType=="variance":
-        weightArr = 1.0 / np.power(dQUArr, 2.0)
+        weightArr = 1.0 / np.power(dquArr, 2.0)
     else:
         weightType = "uniform"
         weightArr = np.ones(freqArr_Hz.shape, dtype=dtFloat)
@@ -297,7 +300,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
-    dFDFth = np.sqrt( np.sum(weightArr**2 * np.nan_to_num(dQUArr)**2) / (np.sum(weightArr))**2 )
+    dFDFth = Ifreq0*np.sqrt( np.sum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
 
 
     # Measure the parameters of the dirty FDF
