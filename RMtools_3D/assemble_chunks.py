@@ -114,7 +114,7 @@ def main():
         if Ndim == 4:
             large[0].data[:,:,yarr,xarr]=chunk[0].data[:,:,0,:]
         elif Ndim == 3:
-            large[0].data[:,yarr,xarr]=chunk[0].data
+            large[0].data[:,yarr,xarr]=chunk[0].data[:,0,:]
         elif Ndim == 2:
             large[0].data[yarr,xarr]=chunk[0].data
 
@@ -131,7 +131,7 @@ def main():
     if Ndim == 4:
         large[0].data[:,:,yarr,xarr]=chunk[0].data[:,:,0,:]
     elif Ndim == 3:
-        large[0].data[:,yarr,xarr]=chunk[0].data
+        large[0].data[:,yarr,xarr]=chunk[0].data[:,0,:]
     elif Ndim == 2:
         large[0].data[yarr,xarr]=chunk[0].data
     large.flush()

@@ -51,7 +51,7 @@ import os
 import shutil
 import copy
 import time
-import imp
+import importlib
 import json
 import argparse
 import traceback
@@ -84,6 +84,24 @@ C = 2.997924538e8 # Speed of light [m/s]
 def main():
     """
     Start the run_qufit procedure if called from the command line.
+    
+    Run QU-fitting on polarised spectra (1D) stored in an ASCII file. The
+    Stokes I spectra is first fit with a polynomial and the resulting model
+    used to create fractional q = Q/I and u = U/I spectra. If the 'noStokesI'
+    option is given, the input data are assumed to be fractional already.
+
+    The script uses the Nested Sampling algorithm (Skilling 2004) to find
+    the best fitting parameters, given a prior function on each free parameter.
+    The sampling algorithm also calculates the Bayesian evidence, which can
+    be used for model comparison. Factors of >10 between models mean that one
+    model is strongly favoured over the other.
+
+    Models and priors are  specified as Python code in files called 'mX.py'
+    within the 'models_ns' directory. See the existing files for examples
+    drawn from the paper Sokoloff et al. 1998, MNRAS 229, pg 189.
+
+    Main algorithm handles the command line interface, passing all arguments
+    one to run_qufit().
     """
 
     # Help string to be shown using the -h option
@@ -144,7 +162,24 @@ def main():
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, debug=False, verbose=False):
-    """Function controlling the fitting procedure."""
+    """Carry out QU-fitting using the supplied parameters:
+        dataFile (str, required): relative or absolute path of file containing 
+            frequencies and Stokes parameters with errors.
+        modelNum (int, required): number of model to be fit to data. Models and
+             priors are specified as Python code in files called 'mX.py' within  
+            the 'models_ns' directory.
+        outDir (str): relative or absolute path to save outputs to. Defaults to
+            working directory.
+        polyOrd (int): Order of polynomial to fit to Stokes I spectrum (used to
+            normalize Q and U values). Defaults to 3 (cubic).
+        nBits (int): number of bits to use in internal calculations.
+        noStokesI (bool): set True if the Stokes I spectrum should be ignored.
+        showPlots (bool): Set true if the spectrum and parameter space plots
+            should be displayed.
+        debug (bool): Display debug messages.
+        verbose (bool): Print verbose messages/results to terminal.
+        
+        Returns: nothing. Results saved to files and/or printed to terminal."""
 
     # Get the processing environment
     if mpiSwitch:
@@ -263,9 +298,26 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         mpiComm.Barrier()
     if mpiRank==0:
         print("\nLoading the model from 'models_ns/m%d.py' ..."  % modelNum)
-    mod = imp.load_source("m%d" % modelNum, "models_ns/m%d.py" % modelNum)
+    #First check the working directory for a model. Failing that, try the install directory.
+    try:
+        spec=importlib.util.spec_from_file_location("m%d" % modelNum,"models_ns/m%d.py" % modelNum)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[mod] = mod
+        spec.loader.exec_module(mod)
+    except FileNotFoundError:
+        try:
+            RMtools_dir=os.path.dirname(importlib.util.find_spec('RMtools_1D').origin)
+            spec=importlib.util.spec_from_file_location("m%d" % modelNum,RMtools_dir+"/models_ns/m%d.py" % modelNum)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod] = mod
+            spec.loader.exec_module(mod)
+        except:
+            print('Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/RMtools_1D/models_ns/'.format(os.getcwd(),RMtools_dir))
+            sys.exit()
+
     global model
     model = mod.model
+
 
     # Let's time the sampler
     if mpiRank==0:
@@ -299,7 +351,12 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     nestArgsDict["outputfiles_basename"] = nestOut
     nestArgsDict["LogLikelihood"]        = lnlike
     nestArgsDict["Prior"]                = prior
+    # Look for multiple modes
+    nestArgsDict['multimodal']           = True
+    nestArgsDict['n_clustering_params']  = nDim
     pmn.run(**nestArgsDict)
+    # Save parnames for use with PyMultinest tools
+    json.dump(parNames, open(f'{nestOut}/params.json', 'w'))
 
     # Do the post-processing on one processor
     if mpiSwitch:
@@ -324,13 +381,23 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Get the best-fitting values & uncertainties directly from chains
         chains =  aObj.get_equal_weighted_posterior()
         chains = wrap_chains(chains, wraps, bounds, pMed)
+        # Find the mode with the highest evidence
+        mode_evidence = [mode['strictly local log-evidence'] for mode in statDict['modes']]
+        # Get the max and std for modal value
+        modes = np.array(statDict['modes'][np.argmax(mode_evidence)]['maximum a posterior'])
+        sigmas = np.array(statDict['modes'][np.argmax(mode_evidence)]['sigma'])
+        upper = modes + 5 * sigmas
+        lower = modes - 5 * sigmas
+
         p = [None]*nDim
         errPlus = [None]*nDim
         errMinus = [None]*nDim
         g = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
         for i in range(nDim):
+            # Get stats around modal value
+            idx = (chains[:,i] > lower[i]) & (chains[:,i] < upper[i])
             p[i], errPlus[i], errMinus[i] = \
-                        g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
+                        g(np.percentile(chains[idx, i], [15.72, 50, 84.27]))
 
         # Calculate goodness-of-fit parameters
         nData = 2.0 * len(lamSqArr_m2)
@@ -340,7 +407,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         AIC = 2.0*nFree - 2.0 * lnLike
         AICc = 2.0*nFree*(nFree+1)/(nData-nFree-1) - 2.0 * lnLike
         BIC = nFree * np.log(nData) - 2.0 * lnLike
-
+        
         # Summary of run
         print("")
         print("-"*80)
@@ -363,7 +430,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                   (parNames[i], p[i], errPlus[i], errMinus[i]))
         print("-"*80)
         print("")
-
+        
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
@@ -381,9 +448,32 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                     "AIC":        toscalar(AIC),
                     "AICc":       toscalar(AICc),
                     "BIC":        toscalar(BIC),
+                    "nFree":      toscalar(nFree),
                     "IfitDict":   IfitDict}
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
+
+        # Plot the posterior samples in a corner plot
+        chains =  aObj.get_equal_weighted_posterior()
+        chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
+        iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
+        chains = np.delete(chains, iFixed, 1)
+        for i in sorted(iFixed, reverse=True):
+            del(labels[i])
+            del(p[i])
+
+        cornerFig = corner.corner(xs      = chains,
+                                  labels  = labels,
+                                  range   = [(l,u) for l,u in zip(upper,lower)],
+                                  truths  = p,
+                                  quantiles = [0.1572, 0.8427],
+                                  bins    = 30)
+
+        # Save the posterior chains to ASCII file
+        if verbose: print("Saving the posterior chains to ASCII file.")
+        outFile = prefixOut + "_posteriorChains.dat"
+        if verbose: print("> %s" % outFile)
+        np.savetxt(outFile, chains)
 
         # Plot the data and best-fitting model
         lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
@@ -391,6 +481,12 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
         pDict = {k:v for k, v in zip(parNames, p)}
         quModArr = model(pDict, lamSqHirArr_m2)
+        model_dict = {
+            'chains': chains,
+            'model': model,
+            'parNames': parNames,
+            'values': values
+        }
         specFig.clf()
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
@@ -403,29 +499,15 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                               IModArr        = IModArr,
                               qModArr        = quModArr.real,
                               uModArr        = quModArr.imag,
+                              model_dict     = model_dict,
                               fig            = specFig)
         specFig.canvas.draw()
 
-        # Plot the posterior samples in a corner plot
-        chains =  aObj.get_equal_weighted_posterior()
-        chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
-        iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
-        chains = np.delete(chains, iFixed, 1)
-        for i in sorted(iFixed, reverse=True):
-            del(labels[i])
-            del(p[i])
-        cornerFig = corner.corner(xs      = chains,
-                                  labels  = labels,
-                                  range   = [0.99999]*nFree,
-                                  truths  = p,
-                                  quantiles = [0.1572, 0.8427],
-                                  bins    = 30)
-
         # Save the figures
-        outFile = nestOut + "fig_m%d_specfit.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
         specFig.savefig(outFile)
         print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
-        outFile = nestOut + "fig_m%d_corner.pdf" % modelNum
+        outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
         cornerFig.savefig(outFile)
         print("Plot of posterior samples saved to \n '%s'\n" % outFile)
 

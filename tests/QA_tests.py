@@ -7,6 +7,10 @@ through RM-tools. Automated tools will only be able to confirm that things ran,
 but user inspection of the results will be needed to confirm that the expected
 values are produced.
 
+Random values are necessary to simulate noise, which is expected for different
+parts of the code. I have forced the random seed to be the same each run,
+in order to make the tests deterministic. This works for everything except
+QU fitting, which uses random numbers internally that can't be controlled.
 
 Created on Fri Oct 25 10:00:24 2019
 @author: Cameron Van Eck
@@ -18,7 +22,7 @@ import shutil
 from astropy.io import fits as pf
 from scipy.ndimage.filters import gaussian_filter
 import unittest
-
+import json
 
 def Faraday_thin_complex_polarization(freq_array,RM,Polint,initial_angle):
     """freq_array = channel frequencies in Hz
@@ -41,9 +45,10 @@ def create_1D_data(freq_arr):
 
     pol_spectrum=Faraday_thin_complex_polarization(freq_arr,RM,fracpol,pol_angle_deg)
     I_spectrum=StokesI_midband*(freq_arr/np.median(freq_arr))**spectral_index
-    noise_spectrum_I=np.random.normal(scale=noise_amplitude,size=freq_arr.shape)
-    noise_spectrum_Q=np.random.normal(scale=noise_amplitude,size=freq_arr.shape)
-    noise_spectrum_U=np.random.normal(scale=noise_amplitude,size=freq_arr.shape)
+    rng=np.random.default_rng(20200422)
+    noise_spectrum_I=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
+    noise_spectrum_Q=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
+    noise_spectrum_U=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
     dIQU=np.ones_like(freq_arr)*noise_amplitude*error_estimate
     
     if not os.path.isdir('simdata/1D'):
@@ -94,8 +99,9 @@ def create_3D_data(freq_arr,N_side=100):
     diffuse_Q_cube=np.tile(diffuse_pol_spectrum.real[np.newaxis,np.newaxis,:],(N_side,N_side,1))
     diffuse_U_cube=np.tile(diffuse_pol_spectrum.imag[np.newaxis,np.newaxis,:],(N_side,N_side,1))
     
-    noise_Q_cube=np.random.normal(scale=noise_amplitude,size=src_Q_cube.shape)
-    noise_U_cube=np.random.normal(scale=noise_amplitude,size=src_Q_cube.shape)
+    rng=np.random.default_rng(20200422)
+    noise_Q_cube=rng.normal(scale=noise_amplitude,size=src_Q_cube.shape)
+    noise_U_cube=rng.normal(scale=noise_amplitude,size=src_Q_cube.shape)
     noise_Q_cube=gaussian_filter(noise_Q_cube,(beam_size_pix/2.35,beam_size_pix/2.35,0),mode='wrap')
     noise_U_cube=gaussian_filter(noise_U_cube,(beam_size_pix/2.35,beam_size_pix/2.35,0),mode='wrap')
     scale_factor=np.std(noise_Q_cube)/noise_amplitude #Renormalizing flux after convolution
@@ -166,11 +172,34 @@ class test_RMtools(unittest.TestCase):
         N_chan=288
         self.freq_arr=np.linspace(800e6,1088e6,num=N_chan)
 
-    def test_a_1D_synth(self):
+    def test_a1_1D_synth_runs(self):
         create_1D_data(self.freq_arr)
         returncode=subprocess.call('rmsynth1d simdata/1D/simsource.dat -l 600 -d 3 -S',shell=True)
         self.assertEqual(returncode, 0, 'RMsynth1D failed to run.')
-        #what else? test output values? Tricky.
+
+
+    def test_a2_1D_synth_values(self):
+        mDict = json.load(open('simdata/1D/simsource_RMsynth.json', "r"))
+        self.assertEqual(mDict['dFDFcorMAD'], 0.014282122254371643, 'dFDFcorMAD differs from expectation.')
+        self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
+        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.22566726443082255, 'dPhiPeakPIchan_rm2 differs from expectation.')
+        self.assertEqual(mDict['ampPeakPIchan'], 0.6932258009910583, 'ampPeakPIchan differs from expectation.')
+        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6931694888042659, 'ampPeakPIchanEff differs from expectation.')
+        self.assertEqual(mDict['dAmpPeakPIchan'], 0.005826138646954418, 'dAmpPeakPIchan differs from expectation.')
+        self.assertEqual(mDict['peakFDFimagChan'], -0.03262526914477348, 'peakFDFimagChan differs from expectation.')
+        self.assertEqual(mDict['peakFDFrealChan'], 0.6924576759338379, 'peakFDFrealChan differs from expectation.')
+        self.assertEqual(mDict['dPolAngleChan_deg'], 0.2407679827058643, 'dPolAngleChan_deg differs from expectation.')
+        self.assertEqual(mDict['Ifreq0'], 0.9961842613197387, 'Ifreq0 differs from expectation.')
+        self.assertEqual(mDict['IfitStat'], 6, 'IfitStat differs from expectation.')
+        self.assertEqual(mDict['IfitChiSqRed'], 1.0291160551066647, 'IfitChiSqRed differs from expectation.')
+        self.assertEqual(mDict['lam0Sq_m2'], 0.10547465889602677, 'lam0Sq_m2 differs from expectation.')
+        self.assertEqual(mDict['fwhmRMSF'], 53.702247619628906, 'fwhmRMSF differs from expectation.')
+        self.assertEqual(mDict['dQU'], 0.10000000149011612, 'dQU differs from expectation.')
+        self.assertEqual(mDict['fracPol'], 0.696138082436917, 'fracPol differs from expectation.')
+        self.assertEqual(mDict['sigmaAddQ'], 0.09401386056486773, 'sigmaAddQ differs from expectation.')
+        self.assertEqual(mDict['sigmaAddU'], 0.041501945068279554, 'sigmaAddU differs from expectation.')
+
+
 
     def test_c_3D_synth(self):
         create_3D_data(self.freq_arr)
@@ -181,12 +210,28 @@ class test_RMtools(unittest.TestCase):
         self.assertEqual((header['NAXIS1'],header['NAXIS2']),(100,100),'Image plane has wrong dimensions!')
         self.assertEqual(header['NAXIS3'],61,'Number of output FD planes has changed.')
     
-    def test_b_1D_clean(self):
+    def test_b1_1D_clean(self):
         if not os.path.exists('simdata/1D/simsource_RMsynth.dat'):
             self.skipTest('Could not test 1D clean; 1D synth failed first.')
         returncode=subprocess.call('rmclean1d simdata/1D/simsource.dat -n 10',shell=True)
         self.assertEqual(returncode, 0, 'RMclean1D failed to run.')
-        #how to test output values?
+
+    def test_b2_1D_clean_values(self):
+        mDict = json.load(open('simdata/1D/simsource_RMclean.json', "r"))
+        self.assertEqual(mDict['dFDFcorMAD'], 0.0045274123549461365, 'dFDFcorMAD differs from expectation.')
+        self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
+        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.22570929964758826, 'dPhiPeakPIchan_rm2 differs from expectation.')
+        self.assertEqual(mDict['ampPeakPIchan'], 0.6930966973304749, 'ampPeakPIchan differs from expectation.')
+        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6930403746535152, 'ampPeakPIchanEff differs from expectation.')
+        self.assertEqual(mDict['dAmpPeakPIchan'], 0.005826138646954418, 'dAmpPeakPIchan differs from expectation.')
+        self.assertEqual(mDict['peakFDFimagChan'], -0.03262222558259964, 'peakFDFimagChan differs from expectation.')
+        self.assertEqual(mDict['peakFDFrealChan'], 0.6923285722732544, 'peakFDFrealChan differs from expectation.')
+        self.assertEqual(mDict['dPolAngleChan_deg'], 0.24081283074516147, 'dPolAngleChan_deg differs from expectation.')
+        self.assertEqual(mDict['nIter'], 11, 'nIter differs from expectation.')
+        self.assertEqual(mDict['mom2CCFDF'], 0.9962236881256104, 'mom2CCFDF differs from expectation.')
+        self.assertEqual(mDict['cleanCutoff'], 0.017478415940863253, 'cleanCutoff differs from expectation.')
+        self.assertEqual(mDict['dAmpObserved'], 0.0045274123549461365, 'dAmpObserved differs from expectation.')        
+
         
     def test_d_3D_clean(self):
         if not os.path.exists('simdata/3D/FDF_tot_dirty.fits'):
@@ -201,7 +246,7 @@ class test_RMtools(unittest.TestCase):
         returncode=subprocess.call('rmsynth1dFITS simdata/3D/Q_cube.fits simdata/3D/U_cube.fits 25 25 -l 600 -d 3 -S',shell=True)
         self.assertEqual(returncode, 0, 'RMsynth1D_fromFITS failed to run.')
         
-    def test_f_QUfitting(self):
+    def test_f1_QUfitting(self):
         if not os.path.exists('simdata/1D/simsource.dat'):
             create_1D_data(self.freq_arr)
         if not os.path.exists('models_ns'):            
@@ -209,6 +254,19 @@ class test_RMtools(unittest.TestCase):
         returncode=subprocess.call('python ../RMtools_1D/do_QUfit_1D_mnest.py simdata/1D/simsource.dat',shell=True)
         self.assertEqual(returncode, 0, 'QU fitting failed to run.')
         shutil.rmtree('models_ns')
+        
+    def test_f2_1D_synth_values(self):
+        mDict = json.load(open('simdata/1D/simsource_m1_nest.json', "r"))
+        #The QU-fitting code has internal randomness that I can't control. So every run
+        #will produce slightly different results. I want to assert that these differences
+        #are below 1%.
+        self.assertTrue(abs(mDict['values'][0]-0.6903433595475094)/0.6903433595475094 < 0.01 , 'values[0] differs from expectation.')
+        self.assertTrue(abs(mDict['values'][1]-48.392786548085425)/48.392786548085425 < 0.01 , 'values[1] differs from expectation.')
+        self.assertTrue(abs(mDict['values'][2]-200.263158825422)/200.263158825422 < 0.01 , 'values[2] differs from expectation.')
+        self.assertTrue(abs(mDict['chiSqRed']-1.09)/1.09 < 0.01 , 'chiSqRed differs from expectation.')
+        self.assertTrue(abs(mDict['BIC']+558)/558 < 0.01 , 'BIC differs from expectation.')
+        self.assertEqual(mDict['IfitDict']['chiSq'], 293.2980757053994, 'Ifit chiSq differs from expectation.')
+
 
 
 if __name__ == '__main__':
@@ -216,8 +274,8 @@ if __name__ == '__main__':
     if os.path.exists('simdata'):
         shutil.rmtree('simdata')
 
-    print('\nUnit tests running. Manual inspection of saved outputs is necessary for full verification.')
-    print('Test data inputs and outputs can be found in {}\n\n\n'.format(os.getcwd()))
+    print('\nUnit tests running.')
+    print('Test data inputs and outputs can be found in {}\n\n'.format(os.getcwd()))
 
     unittest.TestLoader.sortTestMethodsUsing=None
     suite = unittest.TestLoader().loadTestsFromTestCase(test_RMtools)

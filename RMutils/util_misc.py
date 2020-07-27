@@ -322,13 +322,19 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
                "nIter": 0,
                "p": None}
     try:
-        mp = fit_spec_poly5(freqArr, IArr, dIArr, polyOrd)
+        goodchan=np.logical_and(np.isfinite(IArr),np.isfinite(dIArr)) #Ignore NaN channels!
+        mp = fit_spec_poly5(freqArr[goodchan], IArr[goodchan], dIArr[goodchan], polyOrd)
         fitDict["p"] = mp.params
-        fitDict["fitStatus"] = mp.status
+        fitDict["fitStatus"] = int(np.abs(mp.status))
         fitDict["chiSq"] = mp.fnorm
         fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
         fitDict["nIter"] = mp.niter
         IModArr = poly5(fitDict["p"])(freqArr)
+        
+        if np.min(IModArr) < 0:   #Flag sources with negative models.
+            fitDict["fitStatus"] += 128
+        if (IModArr < dIArr).sum() > 0:  #Flag sources with models with S/N < 1.
+            fitDict["fitStatus"] += 64
 
         #if verbose:
         #    print("\n")
@@ -348,18 +354,59 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
             print("\n")
         print("> Setting Stokes I spectrum to unity.\n")
         fitDict["p"] = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        fitDict['fitStatus']=9
         IModArr = np.ones_like(IArr)
     
     # Calculate the fractional spectra and errors
     with np.errstate(divide='ignore', invalid='ignore'):
         qArr = np.true_divide(QArr, IModArr)
         uArr = np.true_divide(UArr, IModArr)
-        dqArr = qArr * np.sqrt( np.true_divide(dQArr, QArr)**2.0 +
-                                np.true_divide(dIArr, IArr)**2.0 )
-        duArr = uArr * np.sqrt( np.true_divide(dUArr, UArr)**2.0 +
-                                np.true_divide(dIArr, IArr)**2.0 )
+        
+
+## These errors only apply when dividing by channel Stokes I values, but
+## not when dividing by a Stokes I model (the errors on which are more difficult
+## to determine). Also assumes errors in Q,U are uncorrelated with errors in I,
+## which I'm skeptical about. For now, replacing with what I think is a better
+## approximation. I'm leaving this here in case we ever decide to implement
+## channel-wise Stokes I normalization.
+        # dqArr = np.abs(qArr) * np.sqrt( np.true_divide(dQArr, QArr)**2.0 +
+        #                         np.true_divide(dIArr, IArr)**2.0 )
+        # duArr = np.abs(uArr) * np.sqrt( np.true_divide(dUArr, UArr)**2.0 +
+        #                         np.true_divide(dIArr, IArr)**2.0 )
+
+#Alternative scheme: assume errors in Stokes I don't propagate through
+# (i.e., that the model has no errors.)
+        dqArr=dQArr / IModArr
+        duArr=dUArr / IModArr
 
     return IModArr, qArr, uArr, dqArr, duArr, fitDict
+
+#Documenting fitStatus return values:
+#0  Improper input parameters.
+#1  Both actual and predicted relative reductions in the sum of squares
+#		   are at most ftol.
+#2  Relative error between two consecutive iterates is at most xtol
+#3  Conditions for status = 1 and status = 2 both hold.
+#4  The cosine of the angle between fvec and any column of the jacobian
+#		   is at most gtol in absolute value.
+#5  The maximum number of iterations has been reached.
+#6  ftol is too small. No further reduction in the sum of squares is
+#		   possible.
+#7  xtol is too small. No further improvement in the approximate solution
+#		   x is possible.
+#8  gtol is too small. fvec is orthogonal to the columns of the jacobian
+#		   to machine precision.
+#9 Fit failed; reason unknown (check log/terminal)
+#16 		   A parameter or function value has become infinite or an undefined
+#		   number.  This is usually a consequence of numerical overflow in the
+#		   user's model function, which must be avoided.
+#The following can be added to the previous flags:
+#64 Model contains one or more channels with S:N < 1
+#128 Model contains negative Stokes I values.
+
+#All flags greater the 80 indicate questionable/low-signal Stokes I models.
+#All flags greater than 128 indicate bad Stokes I model (negative values)
+
 
 
 #-----------------------------------------------------------------------------#

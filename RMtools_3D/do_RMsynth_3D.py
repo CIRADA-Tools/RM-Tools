@@ -120,13 +120,13 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         dPhi_radm2 = fwhmRMSF_radm2 / nSamples
     if phiMax_radm2 is None:
         phiMax_radm2 = m.sqrt(3.0) / dLambdaSqMax_m2
-        phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
+        phiMax_radm2 = max(phiMax_radm2, fwhmRMSF_radm2*10.)    # Force the minimum phiMax to 10 FWHM
 
     # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0
+    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2))) * 2 + 1
     startPhi_radm2 = - (nChanRM-1.0) * dPhi_radm2 / 2.0
     stopPhi_radm2 = + (nChanRM-1.0) * dPhi_radm2 / 2.0
-    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
+    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, int(nChanRM))
     phiArr_radm2 = phiArr_radm2.astype(dtFloat)
     if(verbose): log("PhiArr = %.2f to %.2f by %.2f (%d chans)." % (phiArr_radm2[0],
                                                         phiArr_radm2[-1],
@@ -423,33 +423,6 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #               output_verify="fix")
 
 
-def readFitsCube_old(file, verbose, log = print):
-
-    if not os.path.exists(file):
-        log("Err: File not found")
-
-    if(verbose): log("Reading " + file + " ...")
-    data = pf.getdata(file)
-    head = pf.getheader(file)
-    if(verbose): log("done.")
-
-    if head['CTYPE3']=='FREQ':
-        freqAx=3
-        data=data[:,:,:]
-        # Feeback
-        if(verbose): log("The first 3 dimensions of the cubes are [X=%d, Y=%d, Z=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"]))
-
-    elif head["NAXIS"]==4:
-        # Feeback
-        if(verbose): log("The first 4 dimensions of the cubes are [X=%d, Y=%d, Z=%d, F=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"], head["NAXIS4"]))
-        if(head['CTYPE4']=='FREQ'):
-            freqAx=4
-            data=data[:,0,:,:]
-        else: log("Err: No frequency axis found")
-
-    return head, data
 
 
 def readFitsCube(file, verbose, log = print):

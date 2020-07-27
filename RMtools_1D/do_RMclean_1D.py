@@ -128,7 +128,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     mDict = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = mDictS["fwhmRMSF"],
-                              #dFDF        = mDictS["dFDFth"],
+                              dFDF        = mDictS["dFDFth"],
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = mDictS["lam0Sq_m2"])
     mDict["cleanCutoff"] = cutoff
@@ -160,12 +160,16 @@ def run_rmclean(mDictS, aDict, cutoff,
         log('-'*80)
         log('RESULTS:\n')
         log('FWHM RMSF = %.4g rad/m^2' % (mDictS["fwhmRMSF"]))
-        log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
-        log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
-        log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
+        log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
+            (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
+        log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
+            (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
+        log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % 
+            (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
         log('freq0_GHz = %.4g ' % (mDictS["freq0_Hz"]/1e9))
         log('I freq0 = %.4g %s' % (mDictS["Ifreq0"],mDictS["units"]))
-        log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
+        log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % 
+            (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
         log('QU Noise = %.4g %s' % (mDictS["dQU"],mDictS["units"]))
         log('FDF Noise (theory)   = %.4g %s' % (mDictS["dFDFth"],mDictS["units"]))
         log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],mDictS["units"]))
@@ -194,7 +198,19 @@ def run_rmclean(mDictS, aDict, cutoff,
     return mDict, arrdict
 
 
-def saveOutput(outdict, arrdict, prefixOut="", outDir="", verbose=False, log=print):
+def saveOutput(outdict, arrdict, prefixOut="", verbose=False, log=print):
+    """
+    Saves RM-CLEAN results to text files. The clean (restored) FDF, model FDF 
+    (clean components) are saved, as is two files (.dat and .json)
+    reporting the fitting results as key-value pairs.
+    Inputs:
+        outdict: the results dictionary (mDict) from RM-CLEAN.
+        arrdict: the array dictionary (aDict) from RM-CLEAN.
+        prefixOut (str): name prefix to be given to output files 
+            (including relative/absolute directory to save to)
+        verbose (bool): print verbose messages?
+        log (function): function to use when printing verbose messages.
+    """
     # Get data
     phiArr_radm2 = arrdict["phiArr_radm2"]
     cleanFDF = arrdict["cleanFDF"]
@@ -222,6 +238,15 @@ def saveOutput(outdict, arrdict, prefixOut="", outDir="", verbose=False, log=pri
     json.dump(outdict, open(outFile, "w"))
 
 def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
+    """
+    Read in the RM-synthesis output files and assemble back into dictionaries.
+    Inputs:
+        fdfFile (str): file path to the FDF.
+        rmsfFile (str): file path to the RMSF.
+        weightfile (str): file path to the channel weights.
+        rmSynthFile (str): file path to the RMsynth json file.
+        nBits (int): number of bits to use when storing the data.
+    """
 
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -252,6 +277,17 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
 
 def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
                     cutoff,units):
+    """
+    Plotting code for CLEANed Faraday depth spectra.
+    Inputs: 
+        phiArr_radm2 (array): array of Faraday depth values.
+        dirty FDF (array): dirty Faraday depth spectrum.
+        cleanFDF (array): cleaned (restored) Faraday depth spectrum
+        ccArr (array): clean component array
+        residFDF (array): residual Faraday depth spectrum
+        cutoff (float): clean threshold
+        units (str): name of flux unit
+    """
     from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
 
@@ -379,7 +415,6 @@ def main():
     saveOutput(outdict,
             arrdict,
             prefixOut    = fileRoot,
-            outDir       = dataDir,
             verbose      = args.verbose)
 
 
