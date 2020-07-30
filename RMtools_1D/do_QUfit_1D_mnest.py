@@ -196,7 +196,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
 
     # Output prefix is derived from the input file name
     prefixOut, ext = os.path.splitext(dataFile)
-    nestOut = prefixOut + "_nest/"
+    nestOut = f"{prefixOut}_m{modelNum}_nest/"
     if mpiRank==0:
         if os.path.exists(nestOut):
             shutil.rmtree(nestOut, True)
@@ -354,6 +354,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     # Look for multiple modes
     nestArgsDict['multimodal']           = True
     nestArgsDict['n_clustering_params']  = nDim
+    nestArgsDict['verbose']              = False
     pmn.run(**nestArgsDict)
     # Save parnames for use with PyMultinest tools
     json.dump(parNames, open(f'{nestOut}/params.json', 'w'))
@@ -471,7 +472,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
 
         # Save the posterior chains to ASCII file
         if verbose: print("Saving the posterior chains to ASCII file.")
-        outFile = prefixOut + "_posteriorChains.dat"
+        outFile = prefixOut + "_m%d_posteriorChains.dat" % modelNum
         if verbose: print("> %s" % outFile)
         np.savetxt(outFile, chains)
 
