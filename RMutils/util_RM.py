@@ -162,6 +162,8 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     K = 1.0 / np.sum(weightArr)
     if lam0Sq_m2 is None:
         lam0Sq_m2 = K * np.sum(weightArr * lambdaSqArr_m2)
+    if np.isnan(lam0Sq_m2): #Can happen if all channels are NaNs/zeros
+        lam0Sq_m2=0.
     
     # The K value used to scale each FDF spectrum must take into account
     # flagged voxels data in the datacube and can be position dependent
