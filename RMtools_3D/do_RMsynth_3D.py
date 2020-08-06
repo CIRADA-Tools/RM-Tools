@@ -184,7 +184,9 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     # Note: the Stokes I model MUST be continuous throughout the cube,
     # i.e., no NaNs as the amplitude at freq0_Hz is interpolated from the
     # nearest two planes.
-    freq0_Hz = C / m.sqrt(lam0Sq_m2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        freq0_Hz = np.true_divide(C , m.sqrt(lam0Sq_m2))
+                                  
     if dataI is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx]<freq0_Hz:
@@ -276,6 +278,8 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     header["CRPIX"+str(freq_axis)] = 1.0
     header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
+    if not np.isfinite(lam0Sq_m2):
+        lam0Sq_m2 = 0.
     header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
         del header["DATAMAX"]
