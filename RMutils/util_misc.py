@@ -425,7 +425,7 @@ def interp_images(arr1, arr2, f=0.5):
     coords = np.ones(arr1.shape) * f, Y, X
     
     # Interpolate using the map_coordinates function
-    interpArr = ndi.map_coordinates(arr, coords, order=2)
+    interpArr = ndi.map_coordinates(arr, coords, order=1)
 
     return interpArr
 
