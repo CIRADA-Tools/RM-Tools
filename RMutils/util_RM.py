@@ -300,7 +300,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     lam0Sq_m2 = K * np.nansum(weightArr * lambdaSqArr_m2)
 
     # Calculate the analytical FWHM width of the main lobe    
-    fwhmRMSF = 2.0 * m.sqrt(3.0)/(np.nanmax(lambdaSqArr_m2) -
+    fwhmRMSF = 3.8/(np.nanmax(lambdaSqArr_m2) -
                                   np.nanmin(lambdaSqArr_m2))
 
     # Do a simple 1D calculation and replicate along X & Y axes
@@ -319,7 +319,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting Gaussian to the main lobe.")
             if fitRMSFreal:
-                mp = fit_rmsf(phi2Arr, RMSFcube.real)
+                mp = fit_rmsf(phi2Arr, RMSFArr.real)
             else:
                 mp = fit_rmsf(phi2Arr, np.abs(RMSFArr))
             if mp is None or mp.status<1:
@@ -644,7 +644,7 @@ def extrap(x, xp, yp):
 
 
 #-----------------------------------------------------------------------------#
-def fit_rmsf(xData, yData, thresh=0.3, ampThresh=0.5):
+def fit_rmsf(xData, yData, thresh=0.4, ampThresh=0.4):
     """
     Fit the main lobe of the RMSF with a Gaussian function. 
     """
@@ -705,31 +705,22 @@ def gauss1D(amp=1.0, mean=0.0, fwhm=1.0):
 
 
 #-----------------------------------------------------------------------------#
-def detect_peak(a, thresh=0.3):
+
+def detect_peak(a, thresh=0.4):
     """Detect the extent of the peak in the array by moving away, in both
-    directions, from the peak channel amd looking for where the slope changes
-    to some shallow value. The triggering slope is 'thresh*max(slope)'.
+    directions, from the peak channel amd looking for where the value drops
+    below a threshold.
     Returns a mask array like the input array with 1s over the extent of the
     peak and 0s elsewhere."""
 
-    # Find the peak and take the 1st derivative
-    iPkL= np.argmax(a)  # If the peak is flat, this is the left index
-    g1 = np.abs(np.gradient(a))
+    # Find the peak
+    iPk = np.argmax(a)  # If the peak is flat, this is the left index
 
-    # Specify a threshold for the 1st derivative. Channels between the peak
-    # and the first crossing point will be included in the mask.
-    threshPos = np.nanmax(g1) * thresh
+    # find first point below threshold right of peak
+    ishift = np.where(a[iPk:]<thresh)[0][0]
+    iR = iPk+ishift
+    iL = iPk-ishift+1
 
-    # Determine the right-most index of flat peaks
-    iPkR = iPkL
-    d = np.diff(a)
-    flatIndxLst = np.argwhere(d[iPkL:]==0).flatten()
-    if len(flatIndxLst)>0:
-        iPkR += (np.max(flatIndxLst)+1)
-        
-    # Search for the left & right crossing point
-    iL = np.max(np.argwhere(g1[:iPkL]<=threshPos).flatten())
-    iR = iPkR + np.min(np.argwhere(g1[iPkR+1:]<=threshPos).flatten()) + 2
     msk = np.zeros_like(a)
     msk[iL:iR] = 1
     
@@ -739,19 +730,66 @@ def detect_peak(a, thresh=0.3):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.step(np.arange(len(a)),a, where="mid", label="arr")
-        ax.step(np.arange(len(g1)), np.abs(g1), where="mid", label="g1")
         ax.step(np.arange(len(msk)), msk*0.5, where="mid", label="msk")
         ax.axhline(0, color='grey')
-        ax.axvline(iPkL, color='k', linewidth=3.0)
-        ax.axhline(threshPos, color='magenta', ls="--")
-        ax.set_xlim([iPkL-20, iPkL+20])
+        ax.axvline(iPk, color='k', linewidth=3.0)
+        ax.axhline(thresh, color='magenta', ls="--")
+        ax.set_xlim([iL-20, iR+20])
         leg = ax.legend(numpoints=1, loc='upper right', shadow=False,
                         borderaxespad=0.3, ncol=1,
                         bbox_to_anchor=(1.00, 1.00))
         fig.show()
-        input()
-
     return msk
+
+
+#-----------------------------------------------------------------------------#
+# def detect_peak(a, thresh=0.3):
+#     """Detect the extent of the peak in the array by moving away, in both
+#     directions, from the peak channel amd looking for where the slope changes
+#     to some shallow value. The triggering slope is 'thresh*max(slope)'.
+#     Returns a mask array like the input array with 1s over the extent of the
+#     peak and 0s elsewhere."""
+
+#     # Find the peak and take the 1st derivative
+#     iPkL= np.argmax(a)  # If the peak is flat, this is the left index
+#     g1 = np.abs(np.gradient(a))
+
+#     # Specify a threshold for the 1st derivative. Channels between the peak
+#     # and the first crossing point will be included in the mask.
+#     threshPos = np.nanmax(g1) * thresh
+
+#     # Determine the right-most index of flat peaks
+#     iPkR = iPkL
+#     d = np.diff(a)
+#     flatIndxLst = np.argwhere(d[iPkL:]==0).flatten()
+#     if len(flatIndxLst)>0:
+#         iPkR += (np.max(flatIndxLst)+1)
+        
+#     # Search for the left & right crossing point
+#     iL = np.max(np.argwhere(g1[:iPkL]<=threshPos).flatten())
+#     iR = iPkR + np.min(np.argwhere(g1[iPkR+1:]<=threshPos).flatten()) + 2
+#     msk = np.zeros_like(a)
+#     msk[iL:iR] = 1
+    
+#     # DEBUG PLOTTING
+#     if False:
+#         from matplotlib import pyplot as plt
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111)
+#         ax.step(np.arange(len(a)),a, where="mid", label="arr")
+#         ax.step(np.arange(len(g1)), np.abs(g1), where="mid", label="g1")
+#         ax.step(np.arange(len(msk)), msk*0.5, where="mid", label="msk")
+#         ax.axhline(0, color='grey')
+#         ax.axvline(iPkL, color='k', linewidth=3.0)
+#         ax.axhline(threshPos, color='magenta', ls="--")
+#         ax.set_xlim([iPkL-20, iPkL+20])
+#         leg = ax.legend(numpoints=1, loc='upper right', shadow=False,
+#                         borderaxespad=0.3, ncol=1,
+#                         bbox_to_anchor=(1.00, 1.00))
+#         fig.show()
+#         input()
+
+#     return msk
 
 
 #-----------------------------------------------------------------------------#
@@ -1325,7 +1363,7 @@ def get_RMSF(lamSqArr, phiArr, weightArr=None, lam0Sq_m2=None, double=True,
     RMSFArr = K * np.nansum(weightArr * np.exp( np.outer(a, b) ), 1)
 
     # Calculate (B&dB Equation 61) or fit the main-lobe FWHM of the RMSF
-    fwhmRMSF = 2.0 * m.sqrt(3.0)/(np.nanmax(lamSqArr) - np.nanmin(lamSqArr))
+    fwhmRMSF = 3.8/(np.nanmax(lamSqArr) - np.nanmin(lamSqArr))
     if not uniformWt:
         if fitRMSFreal:
             mp = fit_rmsf(phi2Arr, RMSFArr.real)
