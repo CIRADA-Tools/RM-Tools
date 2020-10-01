@@ -46,6 +46,7 @@
 #                                                                             #
 #=============================================================================#
 
+from shutil import Error
 import sys
 import os
 import shutil
@@ -141,6 +142,8 @@ def main():
                         help="verbose mode [False].")
     parser.add_argument("-c", dest="sigma_clip", type=float, default=5,
                         help="How many sigma to clip around parameter modes [5].")
+    parser.add_argument("-r", dest="restart", action="store_false",
+                        help="Restart fitting and delete previous run [True].")
     args = parser.parse_args()
 
     # Sanity checks
@@ -159,13 +162,15 @@ def main():
               showPlots    = args.showPlots,
               sigma_clip   = args.sigma_clip,
               debug        = args.debug,
-              verbose      = args.verbose)
+              verbose      = args.verbose,
+              restart      = args.restart
+              )
 
 
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
               noStokesI=False, showPlots=False, sigma_clip=5, 
-              debug=False, verbose=False):
+              debug=False, verbose=False, restart=True):
     """Carry out QU-fitting using the supplied parameters:
         dataFile (str, required): relative or absolute path of file containing 
             frequencies and Stokes parameters with errors.
@@ -204,9 +209,14 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     prefixOut, ext = os.path.splitext(dataFile)
     nestOut = f"{prefixOut}_m{modelNum}_nest/"
     if mpiRank==0:
-        if os.path.exists(nestOut):
+        if os.path.exists(nestOut) and restart:
             shutil.rmtree(nestOut, True)
-        os.mkdir(nestOut)
+            os.mkdir(nestOut)
+        elif not os.path.exists(nestOut) and restart:
+            os.mkdir(nestOut)
+        elif not os.path.exists(nestOut) and not restart:
+            print("Restart requested, but previous run not found!")
+            raise Exception(f"{nestOut} does not exist.")
     if mpiSwitch:
         mpiComm.Barrier()
 
