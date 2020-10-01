@@ -441,22 +441,24 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
-        saveDict = {"parNames":   toscalar(parNames),
-                    "labels":     toscalar(labels),
-                    "values":     toscalar(p),
-                    "errPlus":    toscalar(errPlus),
-                    "errMinus":   toscalar(errMinus),
-                    "bounds":     toscalar(bounds),
-                    "priorTypes": toscalar(priorTypes),
-                    "wraps":      toscalar(wraps),
-                    "dof":        toscalar(dof),
-                    "chiSq":      toscalar(chiSq),
-                    "chiSqRed":   toscalar(chiSqRed),
-                    "AIC":        toscalar(AIC),
-                    "AICc":       toscalar(AICc),
-                    "BIC":        toscalar(BIC),
-                    "nFree":      toscalar(nFree),
-                    "IfitDict":   IfitDict}
+        saveDict = {"parNames":      toscalar(parNames),
+                    "labels":        toscalar(labels),
+                    "values":        toscalar(p),
+                    "errPlus":       toscalar(errPlus),
+                    "errMinus":      toscalar(errMinus),
+                    "bounds":        toscalar(bounds),
+                    "priorTypes":    toscalar(priorTypes),
+                    "wraps":         toscalar(wraps),
+                    "dof":           toscalar(dof),
+                    "chiSq":         toscalar(chiSq),
+                    "chiSqRed":      toscalar(chiSqRed),
+                    "AIC":           toscalar(AIC),
+                    "AICc":          toscalar(AICc),
+                    "BIC":           toscalar(BIC),
+                    "ln(EVIDENCE) ": toscalar(lnEvidence),
+                    "dLn(EVIDENCE)": toscalar(dLnEvidence),
+                    "nFree":         toscalar(nFree),
+                    "IfitDict":      IfitDict}
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
 
