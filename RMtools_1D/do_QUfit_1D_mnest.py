@@ -139,6 +139,8 @@ def main():
                         help="turn on debugging messages/plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="verbose mode [False].")
+    parser.add_argument("-c", dest="sigma_clip", type=float, default=5,
+                        help="How many sigma to clip around parameter modes [5].")
     args = parser.parse_args()
 
     # Sanity checks
@@ -155,13 +157,15 @@ def main():
               nBits        = 32,
               noStokesI    = args.noStokesI,
               showPlots    = args.showPlots,
+              sigma_clip   = args.sigma_clip,
               debug        = args.debug,
               verbose      = args.verbose)
 
 
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
-              noStokesI=False, showPlots=False, debug=False, verbose=False):
+              noStokesI=False, showPlots=False, sigma_clip=5, 
+              debug=False, verbose=False):
     """Carry out QU-fitting using the supplied parameters:
         dataFile (str, required): relative or absolute path of file containing 
             frequencies and Stokes parameters with errors.
@@ -176,6 +180,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         noStokesI (bool): set True if the Stokes I spectrum should be ignored.
         showPlots (bool): Set true if the spectrum and parameter space plots
             should be displayed.
+        sigma_clip (float): How many standard deviations to clip around the 
+            mean of each mode in the parameter postierors.
         debug (bool): Display debug messages.
         verbose (bool): Print verbose messages/results to terminal.
         
@@ -387,8 +393,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Get the max and std for modal value
         modes = np.array(statDict['modes'][np.argmax(mode_evidence)]['maximum a posterior'])
         sigmas = np.array(statDict['modes'][np.argmax(mode_evidence)]['sigma'])
-        upper = modes + 5 * sigmas
-        lower = modes - 5 * sigmas
+        upper = modes + sigma_clip * sigmas
+        lower = modes - sigma_clip * sigmas
 
         p = [None]*nDim
         errPlus = [None]*nDim
