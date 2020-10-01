@@ -46,6 +46,7 @@
 #                                                                             #
 #=============================================================================#
 
+from shutil import Error
 import sys
 import os
 import shutil
@@ -139,6 +140,10 @@ def main():
                         help="turn on debugging messages/plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="verbose mode [False].")
+    parser.add_argument("-c", dest="sigma_clip", type=float, default=5,
+                        help="How many sigma to clip around parameter modes [5].")
+    parser.add_argument("-r", dest="restart", action="store_false",
+                        help="Restart fitting and delete previous run [True].")
     args = parser.parse_args()
 
     # Sanity checks
@@ -155,13 +160,17 @@ def main():
               nBits        = 32,
               noStokesI    = args.noStokesI,
               showPlots    = args.showPlots,
+              sigma_clip   = args.sigma_clip,
               debug        = args.debug,
-              verbose      = args.verbose)
+              verbose      = args.verbose,
+              restart      = args.restart
+              )
 
 
 #-----------------------------------------------------------------------------#
 def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
-              noStokesI=False, showPlots=False, debug=False, verbose=False):
+              noStokesI=False, showPlots=False, sigma_clip=5, 
+              debug=False, verbose=False, restart=True):
     """Carry out QU-fitting using the supplied parameters:
         dataFile (str, required): relative or absolute path of file containing 
             frequencies and Stokes parameters with errors.
@@ -176,6 +185,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         noStokesI (bool): set True if the Stokes I spectrum should be ignored.
         showPlots (bool): Set true if the spectrum and parameter space plots
             should be displayed.
+        sigma_clip (float): How many standard deviations to clip around the 
+            mean of each mode in the parameter postierors.
         debug (bool): Display debug messages.
         verbose (bool): Print verbose messages/results to terminal.
         
@@ -198,9 +209,14 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     prefixOut, ext = os.path.splitext(dataFile)
     nestOut = f"{prefixOut}_m{modelNum}_nest/"
     if mpiRank==0:
-        if os.path.exists(nestOut):
+        if os.path.exists(nestOut) and restart:
             shutil.rmtree(nestOut, True)
-        os.mkdir(nestOut)
+            os.mkdir(nestOut)
+        elif not os.path.exists(nestOut) and restart:
+            os.mkdir(nestOut)
+        elif not os.path.exists(nestOut) and not restart:
+            print("Restart requested, but previous run not found!")
+            raise Exception(f"{nestOut} does not exist.")
     if mpiSwitch:
         mpiComm.Barrier()
 
@@ -387,8 +403,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Get the max and std for modal value
         modes = np.array(statDict['modes'][np.argmax(mode_evidence)]['maximum a posterior'])
         sigmas = np.array(statDict['modes'][np.argmax(mode_evidence)]['sigma'])
-        upper = modes + 5 * sigmas
-        lower = modes - 5 * sigmas
+        upper = modes + sigma_clip * sigmas
+        lower = modes - sigma_clip * sigmas
 
         p = [None]*nDim
         errPlus = [None]*nDim
@@ -435,22 +451,24 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
-        saveDict = {"parNames":   toscalar(parNames),
-                    "labels":     toscalar(labels),
-                    "values":     toscalar(p),
-                    "errPlus":    toscalar(errPlus),
-                    "errMinus":   toscalar(errMinus),
-                    "bounds":     toscalar(bounds),
-                    "priorTypes": toscalar(priorTypes),
-                    "wraps":      toscalar(wraps),
-                    "dof":        toscalar(dof),
-                    "chiSq":      toscalar(chiSq),
-                    "chiSqRed":   toscalar(chiSqRed),
-                    "AIC":        toscalar(AIC),
-                    "AICc":       toscalar(AICc),
-                    "BIC":        toscalar(BIC),
-                    "nFree":      toscalar(nFree),
-                    "IfitDict":   IfitDict}
+        saveDict = {"parNames":      toscalar(parNames),
+                    "labels":        toscalar(labels),
+                    "values":        toscalar(p),
+                    "errPlus":       toscalar(errPlus),
+                    "errMinus":      toscalar(errMinus),
+                    "bounds":        toscalar(bounds),
+                    "priorTypes":    toscalar(priorTypes),
+                    "wraps":         toscalar(wraps),
+                    "dof":           toscalar(dof),
+                    "chiSq":         toscalar(chiSq),
+                    "chiSqRed":      toscalar(chiSqRed),
+                    "AIC":           toscalar(AIC),
+                    "AICc":          toscalar(AICc),
+                    "BIC":           toscalar(BIC),
+                    "ln(EVIDENCE) ": toscalar(lnEvidence),
+                    "dLn(EVIDENCE)": toscalar(dLnEvidence),
+                    "nFree":         toscalar(nFree),
+                    "IfitDict":      IfitDict}
         json.dump(saveDict, open(outFile, "w"))
         print("Results saved in JSON format to:\n '%s'\n" % outFile)
 
