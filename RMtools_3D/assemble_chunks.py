@@ -63,8 +63,14 @@ def main():
                               (x.startswith('C') and x[1:].isnumeric()) ])
     else:
         output_filename=args.output
+        
+    #Get all the chunk filenames. Missing chunks will break things!
+    filename=re.search('\.C\d+\.',args.chunkname)
+    chunkfiles=glob(args.chunkname[0:filename.start()]+'.C*.'+args.chunkname[filename.end():])
+    chunkfiles.sort()
 
-    old_header=pf.getheader(args.chunkname)
+
+    old_header=pf.getheader(chunkfiles[0])
     x_dim=old_header['OLDXDIM']
     y_dim=old_header['OLDYDIM']
     Nperchunk=old_header['NAXIS1']
@@ -91,10 +97,6 @@ def main():
         fobj.seek(len(new_header.tostring()) + (np.product(shape) * np.abs(new_header['BITPIX']//8)) - 1)
         fobj.write(b'\0')
 
-    #Get all the chunk filenames. Missing chunks will break things!
-    filename=re.search('\.C\d+\.',args.chunkname)
-    chunkfiles=glob(args.chunkname[0:filename.start()]+'.C*.'+args.chunkname[filename.end():])
-    chunkfiles.sort()
 
     if len(chunkfiles) != num_chunks:
         raise Exception('Number of chunk files found does not match expectations!')
