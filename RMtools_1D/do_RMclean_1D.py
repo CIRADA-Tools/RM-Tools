@@ -143,12 +143,7 @@ def run_rmclean(mDictS, aDict, cutoff,
     mDict["dAmpObserved"] = mDict["dFDFcorMAD"]
     mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
 
-    nChansGood = np.sum(np.where(lambdaSqArr_m2==lambdaSqArr_m2, 1.0, 0.0))
-    varLamSqArr_m2 = (np.sum(lambdaSqArr_m2**2.0) -
-                      np.sum(lambdaSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
-    mDict["dPolAngle0ChanObserved_deg"] = \
-    np.degrees(np.sqrt( mDict["dFDFcorMAD"]**2.0 / (4.0*(nChansGood-2.0)*mDict["ampPeakPIfit"]**2.0) *
-                 ((nChansGood-1)/nChansGood + mDictS["lam0Sq_m2"]**2.0/varLamSqArr_m2) ))
+    mDict["dPolAngleFit0Observed_deg"] = mDict["dPolAngle0Fit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
 
 
 
