@@ -1326,7 +1326,7 @@ def plot_Ipqu_spectra_fig(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
 
     # Default to non-high-resolution inputs
     if freqHirArr_Hz is None:
@@ -1531,7 +1531,7 @@ def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, fwhmRMSF=None,
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
     # Plot the RMSF
     ax1 = fig.add_subplot(211)    
     plot_RMSF_ax(ax=ax1,
@@ -1668,7 +1668,7 @@ def plot_cleanFDF_fig(phiArr, cleanFDFArr, ccFDFArr=None,
     
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
 
     # Plot the clean FDF
     ax1 = fig.add_subplot(211)    
@@ -1929,7 +1929,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(16.0, 8.0))
+        fig = plt.figure(facecolor='w',figsize=(16.0, 8.0))
     
     # Plot the data and the +/- 1-sigma levels
     ax1 = fig.add_subplot(231)
