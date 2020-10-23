@@ -284,7 +284,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         print("Plotting the input data and spectral index fit.")
         freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
         IModHirArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
-        specFig = plt.figure(figsize=(10, 6))
+        specFig = plt.figure(facecolor='w',figsize=(10, 6))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
                               qArr           = qArr,

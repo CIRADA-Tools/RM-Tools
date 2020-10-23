@@ -171,7 +171,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
     IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)
     if showPlots or saveFigures:
-        specFig = plt.figure(figsize=(12.0, 8))
+        specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
                               qArr           = qArr,
@@ -201,7 +201,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # DEBUG (plot the Q, U and average RMS spectrum)
     if debug:
-        rmsFig = plt.figure(figsize=(12.0, 8))
+        rmsFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         ax = rmsFig.add_subplot(111)
         ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
                 label='rms <QU>')
@@ -414,7 +414,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Plot the RM Spread Function and dirty FDF
     if showPlots or saveFigures:
-        fdfFig = plt.figure(figsize=(12.0, 8))
+        fdfFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = dirtyFDF,
                           phi2Arr    = phi2Arr_radm2,

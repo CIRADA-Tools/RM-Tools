@@ -39,7 +39,9 @@ import time
 import os
 import sys
 import json
+from matplotlib.pyplot import savefig
 import numpy as np
+from matplotlib import pyplot as plt
 
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import measure_FDF_parms
@@ -49,7 +51,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmclean(mDictS, aDict, cutoff,
                 maxIter=1000, gain=0.1, nBits=32,
-                showPlots=False, verbose=False, log=print):
+                showPlots=False, prefixOut="", verbose=False, log=print, saveFigures=None):
     """Run RM-CLEAN on a complex FDF spectrum given a RMSF.
 
     Args:
@@ -174,11 +176,19 @@ def run_rmclean(mDictS, aDict, cutoff,
         log('-'*80)
 
     # Pause to display the figure
+    if showPlots or saveFigures:
+        fdfFig = plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
+                                 cutoff,mDictS["units"])
+    # Pause if plotting enabled
     if showPlots:
-        plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                    cutoff,mDictS["units"])
-        print("Press <RETURN> to exit ...", end=' ')
-        input()
+        plt.show()
+    elif saveFigures:
+        if verbose: print("Saving CLEAN FDF plot:")
+        outFilePlot = prefixOut + "_cleanFDF-plots.pdf"
+        if verbose: print("> " + outFilePlot)
+        fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
+        # print("Press <RETURN> to exit ...", end=' ')
+        # input()
 
     #add array dictionary
     arrdict = dict()
@@ -282,10 +292,9 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
         cutoff (float): clean threshold
         units (str): name of flux unit
     """
-    from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
 
-    fig = plt.figure(figsize=(12.0, 8))
+    fig = plt.figure(facecolor='w',figsize=(12.0, 8))
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212, sharex=ax1)
 
@@ -293,8 +302,6 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     cleanFDF=np.squeeze(cleanFDF)
     ccArr=np.squeeze(ccArr)
     residFDF=np.squeeze(residFDF)
-
-    fig.show()
 
 
     ax1.cla()
@@ -339,7 +346,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     leg.get_frame().set_linewidth(0.5)
     leg.get_frame().set_alpha(0.5)
     ax2.autoscale_view(True, True, True)
-    plt.draw()
+    return fig
 
 #-----------------------------------------------------------------------------#
 def main():
@@ -403,6 +410,7 @@ def main():
                                 gain         = args.gain,
                                 nBits        = nBits,
                                 showPlots    = args.showPlots,
+                                prefixOut    = fileRoot,
                                 verbose      = args.verbose)
 
     # Save output
