@@ -71,7 +71,6 @@ from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
 from RMutils import corner
-from IPython import embed
 
 # Fail if script has been started with mpiexec & mpi4py is not installed
 if os.environ.get('OMPI_COMM_WORLD_SIZE') is not None:
@@ -675,20 +674,6 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
-
-#-----------------------------------------------------------------------------#
-def get_mode_chains(mode, outputfiles_basename="_nest/"):
-    i = mode + 1
-
-    with open(f'{outputfiles_basename}post_separate.dat') as f:
-        contents = f.read()
-
-    modes = contents.split('\n\n')
-    chains = np.genfromtxt(modes[i].splitlines())
-    chains = chains[:,2:]
-    weights = chains[:,0] # sample probability
-
-    return chains, weights
 
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
