@@ -142,7 +142,6 @@ def run_rmclean(mDictS, aDict, cutoff,
     mDict["dPhiObserved_rm2"] = mDict["dPhiPeakPIfit_rm2"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
     mDict["dAmpObserved"] = mDict["dFDFcorMAD"]
     mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
-
     mDict["dPolAngleFit0Observed_deg"] = mDict["dPolAngle0Fit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
 
 
@@ -158,7 +157,7 @@ def run_rmclean(mDictS, aDict, cutoff,
         log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
             (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
         log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
-            (mDict["polAngle0Fit_deg"],mDict["dPolAngle0ChanObserved_deg"],mDict["dPolAngle0Fit_deg"]))
+            (mDict["polAngle0Fit_deg"],mDict["dPolAngleFit0Observed_deg"],mDict["dPolAngle0Fit_deg"]))
         log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % 
             (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
         log('freq0_GHz = %.4g ' % (mDictS["freq0_Hz"]/1e9))

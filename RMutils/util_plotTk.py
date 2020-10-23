@@ -1956,10 +1956,10 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     nBins = 15
     yMin = np.nanmin([np.nanmin(qArr), np.nanmin(uArr)])
     yMax = np.nanmax([np.nanmax(qArr), np.nanmax(uArr)])
-    n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), normed=1,
+    n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), density=1,
                        histtype='step', color='tab:blue', linewidth=1.0)
     ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=1.5)
-    n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), normed=1,
+    n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), density=1,
                        histtype='step', color='tab:red', linewidth=1.0)
     ax2.axvline(med, color='grey', zorder=11)
     ax2.set_title(r'Distribution of Data vs Normal')
