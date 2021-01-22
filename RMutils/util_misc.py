@@ -968,3 +968,48 @@ def poly10(p):
         return y
              
     return rfunc
+
+#-----------------------------------------------------------------------------
+def fit_spec_gauss_mod(xData, yData, dyData=None):
+    """Fit a 5th order polynomial to a spectrum. To avoid overflow errors the
+    X-axis data should not be large numbers (e.g.: x10^9 Hz; use GHz
+    instead)."""
+
+    if dyData is None:
+        dyData = np.ones_like(yData)
+    if np.all(dyData==0):
+        dyData = np.ones_like(yData)
+    
+    C0 = 0.0
+    C1 = 0.0
+    C2 = 0.0
+    
+    inParms=[ {'value': C2, 'parname': 'C2', 'fixed': False},
+              {'value': C1, 'parname': 'C1', 'fixed': False},
+              {'value': C0, 'parname': 'C0', 'fixed': False} ]
+    
+    # Function to evaluate the difference between the model and data.
+    # This is minimised in the least-squared sense by the fitter
+    def errFn(p, fjac=None):
+        status = 0
+        return status, (gauss_mod(p)(xData) - yData)/dyData
+
+    # Use MPFIT to perform the LM-minimisation
+    mp = mpfit(errFn, parinfo=inParms, quiet=True)
+    
+    return mp
+
+
+#-----------------------------------------------------------------------------
+def gauss_mod(p):
+    """Returns a function to evaluate a polynomial. The subfunction can be
+    accessed via 'argument unpacking' like so: 'y = poly5(p)(*x)',
+    where x is a vector of X values and p is a vector of coefficients."""
+   
+    p = np.append(np.zeros((3-len(p))), p)
+   
+    def rfunc(x):
+        y = p[0]*(x/x.min())**(p[1]+p[2]*np.log(x/x.min()))
+        return y
+    
+    return rfunc
