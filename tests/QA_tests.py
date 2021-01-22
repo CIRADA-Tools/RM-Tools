@@ -180,24 +180,9 @@ class test_RMtools(unittest.TestCase):
 
     def test_a2_1D_synth_values(self):
         mDict = json.load(open('simdata/1D/simsource_RMsynth.json', "r"))
-        self.assertEqual(mDict['dFDFcorMAD'], 0.013521933928132057, 'dFDFcorMAD differs from expectation.')
-        self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
-        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.24754919790792115, 'dPhiPeakPIchan_rm2 differs from expectation.')
-        self.assertEqual(mDict['ampPeakPIchan'], 0.6932258009910583, 'ampPeakPIchan differs from expectation.')
-        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6931694888042659, 'ampPeakPIchanEff differs from expectation.')
-        self.assertEqual(mDict['dAmpPeakPIchan'], 0.005826138646954418, 'dAmpPeakPIchan differs from expectation.')
-        self.assertEqual(mDict['peakFDFimagChan'], -0.03262526914477348, 'peakFDFimagChan differs from expectation.')
-        self.assertEqual(mDict['peakFDFrealChan'], 0.6924576759338379, 'peakFDFrealChan differs from expectation.')
-        self.assertEqual(mDict['dPolAngleChan_deg'], 0.2407679827058643, 'dPolAngleChan_deg differs from expectation.')
-        self.assertEqual(mDict['Ifreq0'], 0.9961842613197387, 'Ifreq0 differs from expectation.')
-        self.assertEqual(mDict['IfitStat'], 6, 'IfitStat differs from expectation.')
-        self.assertEqual(mDict['IfitChiSqRed'], 1.0291160551066647, 'IfitChiSqRed differs from expectation.')
-        self.assertEqual(mDict['lam0Sq_m2'], 0.10547465889602677, 'lam0Sq_m2 differs from expectation.')
-        self.assertEqual(mDict['fwhmRMSF'], 58.90951156616211, 'fwhmRMSF differs from expectation.')
-        self.assertEqual(mDict['dQU'], 0.10000000149011612, 'dQU differs from expectation.')
-        self.assertEqual(mDict['fracPol'], 0.696138082436917, 'fracPol differs from expectation.')
-        self.assertEqual(mDict['sigmaAddQ'], 0.09401386056486773, 'sigmaAddQ differs from expectation.')
-        self.assertEqual(mDict['sigmaAddU'], 0.041501945068279554, 'sigmaAddU differs from expectation.')
+        refDict = json.load(open('RMsynth1D_referencevalues.json', "r"))
+        for key in mDict.keys():
+            self.assertEqual(mDict[key], refDict[key], '{} differs from expectation.'.format(key))
 
 
 
@@ -218,19 +203,9 @@ class test_RMtools(unittest.TestCase):
 
     def test_b2_1D_clean_values(self):
         mDict = json.load(open('simdata/1D/simsource_RMclean.json', "r"))
-        self.assertEqual(mDict['dFDFcorMAD'], 0.004344077780842781, 'dFDFcorMAD differs from expectation.')
-        self.assertEqual(mDict['phiPeakPIchan_rm2'], 201.0, 'phiPeakPIchan_rm2 differs from expectation.')
-        self.assertEqual(mDict['dPhiPeakPIchan_rm2'], 0.24756420450951575, 'dPhiPeakPIchan_rm2 differs from expectation.')
-        self.assertEqual(mDict['ampPeakPIchan'], 0.6931837797164917, 'ampPeakPIchan differs from expectation.')
-        self.assertEqual(mDict['ampPeakPIchanEff'], 0.6931274641157387, 'ampPeakPIchanEff differs from expectation.')
-        self.assertEqual(mDict['dAmpPeakPIchan'], 0.005826138646954418, 'dAmpPeakPIchan differs from expectation.')
-        self.assertEqual(mDict['peakFDFimagChan'], -0.03262597322463989, 'peakFDFimagChan differs from expectation.')
-        self.assertEqual(mDict['peakFDFrealChan'], 0.6924155354499817, 'peakFDFrealChan differs from expectation.')
-        self.assertEqual(mDict['dPolAngleChan_deg'], 0.24078257822555788, 'dPolAngleChan_deg differs from expectation.')
-        self.assertEqual(mDict['nIter'], 11, 'nIter differs from expectation.')
-        self.assertEqual(mDict['mom2CCFDF'], 0.9962236881256104, 'mom2CCFDF differs from expectation.')
-        self.assertEqual(mDict['cleanCutoff'], 0.017478415940863253, 'cleanCutoff differs from expectation.')
-        self.assertEqual(mDict['dAmpObserved'], 0.004344077780842781, 'dAmpObserved differs from expectation.')        
+        refDict = json.load(open('RMclean1D_referencevalues.json', "r"))
+        for key in mDict.keys():
+            self.assertEqual(mDict[key], refDict[key], '{} differs from expectation.'.format(key))
 
         
     def test_d_3D_clean(self):
@@ -246,26 +221,25 @@ class test_RMtools(unittest.TestCase):
         returncode=subprocess.call('rmsynth1dFITS simdata/3D/Q_cube.fits simdata/3D/U_cube.fits 25 25 -l 600 -d 3 -S',shell=True)
         self.assertEqual(returncode, 0, 'RMsynth1D_fromFITS failed to run.')
         
-#    def test_f1_QUfitting(self):
-#        if not os.path.exists('simdata/1D/simsource.dat'):
-#            create_1D_data(self.freq_arr)
-#        if not os.path.exists('models_ns'):            
-#            shutil.copytree('../RMtools_1D/models_ns','models_ns')
-#        returncode=subprocess.call('python ../RMtools_1D/do_QUfit_1D_mnest.py simdata/1D/simsource.dat',shell=True)
-#        self.assertEqual(returncode, 0, 'QU fitting failed to run.')
-#        shutil.rmtree('models_ns')
+    def test_f1_QUfitting(self):
+        if not os.path.exists('simdata/1D/simsource.dat'):
+            create_1D_data(self.freq_arr)
+        if not os.path.exists('models_ns'):            
+            shutil.copytree('../RMtools_1D/models_ns','models_ns')
+        returncode=subprocess.call('python ../RMtools_1D/do_QUfit_1D_mnest.py simdata/1D/simsource.dat',shell=True)
+        self.assertEqual(returncode, 0, 'QU fitting failed to run.')
+        shutil.rmtree('models_ns')
         
-#    def test_f2_QUfit_values(self):
-#        mDict = json.load(open('simdata/1D/simsource_m1_nest.json', "r"))
-#        #The QU-fitting code has internal randomness that I can't control. So every run
-#        #will produce slightly different results. I want to assert that these differences
-#        #are below 1%.
-#        self.assertTrue(abs(mDict['values'][0]-0.6903433595475094)/0.6903433595475094 < 0.01 , 'values[0] differs from expectation.')
-#        self.assertTrue(abs(mDict['values'][1]-48.392786548085425)/48.392786548085425 < 0.01 , 'values[1] differs from expectation.')
-#        self.assertTrue(abs(mDict['values'][2]-200.263158825422)/200.263158825422 < 0.01 , 'values[2] differs from expectation.')
-#        self.assertTrue(abs(mDict['chiSqRed']-1.09)/1.09 < 0.01 , 'chiSqRed differs from expectation.')
-#        self.assertTrue(abs(mDict['BIC']+558)/558 < 0.01 , 'BIC differs from expectation.')
-#        self.assertEqual(mDict['IfitDict']['chiSq'], 293.2980757053994, 'Ifit chiSq differs from expectation.')
+    def test_f2_QUfit_values(self):
+        mDict = json.load(open('simdata/1D/simsource_m1_nest.json', "r"))
+        #The QU-fitting code has internal randomness that I can't control. So every run
+        #will produce slightly different results. I want to assert that these differences
+        #are below 1%.
+        self.assertTrue(abs(mDict['values'][0]-0.695)/0.695 < 0.01 , 'values[0] differs from expectation.')
+        self.assertTrue(abs(mDict['values'][1]-48.3)/48.3 < 0.01 , 'values[1] differs from expectation.')
+        self.assertTrue(abs(mDict['values'][2]-200.)/200. < 0.01 , 'values[2] differs from expectation.')
+        self.assertTrue(abs(mDict['chiSqRed']-1.09)/1.09 < 0.01 , 'chiSqRed differs from expectation.')
+        self.assertTrue(abs(mDict['BIC']+558)/558 < 0.01 , 'BIC differs from expectation.')
 
 
 

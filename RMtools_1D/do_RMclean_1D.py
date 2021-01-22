@@ -177,8 +177,6 @@ def run_rmclean(mDictS, aDict, cutoff,
     if showPlots:
         plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
                     cutoff,mDictS["units"])
-        print("Press <RETURN> to exit ...", end=' ')
-        input()
 
     #add array dictionary
     arrdict = dict()
@@ -340,6 +338,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     leg.get_frame().set_alpha(0.5)
     ax2.autoscale_view(True, True, True)
     plt.draw()
+    plt.show()
 
 #-----------------------------------------------------------------------------#
 def main():

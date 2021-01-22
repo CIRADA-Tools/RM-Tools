@@ -268,25 +268,35 @@ def main():
         print('Cannot find frequency file. Please check filename/path.')
         sys.exit()
     
+    if args.output_name[0][0] != '/':
+        args.output_name[0]='./'+args.output_name[0]
+    
     #Define default product lists:
     if args.peak_only:
         product_list=["dFDFcorMAD","phiPeakPIfit_rm2","dPhiPeakPIfit_rm2",
                       "ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",
                       "polAngle0Fit_deg","dPolAngle0Fit_deg"]
     elif args.all_products:
-        product_list=["dFDFcorMAD","dFDFrms","phiPeakPIchan_rm2","dPhiPeakPIchan_rm2",
-                      "ampPeakPIchan","ampPeakPIchanEff","dAmpPeakPIchan",
-                      "snrPIchan","indxPeakPIchan","peakFDFimagChan","peakFDFrealChan",
-                      "polAngleChan_deg","polAngle0Chan_deg","dPolAngleChan_deg",
-                      "dPolAngle0Chan_deg","phiPeakPIfit_rm2","dPhiPeakPIfit_rm2",
-                      "ampPeakPIfit","ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",
-                      "indxPeakPIfit","peakFDFimagFit","peakFDFrealFit",
-                      "polAngleFit_deg","dPolAngleFit_deg","polAngle0Fit_deg",
-                      "dPolAngle0Fit_deg"]
+        product_list=['dFDFcorMAD', 'dFDFrms', 'phiPeakPIchan_rm2', 
+                      'dPhiPeakPIchan_rm2', 'ampPeakPIchan', 'ampPeakPIchanEff',
+                      'dAmpPeakPIchan', 'snrPIchan', 'indxPeakPIchan',
+                      'peakFDFimagChan', 'peakFDFrealChan', 'polAngleChan_deg',
+                      'dPolAngleChan_deg', 'polAngle0Chan_deg', 
+                      'dPolAngle0Chan_deg', 'phiPeakPIfit_rm2', 
+                      'dPhiPeakPIfit_rm2', 'ampPeakPIfit', 'ampPeakPIfitEff',
+                      'dAmpPeakPIfit', 'snrPIfit', 'indxPeakPIfit', 
+                      'peakFDFimagFit', 'peakFDFrealFit', 'polAngleFit_deg', 
+                      'dPolAngleFit_deg', 'polAngle0Fit_deg',
+                      'dPolAngle0Fit_deg', 'Ifreq0', 'polyCoeffs', 'IfitStat',
+                      'IfitChiSqRed', 'lam0Sq_m2', 'freq0_Hz', 'fwhmRMSF', 
+                      'dQU', 'dFDFth', 'min_freq', 'max_freq', 'N_channels',
+                      'median_channel_width', 'fracPol', 'sigmaAddQ', 
+                      'dSigmaAddMinusQ', 'dSigmaAddPlusQ', 'sigmaAddU',
+                      'dSigmaAddMinusU', 'dSigmaAddPlusU']
     else: #Default option is a curated list of products I think are most useful.
         product_list=["dFDFcorMAD","phiPeakPIfit_rm2","dPhiPeakPIfit_rm2",
-                      "ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",
-                      "peakFDFimagFit","peakFDFrealFit",
+                      "ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",'Ifreq0',
+                      "peakFDFimagFit","peakFDFrealFit",'freq0_Hz',
                       "polAngle0Fit_deg","dPolAngle0Fit_deg"]
 
     

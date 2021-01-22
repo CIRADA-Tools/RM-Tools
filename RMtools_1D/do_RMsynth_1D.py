@@ -71,7 +71,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam', 
-                prefixOut="prefixOut", saveFigures=None,fit_function='linear'):
+                prefixOut="prefixOut", saveFigures=None,fit_function='log'):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -592,8 +592,8 @@ def main():
                         help="number of samples across the RMSF lobe [10].")
     parser.add_argument("-w", dest="weightType", default="variance",
                         help="weighting [inverse 'variance'] or 'uniform' (all 1s).")
-    parser.add_argument("-f", dest="fit_function", type=str, default="linear",
-                        help="Stokes I fitting function: ['linear'] or 'log' polynomials.")
+    parser.add_argument("-f", dest="fit_function", type=str, default="log",
+                        help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
     parser.add_argument("-o", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
     parser.add_argument("-i", dest="noStokesI", action="store_true",

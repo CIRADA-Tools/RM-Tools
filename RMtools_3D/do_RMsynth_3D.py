@@ -426,7 +426,24 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
 #               output_verify="fix")
 
-
+def find_freq_axis(header):
+    """Finds the frequency axis in a FITS header.
+    Input: header: a Pyfits header object.
+    Returns the axis number (as recorded in the FITS file, **NOT** in numpy ordering.)
+    Returns 0 if the frequency axis cannot be found.
+    """
+    freq_axis=0 #Default for 'frequency axis not identified'
+    #Check for frequency axes. Because I don't know what different formatting
+    #I might get ('FREQ' vs 'OBSFREQ' vs 'Freq' vs 'Frequency'), convert to
+    #all caps and check for 'FREQ' anywhere in the axis name.
+    for i in range(1,header['NAXIS']+1):  #Check each axis in turn.
+        try:
+            if 'FREQ' in header['CTYPE'+str(i)].upper():
+                freq_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+    return freq_axis
 
 
 def readFitsCube(file, verbose, log = print):
@@ -456,18 +473,7 @@ def readFitsCube(file, verbose, log = print):
             print('NAXIS{} = {}'.format(i,head['NAXIS'+str(i)]),end='  ')
         print()
 
-    freq_axis=0 #Default for 'frequency axis not identified'
-    #Check for frequency axes. Because I don't know what different formatting
-    #I might get ('FREQ' vs 'OBSFREQ' vs 'Freq' vs 'Frequency'), convert to
-    #all caps and check for 'FREQ' anywhere in the axis name.
-    for i in range(1,N_dim+1):
-        try:
-            if 'FREQ' in head['CTYPE'+str(i)].upper():
-                freq_axis=i
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                 # have CTYPE keywords.
-
+    freq_axis=find_freq_axis(head) 
     #If the frequency axis isn't the last one, rotate the array until it is.
     #Recall that pyfits reverses the axis ordering, so we want frequency on
     #axis 0 of the numpy array.

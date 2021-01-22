@@ -309,7 +309,7 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
 #-----------------------------------------------------------------------------#
 
 
-def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="linear"):
+def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
 
     # Frequency axis must be in GHz to avoid overflow errors
     fitDict = {"fit_function": fit_function,
@@ -349,7 +349,7 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="linear"):
                 current_order+=1
             else: #if not an improvement, stop here.
                 break
-        fitDict["polyOrd"] = current_order-1
+        fitDict["polyOrd"] = current_order-1  #Best order is always one less than the last one checked.
         fitDict["AIC"] = old_aic 
     else:
         mp = fit_spec_poly5(freqArr[goodchan]/fitDict['reference_frequency_Hz'],
@@ -367,6 +367,10 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="linear"):
     return fitDict
 
 def calculate_StokesI_model(fitDict,freqArr_Hz):
+    """Calculates channel values for a Stokes I model.
+    Inputs: fitDict: a dictionary returned from the Stokes I model fitting.
+            freqArr_Hz: an array of frequency values (assumed to be in Hz).
+    Returns: array containing Stokes I model values corresponding to each frequency."""
     if fitDict['fit_function'] == 'linear':
         IModArr = poly5(fitDict["p"])(freqArr_Hz/fitDict['reference_frequency_Hz'])
     elif fitDict['fit_function'] == 'log':
@@ -392,14 +396,14 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
         new_parms=[a, 5*a*lnx+b, 10*a*lnx**2+4*b*lnx+c,
                    10*a*lnx**3+6*b*lnx**2+3*c*lnx+d,
                    5*a*lnx**4+4*b*lnx**3+3*c*lnx**2+2*d*lnx+f,
-                   np.exp(a*lnx**5+b*lnx**4+c*lnx**3+d*lnx**2+f*lnx+np.log(g))]
+                   np.exp(a*lnx**5+b*lnx**4+c*lnx**3+d*lnx**2+f*lnx+np.log10(g))]
     fitDict['p']=new_parms
     fitDict['reference_frequency_Hz']=new_reference_frequency
     return fitDict
 
 #-----------------------------------------------------------------------------#
 def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
-                        polyOrd=2, verbose=False, debug=False,fit_function="linear"):
+                        polyOrd=2, verbose=False, debug=False,fit_function="log"):
     """Fit the Stokes I spectrum with a polynomial and divide into the Q & U
     spectra to create fractional spectra."""
 
@@ -519,7 +523,7 @@ def interp_images(arr1, arr2, f=0.5):
 
     
 #-----------------------------------------------------------------------------#
-def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="linear"):
+def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
     """Fit a 5th order polynomial to a spectrum. To avoid overflow errors the
     X-axis data should not be large numbers (e.g.: x10^9 Hz; use GHz
     instead)."""
@@ -597,7 +601,7 @@ def powerlaw_poly5(p):
     p = np.append(np.zeros((6-len(p))), p)
     
     def rfunc(x):
-        y = (p[0]*np.log(x)**4.0 + p[1]*np.log(x)**3.0 + p[2]*np.log(x)**2.0 + p[3]*np.log(x)
+        y = (p[0]*np.log10(x)**4.0 + p[1]*np.log10(x)**3.0 + p[2]*np.log10(x)**2.0 + p[3]*np.log10(x)
              + p[4])
         return p[5]*np.power(x,y)
              

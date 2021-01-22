@@ -66,7 +66,7 @@ except:
     mpiSwitch = False
 
 from RMutils.util_misc import create_frac_spectra
-from RMutils.util_misc import poly5
+from RMutils.util_misc import calculate_StokesI_model
 from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
@@ -130,8 +130,10 @@ def main():
                         help="ASCII file containing Stokes spectra & errors.")
     parser.add_argument("-m", dest="modelNum", type=int, default=1,
                         help="model number to fit [1].")
+    parser.add_argument("-f", dest="fit_function", type=str, default="log",
+                        help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
     parser.add_argument("-o", dest="polyOrd", type=int, default=2,
-                        help="polynomial order to fit to I spectrum [2].")
+                        help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
     parser.add_argument("-i", dest="noStokesI", action="store_true",
                         help="ignore the Stokes I spectrum [False].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
@@ -163,14 +165,15 @@ def main():
               sigma_clip   = args.sigma_clip,
               debug        = args.debug,
               verbose      = args.verbose,
-              restart      = args.restart
+              restart      = args.restart,
+              fit_function = args.fit_function
               )
 
 
 #-----------------------------------------------------------------------------#
-def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
+def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
               noStokesI=False, showPlots=False, sigma_clip=5, 
-              debug=False, verbose=False, restart=True):
+              debug=False, verbose=False, restart=True,fit_function='log'):
     """Carry out QU-fitting using the supplied parameters:
         dataFile (str, required): relative or absolute path of file containing 
             frequencies and Stokes parameters with errors.
@@ -258,12 +261,11 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         dIArr = np.zeros_like(QArr)
 
     # Convert to GHz for convenience
-    freqArr_GHz = freqArr_Hz / 1e9
     lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
 
     # Fit the Stokes I spectrum and create the fractional spectra
     if mpiRank==0:
-        dataArr = create_frac_spectra(freqArr=freqArr_GHz,
+        dataArr = create_frac_spectra(freqArr=freqArr_Hz,
                                       IArr=IArr,
                                       QArr=QArr,
                                       UArr=UArr,
@@ -271,7 +273,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                                       dQArr=dQArr,
                                       dUArr=dUArr,
                                       polyOrd=polyOrd,
-                                      verbose=True)
+                                      verbose=True,
+                                      fit_function=fit_function)
     else:
         dataArr = None
     if mpiSwitch:
@@ -282,7 +285,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
     if mpiRank==0:
         print("Plotting the input data and spectral index fit.")
         freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        IModHirArr = calculate_StokesI_model(IfitDict,freqHirArr_Hz)
         specFig = plt.figure(figsize=(10, 6))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
@@ -468,9 +471,20 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
                     "ln(EVIDENCE) ": toscalar(lnEvidence),
                     "dLn(EVIDENCE)": toscalar(dLnEvidence),
                     "nFree":         toscalar(nFree),
-                    "IfitDict":      IfitDict}
+                    "Imodel":        toscalar(IfitDict["p"]),
+                    "IfitChiSq":     toscalar(IfitDict["chiSq"]),
+                    "IfitChiSqRed":  toscalar(IfitDict["chiSqRed"]),
+                    "IfitPolyOrd":   toscalar(IfitDict["polyOrd"]),
+                    "Ifitfreq0":     toscalar(IfitDict["reference_frequency_Hz"])
+                    }
         json.dump(saveDict, open(outFile, "w"))
-        print("Results saved in JSON format to:\n '%s'\n" % outFile)
+        outFile = prefixOut + "_m%d_nest.dat" % modelNum
+        FH = open(outFile, "w")
+        for k, v in saveDict.items():
+            FH.write("%s=%s\n" % (k, v))
+        FH.close()
+        print("Results saved in JSON and .dat format to:\n '%s'\n" % outFile)
+
 
         # Plot the posterior samples in a corner plot
         chains =  aObj.get_equal_weighted_posterior()
@@ -497,7 +511,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
         # Plot the data and best-fitting model
         lamSqHirArr_m2 =  np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
         freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-        IModArr = poly5(IfitDict["p"])(freqHirArr_Hz/1e9)
+        IModArr = calculate_StokesI_model(IfitDict,freqHirArr_Hz)
         pDict = {k:v for k, v in zip(parNames, p)}
         quModArr = model(pDict, lamSqHirArr_m2)
         model_dict = {
@@ -532,15 +546,10 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=3, nBits=32,
 
         # Display the figures
         if showPlots:
-            specFig.show()
-            cornerFig.show()
-            print("> Press <RETURN> to exit ...", end="")
-            sys.stdout.flush()
-            input()
+            plt.show()
+            #cornerFig.show()
 
         # Clean up
-        plt.close(specFig)
-        plt.close(cornerFig)
 
     # Clean up MPI environment
     if mpiSwitch:
