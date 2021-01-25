@@ -1,0 +1,47 @@
+Master branch changes:
+-QU-fitting updates from Alec Thomson: sigma-clipping of posteriors,
+    saving evidence to output file, option to not restart from scratch.
+-Fixed bug in chunk reassembly script (assemble_chunks.py) where it would
+    not figure out the cube size correctly when fed the last chunk.
+-Updated RMclean1D to use new derotated angle equation for Observed noise
+    (previously was using old flawed equation fixed in v1.0.2).
+-Fixed problem with handling of degenerate FITS axes in RMclean3D
+
+1.0.5: RMSF FWHM calculation fix   (13 Aug 2020)
+-Theoretical estimate for FWHM now uses formula from Dickey et al 2019
+    instead of Brentjens & de Bruyn 2005, as this is more accurate.
+-RMSF fitting improved to be more accurate (previously would over-estimate)
+-fitReal option for RMSF fitting now works as intended (previously crashed)
+
+1.0.4: QUfitting tweaks + RMsynth3D crash fixes  (10 Aug 2020)
+-Minor QUfitting fixes by Alec Thomson.
+-Fixed crash when writing 3D cubes where all pixels are NaNs.
+-changed output names for the QUfitting multinest files.
+-Fixed crashes in RMsynth3D when input cubes are all NaNs.
+-Fixed crash when RMsynth3D normalizes output cubes by Stokes I model.
+
+1.0.3: Noise propagation improvements   (23 Jul 2020)
+-Minor fixes to new plot-saving code.
+-Changed theoretical noise estimation equation: Shinsuke Ideguchi pointed
+    out that it wasn't correctly computing the error in the fractional
+    polarization. Modified to normalize the channel errors by the model
+    Stokes I (errors in the model are not accounted for). This will alter
+    the noise behaviour for sources with steep Stokes I spectra.
+
+1.0.2: Fixing derotated angle errors + Multimodel QUfitting  (6 Jul 2020)
+-RMsynth1D: added option to save plots (pull request by Lenart Heino)
+-Error formula for the derotated polarization angle (dPolAngle0Fit/Chan)
+    was wrong (too small by a factor of sqrt(Nchan)). Corrected formula
+    incorporated.
+-Multi-modal posterior handling added to QU-fitting (by Alec Thomson).
+
+1.0.1: Minor bug fixes   (12 May 2020)
+-For RMsynth1D, the default Phimax value was previously fixed at 600,
+    which was not ideal for high-frequency data. Modified to now be
+    dynamic: 10x RMSF FWHM.
+-RMclean1D was not using the noise properly when calculating derived 
+    properties. RMclean1D error bars prior to this verison likely have
+    issues.
+
+1.0: Official release (1 May 2020)
+
