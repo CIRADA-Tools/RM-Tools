@@ -198,7 +198,7 @@ class test_RMtools(unittest.TestCase):
     def test_b1_1D_clean(self):
         if not os.path.exists('simdata/1D/simsource_RMsynth.dat'):
             self.skipTest('Could not test 1D clean; 1D synth failed first.')
-        returncode=subprocess.call('rmclean1d simdata/1D/simsource.dat -n 10',shell=True)
+        returncode=subprocess.call('rmclean1d simdata/1D/simsource.dat -n 10 -S',shell=True)
         self.assertEqual(returncode, 0, 'RMclean1D failed to run.')
 
     def test_b2_1D_clean_values(self):

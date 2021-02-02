@@ -166,7 +166,7 @@ def plot_fits_map(data, header, stretch='auto', exponent=2, scaleFrac=0.9,
 
     # Setup the figure
     if fig is None:
-        fig = plt.figure(figsize=(9.5, 8))
+        fig = plt.figure(facecolor='w',figsize=(9.5, 8))
     ax = fig.add_axes([0.1, 0.08, 0.9, 0.87])
     if w['coord_type']=='EQU':
         ax.set_xlabel('Right Ascension')

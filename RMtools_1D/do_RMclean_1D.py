@@ -39,7 +39,9 @@ import time
 import os
 import sys
 import json
+from matplotlib.pyplot import savefig
 import numpy as np
+from matplotlib import pyplot as plt
 
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import measure_FDF_parms
@@ -47,13 +49,14 @@ from RMutils.util_RM import measure_fdf_complexity
 
 C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
-def run_rmclean(mDictS, aDict, cutoff,
+def run_rmclean(mDict, aDict, cutoff,
                 maxIter=1000, gain=0.1, nBits=32,
-                showPlots=False, verbose=False, log=print):
+                showPlots=False, prefixOut="", verbose=False, log=print, 
+                saveFigures=False):
     """Run RM-CLEAN on a complex FDF spectrum given a RMSF.
 
     Args:
-        mDictS (dict): Summary of RM synthesis results.
+        mDict (dict): Summary of RM synthesis results.
         aDict (dict): Data output by RM synthesis.
         cutoff (float): CLEAN cutoff in flux units
 
@@ -66,8 +69,8 @@ def run_rmclean(mDictS, aDict, cutoff,
         log (function): Which logging function to use.
 
     Returns:
-        mDict (dict): Summary of RMCLEAN results.
-        arrdict (dict): Data output by RMCLEAN.
+        mDict_cl (dict): Summary of RMCLEAN results.
+        aDict_cl (dict): Data output by RMCLEAN.
 
     """
     phiArr_radm2 = aDict["phiArr_radm2"]
@@ -81,13 +84,13 @@ def run_rmclean(mDictS, aDict, cutoff,
     lambdaSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
 
     # If the cutoff is negative, assume it is a sigma level
-    if verbose: log("Expected RMS noise = %.4g flux units" % (mDictS["dFDFth"]))
+    if verbose: log("Expected RMS noise = %.4g flux units" % (mDict["dFDFth"]))
     if cutoff<0:
         if verbose: log("Using a sigma cutoff of %.1f." %  (-1 * cutoff))
-        cutoff = -1 * mDictS["dFDFth"] * cutoff
+        cutoff = -1 * mDict["dFDFth"] * cutoff
         if verbose: log("Absolute value = %.3g" % cutoff)
     else:
-        if verbose: log("Using an absolute cutoff of %.3g (%.1f x expected RMS)." % (cutoff, cutoff/mDictS["dFDFth"]))
+        if verbose: log("Using an absolute cutoff of %.3g (%.1f x expected RMS)." % (cutoff, cutoff/mDict["dFDFth"]))
 
     startTime = time.time()
     # Perform RM-clean on the spectrum
@@ -96,7 +99,7 @@ def run_rmclean(mDictS, aDict, cutoff,
                                 phiArr_radm2    = phiArr_radm2,
                                 RMSFArr         = RMSFArr,
                                 phi2Arr_radm2   = phi2Arr_radm2,
-                                fwhmRMSFArr     = np.array(mDictS["fwhmRMSF"]),
+                                fwhmRMSFArr     = np.array(mDict["fwhmRMSF"]),
                                 cutoff          = cutoff,
                                 maxIter         = maxIter,
                                 gain            = gain,
@@ -115,7 +118,7 @@ def run_rmclean(mDictS, aDict, cutoff,
                          weight       = weightArr,
                          RMSFArr      = RMSFArr,
                          RMSFphiArr   = phi2Arr_radm2,
-                         fwhmRMSF     = mDictS["fwhmRMSF"],
+                         fwhmRMSF     = mDict["fwhmRMSF"],
                          doPlots      = True)
     '''
     #-------------------------------------------------------------------------#
@@ -125,24 +128,24 @@ def run_rmclean(mDictS, aDict, cutoff,
     if verbose: log("> RM-CLEAN completed in %.4f seconds." % cputime)
 
     # Measure the parameters of the deconvolved FDF
-    mDict = measure_FDF_parms(FDF         = cleanFDF,
+    mDict_cl = measure_FDF_parms(FDF         = cleanFDF,
                               phiArr      = phiArr_radm2,
-                              fwhmRMSF    = mDictS["fwhmRMSF"],
-                              dFDF        = mDictS["dFDFth"],
+                              fwhmRMSF    = mDict["fwhmRMSF"],
+                              dFDF        = mDict["dFDFth"],
                               lamSqArr_m2 = lambdaSqArr_m2,
-                              lam0Sq      = mDictS["lam0Sq_m2"])
-    mDict["cleanCutoff"] = cutoff
-    mDict["nIter"] = int(iterCountArr)
+                              lam0Sq      = mDict["lam0Sq_m2"])
+    mDict_cl["cleanCutoff"] = cutoff
+    mDict_cl["nIter"] = int(iterCountArr)
 
     # Measure the complexity of the clean component spectrum
-    mDict["mom2CCFDF"] = measure_fdf_complexity(phiArr = phiArr_radm2,
+    mDict_cl["mom2CCFDF"] = measure_fdf_complexity(phiArr = phiArr_radm2,
                                                 FDF = ccArr)
 
     #Calculating observed errors (based on dFDFcorMAD)
-    mDict["dPhiObserved_rm2"] = mDict["dPhiPeakPIfit_rm2"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
-    mDict["dAmpObserved"] = mDict["dFDFcorMAD"]
-    mDict["dPolAngleFitObserved_deg"] = mDict["dPolAngleFit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
-    mDict["dPolAngleFit0Observed_deg"] = mDict["dPolAngle0Fit_deg"]*mDict["dFDFcorMAD"]/mDictS["dFDFth"]
+    mDict_cl["dPhiObserved_rm2"] = mDict_cl["dPhiPeakPIfit_rm2"]*mDict_cl["dFDFcorMAD"]/mDict["dFDFth"]
+    mDict_cl["dAmpObserved"] = mDict_cl["dFDFcorMAD"]
+    mDict_cl["dPolAngleFitObserved_deg"] = mDict_cl["dPolAngleFit_deg"]*mDict_cl["dFDFcorMAD"]/mDict["dFDFth"]
+    mDict_cl["dPolAngleFit0Observed_deg"] = mDict_cl["dPolAngle0Fit_deg"]*mDict_cl["dFDFcorMAD"]/mDict["dFDFth"]
 
 
 
@@ -153,60 +156,70 @@ def run_rmclean(mDictS, aDict, cutoff,
         log()
         log('-'*80)
         log('RESULTS:\n')
-        log('FWHM RMSF = %.4g rad/m^2' % (mDictS["fwhmRMSF"]))
+        log('FWHM RMSF = %.4g rad/m^2' % (mDict["fwhmRMSF"]))
         log('Pol Angle = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
-            (mDict["polAngleFit_deg"],mDict["dPolAngleFitObserved_deg"],mDict["dPolAngleFit_deg"]))
+            (mDict_cl["polAngleFit_deg"],mDict_cl["dPolAngleFitObserved_deg"],mDict_cl["dPolAngleFit_deg"]))
         log('Pol Angle 0 = %.4g (+/-%.4g observed, +- %.4g theoretical) deg' % 
-            (mDict["polAngle0Fit_deg"],mDict["dPolAngleFit0Observed_deg"],mDict["dPolAngle0Fit_deg"]))
+            (mDict_cl["polAngle0Fit_deg"],mDict_cl["dPolAngleFit0Observed_deg"],mDict_cl["dPolAngle0Fit_deg"]))
         log('Peak FD = %.4g (+/-%.4g observed, +- %.4g theoretical) rad/m^2' % 
-            (mDict["phiPeakPIfit_rm2"],mDict["dPhiObserved_rm2"],mDict["dPhiPeakPIfit_rm2"]))
-        log('freq0_GHz = %.4g ' % (mDictS["freq0_Hz"]/1e9))
-        log('I freq0 = %.4g %s' % (mDictS["Ifreq0"],mDictS["units"]))
+            (mDict_cl["phiPeakPIfit_rm2"],mDict_cl["dPhiObserved_rm2"],mDict_cl["dPhiPeakPIfit_rm2"]))
+        log('freq0_GHz = %.4g ' % (mDict["freq0_Hz"]/1e9))
+        log('I freq0 = %.4g %s' % (mDict["Ifreq0"],mDict["units"]))
         log('Peak PI = %.4g (+/-%.4g observed, +- %.4g theoretical) %s' % 
-            (mDict["ampPeakPIfit"],mDict["dAmpObserved"],mDict["dAmpPeakPIfit"],mDictS["units"]))
-        log('QU Noise = %.4g %s' % (mDictS["dQU"],mDictS["units"]))
-        log('FDF Noise (theory)   = %.4g %s' % (mDictS["dFDFth"],mDictS["units"]))
-        log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],mDictS["units"]))
-        log('FDF Noise (rms)   = %.4g %s' % (mDict["dFDFrms"],mDictS["units"]))
+            (mDict_cl["ampPeakPIfit"],mDict_cl["dAmpObserved"],mDict_cl["dAmpPeakPIfit"],mDict["units"]))
+        log('QU Noise = %.4g %s' % (mDict["dQU"],mDict["units"]))
+        log('FDF Noise (theory)   = %.4g %s' % (mDict["dFDFth"],mDict["units"]))
+        log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict_cl["dFDFcorMAD"],mDict["units"]))
+        log('FDF Noise (rms)   = %.4g %s' % (mDict_cl["dFDFrms"],mDict["units"]))
 
-        log('FDF SNR = %.4g ' % (mDict["snrPIfit"]))
+        log('FDF SNR = %.4g ' % (mDict_cl["snrPIfit"]))
         log()
         log('-'*80)
 
     # Pause to display the figure
+    if showPlots or saveFigures:
+        fdfFig = plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
+                                 cutoff,mDict["units"])
+    # Pause if plotting enabled
     if showPlots:
-        plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                    cutoff,mDictS["units"])
+        plt.show()
+    elif saveFigures:
+        if verbose: print("Saving CLEAN FDF plot:")
+        outFilePlot = prefixOut + "_cleanFDF-plots.pdf"
+        if verbose: print("> " + outFilePlot)
+        fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
+        # print("Press <RETURN> to exit ...", end=' ')
+        # input()
 
     #add array dictionary
-    arrdict = dict()
-    arrdict["phiArr_radm2"] = phiArr_radm2
-    arrdict["freqArr_Hz"] = freqArr_Hz
-    arrdict["cleanFDF"]=cleanFDF
-    arrdict["ccArr"]=ccArr
-    arrdict["iterCountArr"]=iterCountArr
-    arrdict["residFDF"]=residFDF
+    aDict_cl = dict()
+    aDict_cl["phiArr_radm2"] = phiArr_radm2
+    aDict_cl["freqArr_Hz"] = freqArr_Hz
+    aDict_cl["cleanFDF"]=cleanFDF
+    aDict_cl["ccArr"]=ccArr
+    aDict_cl["iterCountArr"]=iterCountArr
+    aDict_cl["residFDF"]=residFDF
 
-    return mDict, arrdict
+    return mDict_cl, aDict_cl
 
 
-def saveOutput(outdict, arrdict, prefixOut="", verbose=False, log=print):
+def saveOutput(mDict_cl, aDict_cl, prefixOut="", verbose=False, log=print):
     """
     Saves RM-CLEAN results to text files. The clean (restored) FDF, model FDF 
     (clean components) are saved, as is two files (.dat and .json)
     reporting the fitting results as key-value pairs.
     Inputs:
-        outdict: the results dictionary (mDict) from RM-CLEAN.
-        arrdict: the array dictionary (aDict) from RM-CLEAN.
+        mDict_cl: the results dictionary (mDict_cl) from RM-CLEAN.
+        aDict_cl: the array dictionary (aDict) from RM-CLEAN.
         prefixOut (str): name prefix to be given to output files 
             (including relative/absolute directory to save to)
         verbose (bool): print verbose messages?
         log (function): function to use when printing verbose messages.
     """
     # Get data
-    phiArr_radm2 = arrdict["phiArr_radm2"]
-    cleanFDF = arrdict["cleanFDF"]
-    ccArr = arrdict["ccArr"]
+    phiArr_radm2 = aDict_cl["phiArr_radm2"]
+    cleanFDF = aDict_cl["cleanFDF"]
+    ccArr = aDict_cl["ccArr"]
 
     # Save the deconvolved FDF and CC model to ASCII files
     if verbose: log("Saving the clean FDF and component model to ASCII files.")
@@ -222,12 +235,12 @@ def saveOutput(outdict, arrdict, prefixOut="", verbose=False, log=print):
     outFile = prefixOut + "_RMclean.dat"
     if verbose: log("> %s" % outFile)
     FH = open(outFile, "w")
-    for k, v in outdict.items():
+    for k, v in mDict_cl.items():
         FH.write("%s=%s\n" % (k, v))
     FH.close()
     outFile = prefixOut + "_RMclean.json"
     if verbose: log("> %s" % outFile)
-    json.dump(outdict, open(outFile, "w"))
+    json.dump(mDict_cl, open(outFile, "w"))
 
 def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     """
@@ -251,7 +264,7 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     # Read the FDF from the ASCII file
     phiArr_radm2, FDFreal, FDFimag = np.loadtxt(fdfFile, unpack=True, dtype=dtFloat)
     # Read the RM-synthesis parameters from the JSON file
-    mDictS = json.load(open(rmSynthFile, "r"))
+    mDict = json.load(open(rmSynthFile, "r"))
     dirtyFDF = FDFreal + 1j * FDFimag
     RMSFArr = RMSFreal + 1j * RMSFimag
 
@@ -264,7 +277,7 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
     aDict["weightArr"]=weightArr
     aDict["dirtyFDF"]=dirtyFDF
 
-    return mDictS, aDict
+    return mDict, aDict
 
 
 def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
@@ -280,10 +293,9 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
         cutoff (float): clean threshold
         units (str): name of flux unit
     """
-    from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
 
-    fig = plt.figure(figsize=(12.0, 8))
+    fig = plt.figure(facecolor='w',figsize=(12.0, 8))
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212, sharex=ax1)
 
@@ -291,8 +303,6 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     cleanFDF=np.squeeze(cleanFDF)
     ccArr=np.squeeze(ccArr)
     residFDF=np.squeeze(residFDF)
-
-    fig.show()
 
 
     ax1.cla()
@@ -337,8 +347,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     leg.get_frame().set_linewidth(0.5)
     leg.get_frame().set_alpha(0.5)
     ax2.autoscale_view(True, True, True)
-    plt.draw()
-    plt.show()
+    return fig
 
 #-----------------------------------------------------------------------------#
 def main():
@@ -378,6 +387,8 @@ def main():
                         help="show the plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Print verbose messages")
+    parser.add_argument("-S", dest="saveOutput", action="store_true",
+                        help="save the arrays and plots [False].")
     args = parser.parse_args()
 
     # Form the input file names from prefix of the original data file
@@ -393,22 +404,27 @@ def main():
             sys.exit()
     nBits = 32
     dataDir, dummy = os.path.split(args.dataFile[0])
-    mDictS, aDict = readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits)
+    mDict, aDict = readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits)
     # Run RM-CLEAN on the spectrum
-    outdict, arrdict = run_rmclean(mDictS  = mDictS,
-                                aDict        = aDict,
-                                cutoff       = args.cutoff,
-                                maxIter      = args.maxIter,
-                                gain         = args.gain,
-                                nBits        = nBits,
-                                showPlots    = args.showPlots,
-                                verbose      = args.verbose)
+    mDict_cl, aDict_cl = run_rmclean(mDict        = mDict,
+                                     aDict        = aDict,
+                                     cutoff       = args.cutoff,
+                                     maxIter      = args.maxIter,
+                                     gain         = args.gain,
+                                     nBits        = nBits,
+                                     showPlots    = args.showPlots,
+                                     prefixOut    = fileRoot,
+                                     verbose      = args.verbose,
+                                     saveFigures  = args.saveOutput
+                                )
 
     # Save output
-    saveOutput(outdict,
-            arrdict,
-            prefixOut    = fileRoot,
-            verbose      = args.verbose)
+    if args.saveOutput:
+        saveOutput(mDict_cl,
+                   aDict_cl,
+                   prefixOut    = fileRoot,
+                   verbose      = args.verbose
+                   )
 
 
 

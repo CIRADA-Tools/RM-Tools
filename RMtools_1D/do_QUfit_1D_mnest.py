@@ -286,7 +286,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
         print("Plotting the input data and spectral index fit.")
         freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
         IModHirArr = calculate_StokesI_model(IfitDict,freqHirArr_Hz)
-        specFig = plt.figure(figsize=(10, 6))
+        specFig = plt.figure(facecolor='w',figsize=(10, 6))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
                               qArr           = qArr,
@@ -450,7 +450,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
                   (parNames[i], p[i], errPlus[i], errMinus[i]))
         print("-"*80)
         print("")
-        
+
         # Create a save dictionary and store final p in values
         outFile = prefixOut + "_m%d_nest.json" % modelNum
         IfitDict["p"] = toscalar(IfitDict["p"].tolist())
