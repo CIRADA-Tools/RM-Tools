@@ -203,7 +203,9 @@ def read_files(FDF_filename,freq_filename):
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1)
     
     HDUfwhm = pf.open(FDF_filename.replace('FDF_tot_dirty','RMSF_FWHM').replace(
-        'FDF_real_dirty','RMSF_FWHM').replace('FDF_im_dirty','RMSF_FWHM'),
+        'FDF_real_dirty','RMSF_FWHM').replace('FDF_im_dirty','RMSF_FWHM').replace(
+            'FDF_clean_tot','RMSF_FWHM').replace('FDF_clean_real','RMSF_FWHM').replace(
+                'FDF_clean_im','RMSF_FWHM'),
         "readonly", memmap=True)
     fwhmRMSF = HDUfwhm[0].data.squeeze()
 
