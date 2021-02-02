@@ -114,9 +114,15 @@ def save_maps(map_dict, prefix_path,FDFheader):
     if 'NAXIS4' in product_header:
         delete_FITSheader_axis(product_header, 4)
     
+
+    #Set flux unit from FITS header if possible
+    if 'BUNIT' in FDFheader:
+        flux_unit=FDFheader['BUNIT']
+    else:
+        flux_unit=''
+
     
     #Dictionary of units for peak fitting output parameters (for FITS headers)
-    flux_unit=FDFheader['BUNIT']
     unit_dict={"dFDFcorMAD": flux_unit, "dFDFrms": flux_unit, 
            "phiPeakPIchan_rm2": 'rad/m^2', "dPhiPeakPIchan_rm2": 'rad/m^2',
            "ampPeakPIchan": flux_unit, "ampPeakPIchanEff": flux_unit, 
