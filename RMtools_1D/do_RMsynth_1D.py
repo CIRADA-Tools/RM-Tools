@@ -329,9 +329,9 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["units"] = units
     mDict['polyOrd'] = fitDict['polyOrd']
     
-    if fitDict["fitStatus"] >= 128:
+    if (fitDict["fitStatus"] >= 128) and verbose:
         log("WARNING: Stokes I model contains negative values!")
-    elif fitDict["fitStatus"] >= 64:
+    elif (fitDict["fitStatus"] >= 64) and verbose:
         log("Caution: Stokes I model has low signal-to-noise.")
 
 
