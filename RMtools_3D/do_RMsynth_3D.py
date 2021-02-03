@@ -544,7 +544,7 @@ def main():
     parser.add_argument("-i", dest="fitsI", default=None,
                         help="FITS cube containing Stokes I model [None].")
     parser.add_argument("-n", dest="noiseFile", default=None,
-                        help="FITS file or cube containing noise values [None].")
+                        help="Text file containing channel noise values [None].")
     parser.add_argument("-w", dest="weightType", default="uniform",
                         help="weighting [uniform] (all 1s) or 'variance'.")
     parser.add_argument("-t", dest="fitRMSF", action="store_true",
