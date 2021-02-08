@@ -182,7 +182,11 @@ class test_RMtools(unittest.TestCase):
         mDict = json.load(open('simdata/1D/simsource_RMsynth.json', "r"))
         refDict = json.load(open('RMsynth1D_referencevalues.json', "r"))
         for key in mDict.keys():
-            self.assertEqual(mDict[key], refDict[key], '{} differs from expectation.'.format(key))
+            if type(mDict[key])==str:
+                self.assertEqual(mDict[key],refDict[key],'{} differs from expectation.'.format(key))
+            else:
+                self.assertTrue(np.abs((mDict[key]-refDict[key])/refDict[key]) < 1e-7, 
+                            '{} differs from expectation.'.format(key))
 
 
 
@@ -205,7 +209,9 @@ class test_RMtools(unittest.TestCase):
         mDict = json.load(open('simdata/1D/simsource_RMclean.json', "r"))
         refDict = json.load(open('RMclean1D_referencevalues.json', "r"))
         for key in mDict.keys():
-            self.assertEqual(mDict[key], refDict[key], '{} differs from expectation.'.format(key))
+            self.assertTrue(np.abs((mDict[key]-refDict[key])/refDict[key]) < 1e-7,
+                            '{} differs from expectation.'.format(key))
+
 
         
     def test_d_3D_clean(self):
