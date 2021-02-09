@@ -43,20 +43,23 @@ def create_1D_data(freq_arr):
     spectral_index=-0.7
     error_estimate=1  #Size of assumed errors as multiple of actual error.
 
-    pol_spectrum=Faraday_thin_complex_polarization(freq_arr,RM,fracpol,pol_angle_deg)
-    I_spectrum=StokesI_midband*(freq_arr/np.median(freq_arr))**spectral_index
-    rng=np.random.default_rng(20200422)
-    noise_spectrum_I=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
-    noise_spectrum_Q=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
-    noise_spectrum_U=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
-    dIQU=np.ones_like(freq_arr)*noise_amplitude*error_estimate
+    ## Random data generation is not used any more, since it caused different
+    ## results on different machines.
+    # pol_spectrum=Faraday_thin_complex_polarization(freq_arr,RM,fracpol,pol_angle_deg)
+    # I_spectrum=StokesI_midband*(freq_arr/np.median(freq_arr))**spectral_index
+    # rng=np.random.default_rng(20200422)
+    # noise_spectrum_I=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
+    # noise_spectrum_Q=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
+    # noise_spectrum_U=rng.normal(scale=noise_amplitude,size=freq_arr.shape)
+    # dIQU=np.ones_like(freq_arr)*noise_amplitude*error_estimate
     
     if not os.path.isdir('simdata/1D'):
         os.makedirs('simdata/1D')
-    np.savetxt('simdata/1D/simsource.dat', list(zip(freq_arr,I_spectrum+noise_spectrum_I,
-                                I_spectrum*pol_spectrum.real+noise_spectrum_Q,
-                                I_spectrum*pol_spectrum.imag+noise_spectrum_U,
-                                dIQU,dIQU,dIQU)))
+    shutil.copy('RMsynth1D_testdata.dat','simdata/1D/simsource.dat')
+    # np.savetxt('simdata/1D/simsource.dat', list(zip(freq_arr,I_spectrum+noise_spectrum_I,
+    #                             I_spectrum*pol_spectrum.real+noise_spectrum_Q,
+    #                             I_spectrum*pol_spectrum.imag+noise_spectrum_U,
+    #                             dIQU,dIQU,dIQU)))
     with open("simdata/1D/sim_truth.txt",'w') as f:
         f.write('RM = {} rad/m^2\n'.format(RM))
         f.write('Intrsinsic polarization angle = {} deg\n'.format(pol_angle_deg))
