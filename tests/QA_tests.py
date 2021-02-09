@@ -177,7 +177,7 @@ class test_RMtools(unittest.TestCase):
 
     def test_a1_1D_synth_runs(self):
         create_1D_data(self.freq_arr)
-        returncode=subprocess.call('rmsynth1d simdata/1D/simsource.dat -l 600 -d 3 -S',shell=True)
+        returncode=subprocess.call('rmsynth1d simdata/1D/simsource.dat -l 600 -d 3 -S -i',shell=True)
         self.assertEqual(returncode, 0, 'RMsynth1D failed to run.')
 
 
@@ -185,7 +185,7 @@ class test_RMtools(unittest.TestCase):
         mDict = json.load(open('simdata/1D/simsource_RMsynth.json', "r"))
         refDict = json.load(open('RMsynth1D_referencevalues.json', "r"))
         for key in mDict.keys():
-            if type(mDict[key])==str:
+            if type(mDict[key])==str or refDict[key] == 0:
                 self.assertEqual(mDict[key],refDict[key],'{} differs from expectation.'.format(key))
             else:
                 self.assertTrue(np.abs((mDict[key]-refDict[key])/refDict[key]) < 1e-3, 
