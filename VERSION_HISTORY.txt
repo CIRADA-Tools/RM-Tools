@@ -1,4 +1,7 @@
 Master branch changes:
+
+
+1.1.0: New feature update
 -QU-fitting updates from Alec Thomson: sigma-clipping of posteriors,
     saving evidence to output file, option to not restart from scratch.
 -Fixed bug in chunk reassembly script (assemble_chunks.py) where it would
@@ -6,6 +9,24 @@ Master branch changes:
 -Updated RMclean1D to use new derotated angle equation for Observed noise
     (previously was using old flawed equation fixed in v1.0.2).
 -Fixed problem with handling of degenerate FITS axes in RMclean3D
+-Created new tool: RMpeakfit_3D.py,which applies the 1D peak fitting to
+    each pixel in a 3D FDF cube. Outputs 2D maps for the resulting 
+    parameters.
+-New Stokes I fitting. Two changes: 
+    1) Logarithmic polynomial fitting function added. This is essentially
+        a 5-th order polynomial in log-log space, modified into the 
+        standard power-law with curvature formulation. Added flags to
+        RMsynth1D, do_QUfitting, and do_fitIcube to let user select fitting
+        function.
+    2) Dynamic order selection. If user enters a negative polynomial order,
+        it will now trying fitting successively higher order polynomials
+        (starting with 0) until the AIC no longer improves.
+-default Stokes I fitting is now 2nd order polynomial
+-Plotting code has been made more consistent, in terms of no longer
+    requiring user to press 'Enter', for all routines.
+-QUfitting now has .dat output like that of RMsynth1D.
+-All supporting tools now have command-line hooks, which all begin with
+    'rmtools_'.
 
 1.0.5: RMSF FWHM calculation fix   (13 Aug 2020)
 -Theoretical estimate for FWHM now uses formula from Dickey et al 2019
