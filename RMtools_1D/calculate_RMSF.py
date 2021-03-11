@@ -118,7 +118,7 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     
     #Output key results to terminal:
     print('RMSF PROPERTIES:')
-    print('Theoretical (unweighted) FWHM:       {:.4g} rad m^-2'.format(2*np.sqrt(3.0) / (l2_max-l2_min)))
+    print('Theoretical (unweighted) FWHM:       {:.4g} rad m^-2'.format(3.8 / (l2_max-l2_min)))
     print('Measured FWHM:                       {:.4g} rad m^-2'.format(fwhmRMSFArr))
     print('Theoretical largest FD scale probed: {:.4g} rad m^-2'.format(np.pi/l2_min))
     print('Theoretical maximum FD*:             {:.4g} rad m^-2'.format(np.sqrt(3.0)/dl2))
@@ -159,7 +159,7 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
                     '                                     {:.4g} % of peak\n\n'+
                     'Lowest frequency/wavelength [GHz/cm]:  {:>7.4g}/{:.4g}\n'+
                     'Highest frequency/wavelength [GHz/cm]: {:>7.4g}/{:.4g}\n'+
-                    '# of channels:                                {:.4g}\n').format(2*np.sqrt(3.0) / (l2_max-l2_min),
+                    '# of channels:                                {:.4g}\n').format(3.8 / (l2_max-l2_min),
             fwhmRMSFArr,np.pi/l2_min,np.sqrt(3.0)/dl2,
             phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]],np.max(peaks)*100,
             np.min(freq_array)/1e9,C/np.min(freq_array)*100.,

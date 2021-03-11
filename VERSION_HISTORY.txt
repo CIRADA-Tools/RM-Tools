@@ -1,4 +1,6 @@
 Master branch changes:
+-updated calculate_RMSF to use same theoretical width as rmsynth1D
+  (the formula from Dickey et al. 2019)
 
 
 1.1.0: New feature update
