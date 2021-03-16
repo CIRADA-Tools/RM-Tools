@@ -151,7 +151,7 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     ax=plt.gca()
     ax.axis([0,1,0,1])
     ax.axis('off')
-    ax.text(0.1,0.8,('Theoretical (unweighted) FWHM:      {:.4g} rad m^-2\n'+
+    ax.text(0.1,0.8,('Theoretical (unweighted) FWHM:       {:.4g} rad m^-2\n'+
                     'Measured FWHM:                       {:.4g} rad m^-2\n'+
                     'Theoretical largest FD scale probed: {:.4g} rad m^-2\n'+
                     'Theoretical maximum FD:              {:.4g} rad m^-2\n'+

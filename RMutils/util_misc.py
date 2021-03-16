@@ -452,7 +452,8 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     with np.errstate(divide='ignore', invalid='ignore'):
         qArr = np.true_divide(QArr, IModArr)
         uArr = np.true_divide(UArr, IModArr)
-        
+        qArr= np.where(np.isfinite(qArr),qArr,np.nan)
+        uArr= np.where(np.isfinite(uArr),uArr,np.nan)
 
 ## These errors only apply when dividing by channel Stokes I values, but
 ## not when dividing by a Stokes I model (the errors on which are more difficult
@@ -470,6 +471,8 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
 #TODO: if I do figure out model errors at some point, fold them in here.
         dqArr=dQArr / IModArr
         duArr=dUArr / IModArr
+        dqArr= np.where(np.isfinite(dqArr),dqArr,np.nan)
+        duArr= np.where(np.isfinite(duArr),duArr,np.nan)
 
     return IModArr, qArr, uArr, dqArr, duArr, fitDict
 

@@ -380,11 +380,13 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     # Calculate p and errors
     if pArr is None:
         pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
+        pArr= np.where(np.isfinite(pArr),pArr,np.nan)
     if dpArr is None:
         if dqArr is None or duArr is None:
             dpArr = None
         else:
             dpArr = np.sqrt(dqArr**2.0 + duArr**2.0 )
+            dpArr= np.where(np.isfinite(dpArr),dpArr,np.nan)
         
     # Plot p, q, u versus lambda^2
 #    """
