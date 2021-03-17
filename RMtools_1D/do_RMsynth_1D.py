@@ -166,6 +166,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                              fit_function = fit_function)
              
     dquArr = (dqArr + duArr)/2.0
+    dquArr= np.where(np.isfinite(dquArr),dquArr,np.nan)
 
 
     # Plot the data and the Stokes I model fit
@@ -306,7 +307,7 @@ def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
-    dFDFth = Ifreq0*np.sqrt( np.sum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
+    dFDFth = Ifreq0*np.sqrt( np.nansum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
 
 
     # Measure the parameters of the dirty FDF
