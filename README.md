@@ -48,5 +48,5 @@ A paper with a full description of the package is being prepared but is not avai
 
 Questions, bug reports, and feature requests can be posted to the GitHub issues page or sent to Cameron Van Eck, cameron.van.eck (at) dunlap.utoronto.ca.
 
-More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.org.
+More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.ca.
 
