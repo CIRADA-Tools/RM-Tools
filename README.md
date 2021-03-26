@@ -20,6 +20,8 @@ RMutils     ... Utilities for interacting with polarized data and Faraday depth
 
 This will make the following modules importable in Python: RMtools_1D, RMtools_3D, RMutil
 
+![RM-Tools component diagram](https://github.com/CIRADA-Tools/RM-Tools/wiki/diagram.png)
+
 Five terminal commands are added to invoke the main tools:  
 rmsynth1d  
 rmclean1d  
@@ -28,6 +30,18 @@ rmclean3d
 qufit
 
 Use these commands with a -h flag to get information on the usage of each. Full documentation is on the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
+
+The following terminal commands are available to access the [additional tools](https://github.com/CIRADA-Tools/RM-Tools/wiki/Tools):  
+rmtools_freqfile  
+rmtools_calcRMSF  
+rmtools_testdata1D  
+rmtools_createchunks  
+rmtools_assemblechunks  
+rmtools_fitIcube  
+rmtools_peakfitcube  
+rmtools_testdata3D  
+rmtools_extractregion
+
 
 If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being.  
 A paper with a full description of the package is being prepared but is not available yet.
