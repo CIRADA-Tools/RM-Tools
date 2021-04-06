@@ -52,7 +52,7 @@ setup(
                             'rmtools_createchunks=RMtools_3D.create_chunks:main',
                             'rmtools_assemblechunks=RMtools_3D.assemble_chunks:main',
                             'rmtools_fitIcube=RMtools_3D.do_fitIcube:main',
-                            'rmtools_peakfitcube=RMtools_3D.RMpeakfit_RD:main',
+                            'rmtools_peakfitcube=RMtools_3D.RMpeakfit_3D:main',
                             'rmtools_testdata3D=RMtools_3D.mk_test_cube_data:main',
                             'rmtools_extractregion=RMtoold_3D.extract_region:main'],
     },
