@@ -61,10 +61,10 @@ def main():
     
     #Check that at least one frequency input has been given:
     if args.freqFile == None and args.freq_parms == None:
-        print("Please supply either a file with frequency values or a use the -i flag.")
+        print("Please supply either a file with frequency values or use the -f flag.")
         raise(Exception("No frequency input! Use -h flag for help on inputs."))
     
-    #Order ot priority: frequency file takes precedence over -i flag.
+    #Order of priority: frequency file takes precedence over -i flag.
     #                   weight file takes precedence over 2nd column of frequency file.       
     if args.freqFile != None:
         data=np.genfromtxt(args.freqFile,encoding=None,dtype=None)

@@ -4,6 +4,8 @@ Master branch changes:
 -fixed problem where very small Stokes I model values (~1E-60) would
   cause numeric overflow in Q/I, U/I, creating infinities that were
   not handled gracefully. Now converting infinities to NaNs.
+-fixed peakfitcube not being callable from the command line.
+-fixed typos in rmtools_calcRMSF.
 
 1.1.0: New feature update
 -QU-fitting updates from Alec Thomson: sigma-clipping of posteriors,
