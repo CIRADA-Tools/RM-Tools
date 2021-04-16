@@ -54,7 +54,7 @@ setup(
                             'rmtools_fitIcube=RMtools_3D.do_fitIcube:main',
                             'rmtools_peakfitcube=RMtools_3D.RMpeakfit_3D:main',
                             'rmtools_testdata3D=RMtools_3D.mk_test_cube_data:main',
-                            'rmtools_extractregion=RMtoold_3D.extract_region:main'],
+                            'rmtools_extractregion=RMtools_3D.extract_region:main'],
     },
     install_requires=REQUIRED,
     include_package_data=True,
