@@ -310,7 +310,30 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
 
 
 def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
-
+    """Fit a model to a Stokes I spectrum with specified errors.
+    Supports linear or log polynomials, and fixed or dynamic order selection.
+    
+    Args:
+        freqArr (array): Numpy array-like containing channel frequencies (in Hz)
+        IArr (array): array of Stokes I values (any units)
+        dIArr (array): array of 1-sigma noise/uncertainties in Stokes I
+        polyOrd (int): if positive (0 to 5), will fit that order of polynomial.
+            If negative (-1 to -5), will dynamically find the best order up
+            to the maximum of |polyOrd|.
+        fit_function (str): 'linear' or 'log' to fit the corresponding function.
+    
+    Returns:
+        dict: Dictionary with model information.
+            'p': array of polynomial parameters (highest to lowest order)
+            'fitStatus': exit status of fitter.
+            'chiSq','chiSqRed': chi-squared (and reduced chi-squared) of fit
+            'AIC': Aikaike information criterion value for fit
+            'polyOrd': order of fit
+            'nIter': Number of iterations used by fitter.
+            'reference_frequency_Hz': reference frequency for polynomial.
+            'dof': degrees of freedom in the fit.
+    
+    """
     # Frequency axis must be in GHz to avoid overflow errors
     fitDict = {"fit_function": fit_function,
                "fitStatus": 0,
@@ -368,8 +391,11 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
 
 def calculate_StokesI_model(fitDict,freqArr_Hz):
     """Calculates channel values for a Stokes I model.
-    Inputs: fitDict: a dictionary returned from the Stokes I model fitting.
-            freqArr_Hz: an array of frequency values (assumed to be in Hz).
+    
+    Inputs: 
+        fitDict (dict): a dictionary returned from the Stokes I model fitting.
+        freqArr_Hz (array): an array of frequency values (assumed to be in Hz).
+    
     Returns: array containing Stokes I model values corresponding to each frequency."""
     if fitDict['fit_function'] == 'linear':
         IModArr = poly5(fitDict["p"])(freqArr_Hz/fitDict['reference_frequency_Hz'])
