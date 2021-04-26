@@ -1,4 +1,6 @@
-Master branch changes:
+
+
+1.1.1:
 -updated calculate_RMSF to use same theoretical width as rmsynth1D
   (the formula from Dickey et al. 2019)
 -fixed problem where very small Stokes I model values (~1E-60) would
@@ -6,6 +8,7 @@ Master branch changes:
   not handled gracefully. Now converting infinities to NaNs.
 -fixed peakfitcube not being callable from the command line.
 -fixed typos in rmtools_calcRMSF.
+-fixed pip installation so that QUfitting models are correctly installed.
 
 1.1.0: New feature update
 -QU-fitting updates from Alec Thomson: sigma-clipping of posteriors,
