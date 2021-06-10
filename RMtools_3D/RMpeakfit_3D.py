@@ -105,25 +105,30 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
             dFDF_pix=None
         else:
             dFDF_pix=dFDF[xarr[i],yarr[i]]
-        mDict=measure_FDF_parms(FDF_pix, phiArr, fwhmRMSF_pix, dFDF=dFDF_pix, 
+        try:
+            mDict=measure_FDF_parms(FDF_pix, phiArr, fwhmRMSF_pix, dFDF=dFDF_pix, 
                                 lamSqArr_m2=lamSqArr_m2,lam0Sq=lam0Sq, 
                                 snrDoBiasCorrect=5.0)
         #Add keywords not included by the above function:
-        mDict['lam0Sq_m2']=lam0Sq
-        mDict['freq0_Hz']=freq0_Hz
-        mDict['fwhmRMSF']=fwhmRMSF_pix
-        mDict['Ifreq0']=Ifreq0Arr[xarr[i],yarr[i]]
-        mDict['fracPol']=mDict["ampPeakPIfit"]/mDict['Ifreq0']
-        mDict["min_freq"]=float(np.min(freqArr_Hz))
-        mDict["max_freq"]=float(np.max(freqArr_Hz))
-        mDict["N_channels"]=lamSqArr_m2.size
-        mDict["median_channel_width"]=float(np.median(np.diff(freqArr_Hz)))
-        if dFDF_pix is not None:
-            mDict['dFDFth']=dFDF_pix
-        else:
-            mDict['dFDFth']=np.nan
-        for parameter in product_list:
-            map_dict[parameter][xarr[i],yarr[i]]=mDict[parameter]
+            mDict['lam0Sq_m2']=lam0Sq
+            mDict['freq0_Hz']=freq0_Hz
+            mDict['fwhmRMSF']=fwhmRMSF_pix
+            mDict['Ifreq0']=Ifreq0Arr[xarr[i],yarr[i]]
+            mDict['fracPol']=mDict["ampPeakPIfit"]/mDict['Ifreq0']
+            mDict["min_freq"]=float(np.min(freqArr_Hz))
+            mDict["max_freq"]=float(np.max(freqArr_Hz))
+            mDict["N_channels"]=lamSqArr_m2.size
+            mDict["median_channel_width"]=float(np.median(np.diff(freqArr_Hz)))
+            if dFDF_pix is not None:
+                mDict['dFDFth']=dFDF_pix
+            else:
+                mDict['dFDFth']=np.nan
+            for parameter in product_list:
+                map_dict[parameter][xarr[i],yarr[i]]=mDict[parameter]
+        except:
+            for parameter in product_list:
+                map_dict[parameter][xarr[i],yarr[i]]=np.nan
+
         if i % 100 == 0:
                 progress(40, i/xarr.size*100)
     return map_dict
