@@ -209,7 +209,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     return dataArr
 
 def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
-                nBits = 32, write_seperate_FDF=False, not_rmsf=True, verbose=True, log=print):
+                nBits = 32, write_seperate_FDF=False, not_rmsf=False, verbose=False, log=print):
     """Write data to disk in FITS
 
 
@@ -275,8 +275,8 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
     header["CTYPE"+str(freq_axis)] = ("FDEP", 'Faraday depth (linear)')
     header["CDELT"+str(freq_axis)] = (np.diff(phiArr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
-    header["CRPIX"+str(freq_axis)] = 1.0
-    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
+    header["CRPIX"+str(freq_axis)] = phiArr_radm2.size//2+1
+    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[phiArr_radm2.size//2], '[rad/m^2] Coordinate value at reference point')
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
     if not np.isfinite(lam0Sq_m2):
         lam0Sq_m2 = 0.
@@ -398,21 +398,21 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
 
+    #Generate peak maps:
+        
+    maxPI,peakRM = create_peak_maps(FDFcube,phiArr_radm2,Ndim-freq_axis)
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut,
-                np.expand_dims(np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), axis=0),
+                np.expand_dims(maxPI.astype(dtFloat), axis=0),
                 header,
                overwrite=True, output_verify="fix")
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
-    peakFDFmap = np.argmax(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat)
-    peakFDFmap = header["CRVAL"+str(freq_axis)] + (peakFDFmap + 1
-                                     - header["CRPIX"+str(freq_axis)]) * header["CDELT"+str(freq_axis)]
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, np.expand_dims(peakFDFmap,axis=0), header, overwrite=True,
+    pf.writeto(fitsFileOut, np.expand_dims(peakRM,axis=0), header, overwrite=True,
                output_verify="fix")
 
 #   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
@@ -425,6 +425,35 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #    if(verbose): log("> %s" % fitsFileOut)
 #    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
 #               output_verify="fix")
+
+
+def create_peak_maps(FDFcube,phiArr_radm2,phi_axis=0):
+    """Finds the location and amplitude of the highest peak in the FDF (pixelwise)
+    and returns maps of those parameters. Does not fit the peak, only finds
+    the location in terms of the quantized Faraday depth slices of the cube.
+    Used to produce the maxPI and peakRM maps.
+    Inputs:
+        FDFcube: output cube from run_rmsynth
+        phiArr_radm2: array of Faraday depth values, from run_rmsynth
+        phi_axis (int): number of the axis for Faraday depth (in python order, 
+                         not FITS order). Defaults to zero (first axis).
+    Returns:
+        maxPI: array of same dimensions as FDFcube exceppt collapsed along
+                first (Faraday depth) axis, containing the maximum polarized
+                intensity for each pixel
+        peakRM: as maxPI, but with the Faraday depth location of the peak
+    """
+    
+    maxPI=np.max(np.abs(FDFcube), axis=phi_axis)
+    peakRM_indices = np.argmax(np.abs(FDFcube), axis=phi_axis)
+    peakRM=phiArr_radm2[peakRM_indices]
+    
+    return maxPI, peakRM
+
+    
+    
+
+
 
 def find_freq_axis(header):
     """Finds the frequency axis in a FITS header.
