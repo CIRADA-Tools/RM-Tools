@@ -415,6 +415,7 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
     #Renormalization ratio:
     x=new_reference_frequency/fitDict['reference_frequency_Hz']
     (a,b,c,d,f,g)=fitDict['p']
+    newDict=fitDict.copy()
     if fitDict['fit_function'] == 'linear':
         new_parms=[a * x**5, b * x**4, c * x**3, d * x**2, f * x, g]
     elif fitDict['fit_function'] == 'log':
@@ -422,10 +423,10 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
         new_parms=[a, 5*a*lnx+b, 10*a*lnx**2+4*b*lnx+c,
                    10*a*lnx**3+6*b*lnx**2+3*c*lnx+d,
                    5*a*lnx**4+4*b*lnx**3+3*c*lnx**2+2*d*lnx+f,
-                   np.exp(a*lnx**5+b*lnx**4+c*lnx**3+d*lnx**2+f*lnx+np.log10(g))]
-    fitDict['p']=new_parms
-    fitDict['reference_frequency_Hz']=new_reference_frequency
-    return fitDict
+                   g*np.exp(a*lnx**5+b*lnx**4+c*lnx**3+d*lnx**2+f*lnx)]
+    newDict['p']=new_parms
+    newDict['reference_frequency_Hz']=new_reference_frequency
+    return newDict
 
 #-----------------------------------------------------------------------------#
 def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,

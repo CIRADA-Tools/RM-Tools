@@ -67,7 +67,7 @@ if sys.version_info.major == 2:
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
-def run_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
+def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam', 

@@ -1,4 +1,11 @@
 
+Github main branch:
+-modified the generation of maxPI and peakRM maps in RMsynth3D so that
+  it occurs in its own function rather than as part of the file writing
+  function; this allows it to be run inside a notebook.
+-modified RMpeakfit_3D to be more stable when FDF cubes have NaNs present.
+-Stokes I fit coefficients no longer become NaNs when negative Stokes I 
+  models are renormalized to a new reference frequency.
 
 1.1.1:
 -updated calculate_RMSF to use same theoretical width as rmsynth1D
