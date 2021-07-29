@@ -1,3 +1,5 @@
+![tests](https://github.com/AlecThomson/RM-tools/actions/workflows/python-package.yml/badge.svg)
+
 # RM-Tools
 
 RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
