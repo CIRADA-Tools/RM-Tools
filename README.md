@@ -50,4 +50,4 @@ Questions, bug reports, and feature requests can be posted to the GitHub issues 
 
 More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.ca.
 
-![Tests](https://github.com/AlecThomson/RM-tools/actions/workflows/python-package.yml/badge.svg)
+![Tests](https://github.com/CIRADA-Tools/RM-tools/actions/workflows/python-package.yml/badge.svg)
