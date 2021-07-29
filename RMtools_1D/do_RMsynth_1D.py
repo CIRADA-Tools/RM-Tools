@@ -174,8 +174,12 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Plot the data and the Stokes I model fit
     if verbose: log("Plotting the input data and spectral index fit.")
-    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-    IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
+    if modStokesI is None:
+        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+        IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
+    elif modStokesI is not None:
+        IModHirArr = modStokesI
+        IModHirArr = freqArr_Hz
     if showPlots or saveFigures:
         specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
