@@ -69,7 +69,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
-                noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
+                noStokesI=False, modStokesI=None, phiNoise_radm2=1e6, nBits=32, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam', 
                 prefixOut="prefixOut", saveFigures=None,fit_function='log'):
     """Run RM synthesis on 1D data.
@@ -102,6 +102,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
             "uniform" -- Weight uniformly (i.e. with 1s)
         fitRMSF (bool): Fit a Gaussian to the RMSF?
         noStokesI (bool: Is Stokes I data provided?
+        modStokesI (array_like): Stokes I model across for each channel (optional)
         phiNoise_radm2 (float): ????
         nBits (int): Precision of floating point numbers.
         showPlots (bool): Show plots?
@@ -163,7 +164,9 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                                  polyOrd  = polyOrd,
                                  verbose  = True,
                                  debug    = debug,
-                             fit_function = fit_function)
+                                 fit_function = fit_function,
+                                 modStokesI = modStokesI,
+                                 )
              
     dquArr = (dqArr + duArr)/2.0
     dquArr= np.where(np.isfinite(dquArr),dquArr,np.nan)
