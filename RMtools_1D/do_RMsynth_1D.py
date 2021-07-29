@@ -179,7 +179,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
         IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
     elif modStokesI is not None:
         IModHirArr = modStokesI
-        IModHirArr = freqArr_Hz
+        freqHirArr_Hz = freqArr_Hz
     if showPlots or saveFigures:
         specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
