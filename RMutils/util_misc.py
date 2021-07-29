@@ -439,7 +439,15 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     if modStokesI is not None:
         # Use provided model
         IModArr = modStokesI
-        fitDict = {}
+        fitDict = {"fitStatus": 0,
+            "chiSq": 0.0,
+            "dof": len(freqArr)-polyOrd-1,
+            "chiSqRed": 0.0,
+            "nIter": 0,
+            "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
+            "polyOrd":polyOrd,
+            "AIC":0,
+            "reference_frequency_Hz":1}
         if verbose:
             print('Using provided model Stokes I spectrum')
     else:
