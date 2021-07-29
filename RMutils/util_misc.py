@@ -436,7 +436,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     """Fit the Stokes I spectrum with a polynomial and divide into the Q & U
     spectra to create fractional spectra."""
 
-    if modStokesI:
+    if modStokesI is not None:
         # Use provided model
         IModArr = modStokesI
         if verbose:
