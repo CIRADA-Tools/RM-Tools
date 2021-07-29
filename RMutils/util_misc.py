@@ -450,7 +450,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
             "reference_frequency_Hz":1}
         if verbose:
             print('Using provided model Stokes I spectrum')
-    else:
+    elif modStokesI is None:
         # Fit a <=5th order polynomial model to the Stokes I spectrum
         try:
             fitDict=fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function)
