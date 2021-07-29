@@ -439,6 +439,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     if modStokesI is not None:
         # Use provided model
         IModArr = modStokesI
+        fitDict = {}
         if verbose:
             print('Using provided model Stokes I spectrum')
     else:
