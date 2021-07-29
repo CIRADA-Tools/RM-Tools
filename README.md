@@ -1,4 +1,4 @@
-![python-package](https://github.com/AlecThomson/RM-tools/actions/workflows/python-package.yml/badge.svg)
+![Tests](https://github.com/AlecThomson/RM-tools/actions/workflows/python-package.yml/badge.svg)
 
 # RM-Tools
 
