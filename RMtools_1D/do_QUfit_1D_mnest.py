@@ -71,6 +71,7 @@ from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import CustomNavbar
 from RMutils import corner
+from IPython import embed
 
 # Fail if script has been started with mpiexec & mpi4py is not installed
 if os.environ.get('OMPI_COMM_WORLD_SIZE') is not None:
@@ -399,25 +400,27 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
         dLnEvidence = statDict["nested sampling global log-evidence error"]
 
         # Get the best-fitting values & uncertainties directly from chains
-        chains =  aObj.get_equal_weighted_posterior()
-        chains = wrap_chains(chains, wraps, bounds, pMed)
         # Find the mode with the highest evidence
         mode_evidence = [mode['strictly local log-evidence'] for mode in statDict['modes']]
-        # Get the max and std for modal value
-        modes = np.array(statDict['modes'][np.argmax(mode_evidence)]['maximum a posterior'])
-        sigmas = np.array(statDict['modes'][np.argmax(mode_evidence)]['sigma'])
-        upper = modes + sigma_clip * sigmas
-        lower = modes - sigma_clip * sigmas
+        best_mode = np.argmax(mode_evidence)
+        if verbose:
+            print(f"Best mode is number {best_mode}")
+        
+        # To get the full posterior use:
+        # chains =  aObj.get_equal_weighted_posterior()
+        # Note: This will have mixed modes!
 
+        # Read the chains from single mode:
+        chains, weights = get_mode_chains(best_mode, outputfiles_basename=nestOut)
+        chains = wrap_chains(chains, wraps, bounds, pMed)
         p = [None]*nDim
         errPlus = [None]*nDim
         errMinus = [None]*nDim
         g = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
         for i in range(nDim):
-            # Get stats around modal value
-            idx = (chains[:,i] > lower[i]) & (chains[:,i] < upper[i])
             p[i], errPlus[i], errMinus[i] = \
-                        g(np.percentile(chains[idx, i], [15.72, 50, 84.27]))
+                        g(np.percentile(chains[:, i], [15.72, 50, 84.27]))
+
 
         # Calculate goodness-of-fit parameters
         nData = 2.0 * len(lamSqArr_m2)
@@ -487,7 +490,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
 
 
         # Plot the posterior samples in a corner plot
-        chains =  aObj.get_equal_weighted_posterior()
+        # chains =  aObj.get_equal_weighted_posterior()
+        chains, weights = get_mode_chains(best_mode, outputfiles_basename=nestOut)
         chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
         iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
         chains = np.delete(chains, iFixed, 1)
@@ -497,7 +501,7 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
 
         cornerFig = corner.corner(xs      = chains,
                                   labels  = labels,
-                                  range   = [(l,u) for l,u in zip(upper,lower)],
+                                  range = [0.99999]*nFree,
                                   truths  = p,
                                   quantiles = [0.1572, 0.8427],
                                   bins    = 30)
@@ -683,6 +687,20 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
+#-----------------------------------------------------------------------------#
+def get_mode_chains(mode, outputfiles_basename="_nest/"):
+    i = mode + 1
+
+    with open(f'{outputfiles_basename}post_separate.dat') as f:
+        contents = f.read()
+
+    modes = contents.split('\n\n')
+    chains = np.genfromtxt(modes[i].splitlines())
+    chains = chains[:,2:]
+    weights = chains[:,0] # sample probability
+
+    return chains, weights
 
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
