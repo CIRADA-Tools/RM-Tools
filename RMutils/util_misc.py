@@ -996,7 +996,7 @@ def create_pqu_resid_RMthin(qArr, uArr, freqArr_Hz, fracPol, psi0_deg,
 #-----------------------------------------------------------------------------#
 def xfloat(x, default=None):
 
-    if x is None or x is "":
+    if x is None or x=="":
         return default
     try:
         return float(x)
