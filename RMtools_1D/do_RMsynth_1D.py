@@ -42,6 +42,7 @@ import json
 import math as m
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from RMutils.util_RM import do_rmsynth
 from RMutils.util_RM import do_rmsynth_planes
@@ -174,12 +175,12 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Plot the data and the Stokes I model fit
     if verbose: log("Plotting the input data and spectral index fit.")
-    if modStokesI is None:
-        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+    if modStokesI is None:   
         IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
     elif modStokesI is not None:
-        IModHirArr = modStokesI
-        freqHirArr_Hz = freqArr_Hz
+        modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
+        IModHirArr = modStokesI_interp(freqHirArr_Hz)
     if showPlots or saveFigures:
         specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
@@ -306,11 +307,16 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
     # Multiply the dirty FDF by Ifreq0 to recover the PI
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
-    Ifreq0 = calculate_StokesI_model(fitDict,freq0_Hz)
+    if modStokesI is None:   
+        Ifreq0 = calculate_StokesI_model(fitDict,freq0_Hz)
+    elif modStokesI is not None:
+        modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
+        Ifreq0 = modStokesI_interp(freq0_Hz)
     dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux
 
-    #Need to renormalize the Stokes I parameters here to the actual reference frequency.
-    fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
+    if modStokesI is None:   
+        #Need to renormalize the Stokes I parameters here to the actual reference frequency.
+        fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
