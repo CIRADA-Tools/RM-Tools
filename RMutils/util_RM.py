@@ -881,6 +881,14 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         
         snrPIfit = ampPeakPIfit / dFDF
         
+        #In rare cases, a parabola can be fitted to the edge of the spectrum,
+        #producing a unreasonably large RM and polarized intensity.
+        #In these cases, everything should get NaN'd out.
+        if np.abs(phiPeakPIfit) > np.max(np.abs(phiArr)):
+            phiPeakPIfit=np.nan
+            ampPeakPIfit=np.nan
+        
+        
         # Error on fitted Faraday depth (RM) is same as channel, but using fitted PI
         dPhiPeakPIfit = fwhmRMSF * dFDF / (2.0 * ampPeakPIfit)
         
@@ -962,7 +970,10 @@ def cdf_percentile(x, p, q=50.0):
     function."""
 
     # Determine index where cumulative percentage is achieved
-    i = np.where(p>q/100.0)[0][0]
+    try: #Can fail if NaNs present, so return NaN in this case.
+        i = np.where(p>q/100.0)[0][0]
+    except:
+        return np.nan
 
     # If at extremes of the distribution, return the limiting value
     if i==0 or i==len(x):
