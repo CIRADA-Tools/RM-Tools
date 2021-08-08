@@ -25,6 +25,8 @@ jobs:
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
+        auto-activate-base: true
+        activate-environment: ""
     - name: Install dependencies
       run: |
         pip install --upgrade pytest
