@@ -30,8 +30,8 @@ jobs:
         conda install -c conda-forge pymultinest
         conda install pip pytest
         pip install .[QUfitting,parallel] --upgrade
-
     - name: Test with pytest
       run: |
+        conda info
         cd tests/
         python -m pytest *.py
