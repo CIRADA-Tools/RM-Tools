@@ -430,50 +430,66 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
 
 #-----------------------------------------------------------------------------#
 def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
-                        polyOrd=2, verbose=False, debug=False,fit_function="log"):
+                        polyOrd=2, verbose=False, debug=False,fit_function="log",
+                        modStokesI=None
+                        ):
     """Fit the Stokes I spectrum with a polynomial and divide into the Q & U
     spectra to create fractional spectra."""
 
+    if modStokesI is not None:
+        # Use provided model
+        IModArr = modStokesI
+        fitDict = {"fitStatus": 0,
+            "chiSq": 0.0,
+            "dof": len(freqArr)-polyOrd-1,
+            "chiSqRed": 0.0,
+            "nIter": 0,
+            "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
+            "polyOrd":polyOrd,
+            "AIC":0,
+            "reference_frequency_Hz":1}
+        if verbose:
+            print('Using provided model Stokes I spectrum')
+    elif modStokesI is None:
+        # Fit a <=5th order polynomial model to the Stokes I spectrum
+        try:
+            fitDict=fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function)
+            IModArr = calculate_StokesI_model(fitDict,freqArr)
+            
+            if np.min(IModArr) < 0:   #Flag sources with negative models.
+                fitDict["fitStatus"] += 128
+            if (IModArr < dIArr).sum() > 0:  #Flag sources with models with S/N < 1.
+            #TODO: this can be made better: estimating the error on the model to see
+            # if the model is within 1 sigma, rather than the data error bars.
+                fitDict["fitStatus"] += 64
 
-    # Fit a <=5th order polynomial model to the Stokes I spectrum
-    try:
-        fitDict=fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function)
-        IModArr = calculate_StokesI_model(fitDict,freqArr)
-        
-        if np.min(IModArr) < 0:   #Flag sources with negative models.
-            fitDict["fitStatus"] += 128
-        if (IModArr < dIArr).sum() > 0:  #Flag sources with models with S/N < 1.
-        #TODO: this can be made better: estimating the error on the model to see
-        # if the model is within 1 sigma, rather than the data error bars.
-            fitDict["fitStatus"] += 64
-
-        #if verbose:
-        #    print("\n")
-        #    print("-"*80)
-        #    print("Details of the polynomial fit to the spectrum:")
-        #    for key, val in fitDict.iteritems():
-        #        print(" %s = %s" % (key, val))
-        #    print("-"*80)
-        #    print("\n")
-    except Exception:  #If fit fails, fallback:
-        print("Err: Failed to fit polynomial to Stokes I spectrum.")
-        if debug:
-            print("\nTRACEBACK:")
-            print(("-" * 80))
-            print((traceback.format_exc()))
-            print(("-" * 80))
-            print("\n")
-        print("> Setting Stokes I spectrum to unity.\n")
-        fitDict = {"fitStatus": 9, #indicate failure
-               "chiSq": 0.0,
-               "dof": len(freqArr)-polyOrd-1,
-               "chiSqRed": 0.0,
-               "nIter": 0,
-               "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
-               "polyOrd":polyOrd,
-               "AIC":0,
-               "reference_frequency_Hz":1}
-        IModArr = np.ones_like(IArr)
+            #if verbose:
+            #    print("\n")
+            #    print("-"*80)
+            #    print("Details of the polynomial fit to the spectrum:")
+            #    for key, val in fitDict.iteritems():
+            #        print(" %s = %s" % (key, val))
+            #    print("-"*80)
+            #    print("\n")
+        except Exception:  #If fit fails, fallback:
+            print("Err: Failed to fit polynomial to Stokes I spectrum.")
+            if debug:
+                print("\nTRACEBACK:")
+                print(("-" * 80))
+                print((traceback.format_exc()))
+                print(("-" * 80))
+                print("\n")
+            print("> Setting Stokes I spectrum to unity.\n")
+            fitDict = {"fitStatus": 9, #indicate failure
+                "chiSq": 0.0,
+                "dof": len(freqArr)-polyOrd-1,
+                "chiSqRed": 0.0,
+                "nIter": 0,
+                "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
+                "polyOrd":polyOrd,
+                "AIC":0,
+                "reference_frequency_Hz":1}
+            IModArr = np.ones_like(IArr)
     
     # Calculate the fractional spectra and errors
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -988,7 +1004,7 @@ def create_pqu_resid_RMthin(qArr, uArr, freqArr_Hz, fracPol, psi0_deg,
 #-----------------------------------------------------------------------------#
 def xfloat(x, default=None):
 
-    if x is None or x is "":
+    if x is None or x=="":
         return default
     try:
         return float(x)
