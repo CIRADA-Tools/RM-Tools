@@ -57,6 +57,7 @@ setup(
                             'rmtools_extractregion=RMtools_3D.extract_region:main'],
     },
     install_requires=REQUIRED,
+    extras_require=extras_require,
     include_package_data=True,
     license='MIT',
     classifiers=[
