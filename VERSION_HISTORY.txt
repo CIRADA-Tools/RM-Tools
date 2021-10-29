@@ -13,6 +13,8 @@ Github main branch:
 -added experimental tool to compute QU models from clean components, 
   requested by Luke Pratley. This currently has a normalization error of some 
   kind, which I've asked Luke to chase down.
+-dropping support for Python3.5, since the QUfitting code has problems with it
+ and it's already end-of-life.
 
 1.1.1:
 -updated calculate_RMSF to use same theoretical width as rmsynth1D
