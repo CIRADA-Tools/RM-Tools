@@ -19,7 +19,7 @@ REQUIRED = [
     'numpy', 'scipy', 'matplotlib', 'astropy',
 ]
 
-extras_require={'QUfitting': ['pymultinest'],'parallel':["schwimmbad"]}
+extras_require={'QUfitting': ['bilby'],'parallel':["schwimmbad"]}
 
 here = os.path.abspath(os.path.dirname(__file__))
 
