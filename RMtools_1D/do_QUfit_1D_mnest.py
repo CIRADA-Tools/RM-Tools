@@ -158,21 +158,19 @@ def main():
         "-v", dest="verbose", action="store_true", help="verbose mode [False]."
     )
     parser.add_argument(
-        "-r",
-        dest="restart",
-        action="store_false",
-        help="Restart fitting and delete previous run [True].",
+        "--sampler",
+        type=str,
+        default="dynesty",
+        help="Which sampler to use with Bilby (see https://lscsoft.docs.ligo.org/bilby/samplers.html).",
     )
     parser.add_argument(
         "--ncores",
-        dest="ncores",
         type=int,
         default=1,
         help="Number of cores to use for sampling.",
     )
     parser.add_argument(
         "--nlive",
-        dest="nlive",
         type=int,
         default=1000,
         help="Number of live points to use for sampling.",
@@ -194,8 +192,8 @@ def main():
         showPlots=args.showPlots,
         debug=args.debug,
         verbose=args.verbose,
-        restart=args.restart,
         fit_function=args.fit_function,
+        sampler=args.sampler,
         ncores=args.ncores,
         nlive=args.nlive,
     )
@@ -241,7 +239,7 @@ def run_qufit(
     showPlots=False,
     debug=False,
     verbose=False,
-    restart=True,
+    sampler="dynesty",
     fit_function="log",
     ncores=1,
     nlive=1000,
@@ -273,16 +271,7 @@ def run_qufit(
 
     # Output prefix is derived from the input file name
     prefixOut, ext = os.path.splitext(dataFile)
-    nestOut = f"{prefixOut}_m{modelNum}_nest/"
-
-    if os.path.exists(nestOut) and restart:
-        shutil.rmtree(nestOut, True)
-        os.mkdir(nestOut)
-    elif not os.path.exists(nestOut) and restart:
-        os.mkdir(nestOut)
-    elif not os.path.exists(nestOut) and not restart:
-        print("Restart requested, but previous run not found!")
-        raise Exception(f"{nestOut} does not exist.")
+    nestOut = f"{prefixOut}_m{modelNum}_{sampler}/"
 
     # Read the data file in the root process
     dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
@@ -396,10 +385,10 @@ def run_qufit(
     result = bilby.run_sampler(
         likelihood=lnlike,
         priors=priors,
-        sampler="dynesty",
+        sampler=sampler,
         nlive=nlive,
         npool=ncores,
-        outdir=(prefixOut + "_bilby" + "_m%d" % modelNum),
+        outdir=nestOut,
         label="m%d" % modelNum,
         plot=True,
     )
@@ -460,7 +449,7 @@ def run_qufit(
     print("")
 
     # Create a save dictionary and store final p in values
-    outFile = prefixOut + "_m%d_nest.json" % modelNum
+    outFile = f"{prefixOut}_m{modelNum}_{sampler}.json"
     IfitDict["p"] = toscalar(IfitDict["p"].tolist())
     saveDict = {
         "parNames": toscalar(parNames),
@@ -487,7 +476,7 @@ def run_qufit(
         "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
     }
     json.dump(saveDict, open(outFile, "w"))
-    outFile = prefixOut + "_m%d_nest.dat" % modelNum
+    outFile = f"{prefixOut}_m{modelNum}_{sampler}.dat"
     FH = open(outFile, "w")
     for k, v in saveDict.items():
         FH.write("%s=%s\n" % (k, v))
