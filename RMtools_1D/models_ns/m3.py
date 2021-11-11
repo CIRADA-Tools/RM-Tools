@@ -2,7 +2,8 @@
 #                          MODEL DEFINITION FILE                              #
 #=============================================================================#
 import numpy as np
-
+import bilby
+from bilby.core.prior import PriorDict, Constraint
 
 #-----------------------------------------------------------------------------#
 # Function defining the model.                                                #
@@ -39,60 +40,77 @@ def model(pDict, lamSqArr_m2):
 #   priortype  ...   "uniform", "normal", "log" or "fixed"                    #
 #   wrap       ...   set > 0 for periodic parameters (e.g., for an angle)     #
 #-----------------------------------------------------------------------------#
-inParms = [
-    {"parname":   "fracPol1",
-     "label":     "$p_1$",
-     "value":     0.1,
-     "bounds":    [0.001, 1.0],
-     "priortype": "uniform",
-     "wrap":      0},
-    
-    {"parname":   "fracPol2",
-     "label":     "$p_2$",
-     "value":     0.1,
-     "bounds":    [0.001, 1.0],
-     "priortype": "uniform",
-     "wrap":      0},
-    
-    {"parname":   "psi01_deg",
-     "label":     "$\psi_{0,1}$ (deg)",
-     "value":     0.0,
-     "bounds":    [0.0, 180.0],
-     "priortype": "uniform",
-     "wrap":      1},
-    
-    {"parname":   "psi02_deg",
-     "label":     "$\psi_{0,2}$ (deg)",
-     "value":     0.0,
-     "bounds":    [0.0, 180.0],
-     "priortype": "uniform",
-     "wrap":      1},
-    
-    {"parname":   "RM1_radm2",
-     "label":     "$\phi_1$ (rad m$^{-2}$)",
-     "value":     0.0,
-     "bounds":    [-1100.0, 1100.0],
-     "priortype": "uniform",
-     "wrap": 0},
-    
-    {"parname":   "RM2_radm2",
-     "label":     "$\phi_2$ (rad m$^{-2}$)",
-     "value":     0.0,
-     "bounds":    [-1100.0, 1100.0],
-     "priortype": "uniform",
-     "wrap": 0},
-    
-    {"parname":   "sigmaRM_radm2",
-     "label":     "$\sigma_{RM}$ (rad m$^{-2}$)",
-     "value":     0.0,
-     "bounds":    [0.0, 100.0],
-     "priortype": "uniform",
-     "wrap": 0}
-]
+def make_rm1_gt_rm2(parameters):
+    """
+    Function to convert between sampled parameters and constraint parameter.
 
+    Enforces the condition RM1 > RM2.
 
-#-----------------------------------------------------------------------------#
-# Switches controlling the Nested Sampling algorithm                          #
-#-----------------------------------------------------------------------------#
-nestArgsDict = {"n_live_points": 1000,
-                "verbose": False}
+    Parameters
+    ----------
+    parameters: dict
+        Dictionary containing sampled parameter values, 'RM1_radm2', 'RM1_radm2'.
+
+    Returns
+    -------
+    dict: Dictionary with constraint parameter 'delta_RM1_RM2_radm2' added.
+    """
+    converted_parameters = parameters.copy()
+    converted_parameters['delta_RM1_RM2_radm2'] = parameters['RM1_radm2'] - parameters['RM2_radm2']
+    return converted_parameters
+
+priors = PriorDict(conversion_function=make_rm1_gt_rm2)
+
+priors['fracPol1'] = bilby.prior.Uniform(
+    minimum=0.001,
+    maximum=1.0,
+    name='fracPol1',
+    latex_label='$p_1$',
+)
+priors['fracPol2'] = bilby.prior.Uniform(
+    minimum=0.001,
+    maximum=1.0,
+    name='fracPol2',
+    latex_label='$p_2$',
+)
+
+priors['psi01_deg'] = bilby.prior.Uniform(
+    minimum=0,
+    maximum=180.0,
+    name="psi01_deg",
+    latex_label="$\psi_{0,1}$ (deg)",
+    boundary="periodic",
+)
+priors['psi02_deg'] = bilby.prior.Uniform(
+    minimum=0,
+    maximum=180.0,
+    name="psi02_deg",
+    latex_label="$\psi_{0,2}$ (deg)",
+    boundary="periodic",
+)
+
+priors['RM1_radm2'] = bilby.prior.Uniform(
+    minimum=-1100.0,
+    maximum=1100.0,
+    name="RM1_radm2",
+    latex_label="$\phi_1$ (rad m$^{-2}$)",
+)
+priors['RM2_radm2'] = bilby.prior.Uniform(
+    minimum=-1100.0,
+    maximum=1100.0,
+    name="RM2_radm2",
+    latex_label="$\phi_2$ (rad m$^{-2}$)",
+)
+priors['delta_RM1_RM2_radm2'] = Constraint(
+    minimum=0,
+    maximum=1100.0,
+    name="delta_RM1_RM2_radm2",
+    latex_label="$\Delta\phi_{1,2}$ (rad m$^{-2}$)",
+)
+
+priors['sigmaRM_radm2'] = bilby.prior.Uniform(
+    minimum=0,
+    maximum=100.0,
+    name="sigmaRM_radm2",
+    latex_label="$\sigma_{RM}$ (rad m$^{-2}$)",
+)
