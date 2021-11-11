@@ -426,128 +426,128 @@ def run_qufit(
             summary.minus,
         )
 
-        # Calculate goodness-of-fit parameters
-        nData = 2.0 * len(lamSqArr_m2)
-        dof = nData - nFree - 1
-        chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr, model)
-        chiSqRed = chiSq / dof
-        AIC = 2.0 * nFree - 2.0 * lnLike
-        AICc = 2.0 * nFree * (nFree + 1) / (nData - nFree - 1) - 2.0 * lnLike
-        BIC = nFree * np.log(nData) - 2.0 * lnLike
+    # Calculate goodness-of-fit parameters
+    nData = 2.0 * len(lamSqArr_m2)
+    dof = nData - nFree - 1
+    chiSq = chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr, model)
+    chiSqRed = chiSq / dof
+    AIC = 2.0 * nFree - 2.0 * lnLike
+    AICc = 2.0 * nFree * (nFree + 1) / (nData - nFree - 1) - 2.0 * lnLike
+    BIC = nFree * np.log(nData) - 2.0 * lnLike
 
-        # Summary of run
-        print("")
-        print("-" * 80)
-        print("SUMMARY OF SAMPLING RUN:")
-        print("#-PROCESSORS  = %d" % ncores)
-        print("RUN-TIME      = %.2f" % (endTime - startTime))
-        print("DOF           = %d" % dof)
-        print("CHISQ:        = %.3g" % chiSq)
-        print("CHISQ RED     = %.3g" % chiSqRed)
-        print("AIC:          = %.3g" % AIC)
-        print("AICc          = %.3g" % AICc)
-        print("BIC           = %.3g" % BIC)
-        print("ln(EVIDENCE)  = %.3g" % lnEvidence)
-        print("dLn(EVIDENCE) = %.3g" % dLnEvidence)
-        print("")
-        print("-" * 80)
-        print("RESULTS:\n")
-        for i in range(len(p)):
-            print(
-                "%s = %.4g (+%3g, -%3g)" % (parNames[i], p[i], errPlus[i], errMinus[i])
-            )
-        print("-" * 80)
-        print("")
-
-        # Create a save dictionary and store final p in values
-        outFile = prefixOut + "_m%d_nest.json" % modelNum
-        IfitDict["p"] = toscalar(IfitDict["p"].tolist())
-        saveDict = {
-            "parNames": toscalar(parNames),
-            "labels": toscalar(labels),
-            "values": toscalar(p),
-            "errPlus": toscalar(errPlus),
-            "errMinus": toscalar(errMinus),
-            "bounds": toscalar(bounds),
-            "priorTypes": toscalar(priorTypes),
-            "wraps": toscalar(wraps),
-            "dof": toscalar(dof),
-            "chiSq": toscalar(chiSq),
-            "chiSqRed": toscalar(chiSqRed),
-            "AIC": toscalar(AIC),
-            "AICc": toscalar(AICc),
-            "BIC": toscalar(BIC),
-            "ln(EVIDENCE) ": toscalar(lnEvidence),
-            "dLn(EVIDENCE)": toscalar(dLnEvidence),
-            "nFree": toscalar(nFree),
-            "Imodel": toscalar(IfitDict["p"]),
-            "IfitChiSq": toscalar(IfitDict["chiSq"]),
-            "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
-            "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
-            "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
-        }
-        json.dump(saveDict, open(outFile, "w"))
-        outFile = prefixOut + "_m%d_nest.dat" % modelNum
-        FH = open(outFile, "w")
-        for k, v in saveDict.items():
-            FH.write("%s=%s\n" % (k, v))
-        FH.close()
-        print("Results saved in JSON and .dat format to:\n '%s'\n" % outFile)
-
-        # Plot the posterior samples in a corner plot
-        # chains =  aObj.get_equal_weighted_posterior()
-        # chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
-        # iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
-        # chains = np.delete(chains, iFixed, 1)
-        # for i in sorted(iFixed, reverse=True):
-        #     del(labels[i])
-        #     del(p[i])
-
-        cornerFig = result.plot_corner()
-
-        # Save the posterior chains to ASCII file
-
-        # Plot the data and best-fitting model
-        lamSqHirArr_m2 = np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
-        freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-        IModArr = calculate_StokesI_model(IfitDict, freqHirArr_Hz)
-        pDict = {k: v for k, v in zip(parNames, p)}
-        quModArr = model(pDict, lamSqHirArr_m2)
-        model_dict = {
-            "model": model,
-            "parNames": parNames,
-            "posterior": result.posterior,
-        }
-        specFig.clf()
-        plot_Ipqu_spectra_fig(
-            freqArr_Hz=freqArr_Hz,
-            IArr=IArr,
-            qArr=qArr,
-            uArr=uArr,
-            dIArr=dIArr,
-            dqArr=dqArr,
-            duArr=duArr,
-            freqHirArr_Hz=freqHirArr_Hz,
-            IModArr=IModArr,
-            qModArr=quModArr.real,
-            uModArr=quModArr.imag,
-            model_dict=model_dict,
-            fig=specFig,
+    # Summary of run
+    print("")
+    print("-" * 80)
+    print("SUMMARY OF SAMPLING RUN:")
+    print("#-PROCESSORS  = %d" % ncores)
+    print("RUN-TIME      = %.2f" % (endTime - startTime))
+    print("DOF           = %d" % dof)
+    print("CHISQ:        = %.3g" % chiSq)
+    print("CHISQ RED     = %.3g" % chiSqRed)
+    print("AIC:          = %.3g" % AIC)
+    print("AICc          = %.3g" % AICc)
+    print("BIC           = %.3g" % BIC)
+    print("ln(EVIDENCE)  = %.3g" % lnEvidence)
+    print("dLn(EVIDENCE) = %.3g" % dLnEvidence)
+    print("")
+    print("-" * 80)
+    print("RESULTS:\n")
+    for i in range(len(p)):
+        print(
+            "%s = %.4g (+%3g, -%3g)" % (parNames[i], p[i], errPlus[i], errMinus[i])
         )
-        specFig.canvas.draw()
+    print("-" * 80)
+    print("")
 
-        # Save the figures
-        outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
-        specFig.figure.savefig(outFile)
-        print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
-        outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
-        cornerFig.savefig(outFile)
-        print("Plot of posterior samples saved to \n '%s'\n" % outFile)
+    # Create a save dictionary and store final p in values
+    outFile = prefixOut + "_m%d_nest.json" % modelNum
+    IfitDict["p"] = toscalar(IfitDict["p"].tolist())
+    saveDict = {
+        "parNames": toscalar(parNames),
+        "labels": toscalar(labels),
+        "values": toscalar(p),
+        "errPlus": toscalar(errPlus),
+        "errMinus": toscalar(errMinus),
+        "bounds": toscalar(bounds),
+        "priorTypes": toscalar(priorTypes),
+        "wraps": toscalar(wraps),
+        "dof": toscalar(dof),
+        "chiSq": toscalar(chiSq),
+        "chiSqRed": toscalar(chiSqRed),
+        "AIC": toscalar(AIC),
+        "AICc": toscalar(AICc),
+        "BIC": toscalar(BIC),
+        "ln(EVIDENCE) ": toscalar(lnEvidence),
+        "dLn(EVIDENCE)": toscalar(dLnEvidence),
+        "nFree": toscalar(nFree),
+        "Imodel": toscalar(IfitDict["p"]),
+        "IfitChiSq": toscalar(IfitDict["chiSq"]),
+        "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
+        "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
+        "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
+    }
+    json.dump(saveDict, open(outFile, "w"))
+    outFile = prefixOut + "_m%d_nest.dat" % modelNum
+    FH = open(outFile, "w")
+    for k, v in saveDict.items():
+        FH.write("%s=%s\n" % (k, v))
+    FH.close()
+    print("Results saved in JSON and .dat format to:\n '%s'\n" % outFile)
 
-        # Display the figures
-        if showPlots:
-            specFig.figure.show()
-            cornerFig.show()
+    # Plot the posterior samples in a corner plot
+    # chains =  aObj.get_equal_weighted_posterior()
+    # chains = wrap_chains(chains, wraps, bounds, p)[:, :nDim]
+    # iFixed = [i for i, e in enumerate(fixedMsk) if e==0]
+    # chains = np.delete(chains, iFixed, 1)
+    # for i in sorted(iFixed, reverse=True):
+    #     del(labels[i])
+    #     del(p[i])
+
+    cornerFig = result.plot_corner()
+
+    # Save the posterior chains to ASCII file
+
+    # Plot the data and best-fitting model
+    lamSqHirArr_m2 = np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
+    freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
+    IModArr = calculate_StokesI_model(IfitDict, freqHirArr_Hz)
+    pDict = {k: v for k, v in zip(parNames, p)}
+    quModArr = model(pDict, lamSqHirArr_m2)
+    model_dict = {
+        "model": model,
+        "parNames": parNames,
+        "posterior": result.posterior,
+    }
+    specFig.clf()
+    plot_Ipqu_spectra_fig(
+        freqArr_Hz=freqArr_Hz,
+        IArr=IArr,
+        qArr=qArr,
+        uArr=uArr,
+        dIArr=dIArr,
+        dqArr=dqArr,
+        duArr=duArr,
+        freqHirArr_Hz=freqHirArr_Hz,
+        IModArr=IModArr,
+        qModArr=quModArr.real,
+        uModArr=quModArr.imag,
+        model_dict=model_dict,
+        fig=specFig,
+    )
+    specFig.canvas.draw()
+
+    # Save the figures
+    outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
+    specFig.figure.savefig(outFile)
+    print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
+    outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
+    cornerFig.savefig(outFile)
+    print("Plot of posterior samples saved to \n '%s'\n" % outFile)
+
+    # Display the figures
+    if showPlots:
+        specFig.figure.show()
+        cornerFig.show()
 
 
 # -----------------------------------------------------------------------------#
