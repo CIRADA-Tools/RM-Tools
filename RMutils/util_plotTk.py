@@ -90,8 +90,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 import tkinter.ttk
 
-from numpy.lib.function_base import append
-
 from .util_plotFITS import plot_fits_map
 from .util_misc import xfloat
 from .util_misc import norm_cdf
