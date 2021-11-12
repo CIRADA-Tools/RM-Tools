@@ -4,13 +4,13 @@
 import numpy as np
 import bilby
 
-# -----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 # Function defining the model.                                                #
 #                                                                             #
 #  pDict       = Dictionary of parameters, created by parsing inParms, below. #
 #  lamSqArr_m2 = Array of lambda-squared values                               #
 #  quArr       = Complex array containing the Re and Im spectra.              #
-# -----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
     """Simple Faraday thin source."""
 
@@ -23,20 +23,17 @@ def model(pDict, lamSqArr_m2):
     return quArr
 
 
-# -----------------------------------------------------------------------------#
-# Parameters for the above model.                                             #
+#-----------------------------------------------------------------------------#
+# Priors for the above model.                                                 #
+# See https://lscsoft.docs.ligo.org/bilby/prior.html for details.             #
 #                                                                             #
-# Each parameter is defined by a dictionary with the following keywords:      #
-#   parname    ...   parameter name used in the model function above          #
-#   label      ...   latex style label used by plotting functions             #
-#   value      ...   value of the parameter if priortype = "fixed"            #
-#   bounds     ...   [low, high] limits of the prior                          #
-#   priortype  ...   "uniform", "normal", "log" or "fixed"                    #
-#   wrap       ...   set > 0 for periodic parameters (e.g., for an angle)     #
-# -----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.001, maximum=1.0, name="fracPol", latex_label="$p$"
+        minimum=0.001, 
+        maximum=1.0, 
+        name="fracPol", 
+        latex_label="$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,

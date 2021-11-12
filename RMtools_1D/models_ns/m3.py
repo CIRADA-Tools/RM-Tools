@@ -30,21 +30,13 @@ def model(pDict, lamSqArr_m2):
 
 
 #-----------------------------------------------------------------------------#
-# Parameters for the above model.                                             #
+# Priors for the above model.                                                 #
+# See https://lscsoft.docs.ligo.org/bilby/prior.html for details.             #
 #                                                                             #
-# Each parameter is defined by a dictionary with the following keywords:      #
-#   parname    ...   parameter name used in the model function above          #
-#   label      ...   latex style label used by plotting functions             #
-#   value      ...   value of the parameter if priortype = "fixed"            #
-#   bounds     ...   [low, high] limits of the prior                          #
-#   priortype  ...   "uniform", "normal", "log" or "fixed"                    #
-#   wrap       ...   set > 0 for periodic parameters (e.g., for an angle)     #
 #-----------------------------------------------------------------------------#
-def make_rm1_gt_rm2(parameters):
+def converter(parameters):
     """
     Function to convert between sampled parameters and constraint parameter.
-
-    Enforces the condition RM1 > RM2.
 
     Parameters
     ----------
@@ -57,9 +49,10 @@ def make_rm1_gt_rm2(parameters):
     """
     converted_parameters = parameters.copy()
     converted_parameters['delta_RM1_RM2_radm2'] = parameters['RM1_radm2'] - parameters['RM2_radm2']
+    converted_parameters['sum_p1_p2'] = parameters['fracPol1'] + parameters['fracPol2']
     return converted_parameters
 
-priors = PriorDict(conversion_function=make_rm1_gt_rm2)
+priors = PriorDict(conversion_function=converter)
 
 priors['fracPol1'] = bilby.prior.Uniform(
     minimum=0.001,
@@ -113,4 +106,10 @@ priors['sigmaRM_radm2'] = bilby.prior.Uniform(
     maximum=100.0,
     name="sigmaRM_radm2",
     latex_label="$\sigma_{RM}$ (rad m$^{-2}$)",
+)
+priors['sum_p1_p2'] = Constraint(
+    minimum=0.001,
+    maximum=1,
+    name="sum_p1_p2",
+    latex_label="$p_1+p_2$)",
 )
