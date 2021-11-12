@@ -96,7 +96,7 @@ priors['RM2_radm2'] = bilby.prior.Uniform(
 )
 priors['delta_RM1_RM2_radm2'] = Constraint(
     minimum=0,
-    maximum=1100.0,
+    maximum=2200.0,
     name="delta_RM1_RM2_radm2",
     latex_label="$\Delta\phi_{1,2}$ (rad m$^{-2}$)",
 )
