@@ -20,7 +20,7 @@ REQUIRED = [
 ]
 
 # Using AT's fork for now - includes tiny bug fix for bilby
-extras_require={'QUfitting': ['git+https://github.com/AlecThomson/bilby'],'parallel':["schwimmbad"]}
+extras_require={'QUfitting': ["bilby@git+https://github.com/AlecThomson/bilby"],'parallel':["schwimmbad"]}
 
 here = os.path.abspath(os.path.dirname(__file__))
 
