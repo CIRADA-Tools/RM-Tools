@@ -58,10 +58,10 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 
 #-----------------------------------------------------------------------------#
-#mode 2
-# also a part of the RSMF
-def depolarization(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=None):
-    """Plots theoretical sensitivity and noise only AKA mode2.
+
+def compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=None):
+    """Computes theoretical sensitivity and noise curves for given 
+    channelization.
 
     Args:
 
@@ -70,7 +70,8 @@ def depolarization(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=N
         dPhi_radm2 (float): Faraday depth channel size (rad/m^2).
         nSamples (float): Number of samples across the RMSF.
 
-
+    Returns:
+        (list) Faraday depth array, sensitivity array, noise array
     """
 
 
@@ -101,7 +102,7 @@ def depolarization(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=N
     
     #Get channel widths if not given by user.
     K = 1.0 / np.sum(weightArr)
-    if widths_Hz == None:
+    if widths_Hz is None:
         widths_Hz  = estimate_channel_bandwidth(freqArr_Hz)
         
 
@@ -112,11 +113,8 @@ def depolarization(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=N
     adjoint_info[2]=adjoint_noise/np.max(adjoint_noise) #Renormalize to unity.
 
 
-    # plot adjoint info
-    plot_adjoint_info(adjoint_info,units='arb. units')
-    plt.show()
 
-    return 
+    return adjoint_info
 
 
 def main():
@@ -166,12 +164,15 @@ def main():
         print('Unable to read file. Please ensure file is readable and contains 1 or 2 columns.')
         exit
 
-    depolarization( freqArr_Hz = freqArr_Hz,
-                widths_Hz         = widths_Hz,
-                phiMax_radm2   = args.phiMax_radm2,
-                dPhi_radm2     = args.dPhi_radm2,
-                )
+    adjoint_info=compute_predictions( freqArr_Hz = freqArr_Hz,
+                                       widths_Hz = widths_Hz,
+                                    phiMax_radm2 = args.phiMax_radm2,
+                                      dPhi_radm2 = args.dPhi_radm2,
+                                             )
 
+    # plot adjoint info
+    plot_adjoint_info(adjoint_info,units='arb. units')
+    plt.show()
 
 
 
