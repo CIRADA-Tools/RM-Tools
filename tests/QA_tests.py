@@ -240,7 +240,7 @@ class test_RMtools(unittest.TestCase):
         shutil.rmtree('models_ns')
         
     def test_f2_QUfit_values(self):
-        mDict = json.load(open('simdata/1D/simsource_m1_nest.json', "r"))
+        mDict = json.load(open('simdata/1D/simsource_m1_dynesty.json', "r"))
         #The QU-fitting code has internal randomness that I can't control. So every run
         #will produce slightly different results. I want to assert that these differences
         #are below 1%.
