@@ -161,19 +161,19 @@ def main():
         "--sampler",
         type=str,
         default="dynesty",
-        help="Which sampler to use with Bilby (see https://lscsoft.docs.ligo.org/bilby/samplers.html).",
+        help="Which sampler to use with Bilby (see https://lscsoft.docs.ligo.org/bilby/samplers.html) [dynesty].",
     )
     parser.add_argument(
         "--ncores",
         type=int,
         default=1,
-        help="Number of cores to use for sampling.",
+        help="Number of cores to use for sampling [1].",
     )
     parser.add_argument(
         "--nlive",
         type=int,
         default=1000,
-        help="Number of live points to use for sampling.",
+        help="Number of live points to use for sampling [1000].",
     )
     args = parser.parse_args()
 
@@ -527,9 +527,11 @@ def run_qufit(
 
     # Save the figures
     outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
+    specFig.set_canvas(specFig.canvas)
     specFig.figure.savefig(outFile)
     print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
     outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
+    cornerFig.set_canvas(cornerFig.canvas)
     cornerFig.savefig(outFile)
     print("Plot of posterior samples saved to \n '%s'\n" % outFile)
 
