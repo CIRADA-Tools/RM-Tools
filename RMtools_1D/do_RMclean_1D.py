@@ -339,7 +339,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     ax2.set_ylim(0, cutoff*3.0)
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.set_ylabel("Flux Density ("+units+')')
-    ax2.set_xlabel("$\phi$ rad m$^{-2}$")
+    ax2.set_xlabel(r"\$\phi$ rad m\$^{-2}\$")
     leg = ax2.legend(numpoints=1, loc='upper right', shadow=False,
                      borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
     for t in leg.get_texts():
