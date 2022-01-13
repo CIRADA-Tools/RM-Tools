@@ -64,6 +64,9 @@ def main():
         print("Please supply either a file with frequency values or use the -f flag.")
         raise(Exception("No frequency input! Use -h flag for help on inputs."))
     
+    # if args.phiMax_radm2 != None:
+    #     if args.phiMax_radm2
+    
     #Order of priority: frequency file takes precedence over -i flag.
     #                   weight file takes precedence over 2nd column of frequency file.       
     if args.freqFile != None:
@@ -111,7 +114,7 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     if dphi == None:
         dphi = 0.1*2*np.sqrt(3.0) / (l2_max-l2_min)  #~10*FWHM
 
-    phi_array=np.arange(-1*phi_max,phi_max+1e-6,dphi)
+    phi_array=np.arange(-1*phi_max/2,phi_max/2+1e-6,dphi) #division by two accounts for how RMSF is always twice as wide as FDF.
 
     RMSFcube, phi2Arr, fwhmRMSFArr, statArr=get_rmsf_planes(lambda2_array,phi_array,weightArr=weights_array,fitRMSF=True)
     
@@ -127,11 +130,15 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     print('differing channel widths or many frequency gaps.')
     #Explanation for below: This code find the local maxima in the positive half of the RMSF, 
     #finds the highest amplitude one, and calls that the first sidelobe.
-    x=np.diff(np.sign(np.diff(np.abs(RMSFcube[RMSFcube.size//2:])))) #-2=local max, +2=local min
-    y=1+np.where(x==-2)[0]  #indices of peaks, +1 is because of offset from double differencing
-    peaks=np.abs(RMSFcube[RMSFcube.size//2:])[y] 
-    print('First sidelobe FD and amplitude:     {:.4g} rad m^-2'.format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]]))
-    print('                                     {:.4g} % of peak'.format(np.max(peaks)*100))
+    try:
+        x=np.diff(np.sign(np.diff(np.abs(RMSFcube[RMSFcube.size//2:])))) #-2=local max, +2=local min
+        y=1+np.where(x==-2)[0]  #indices of peaks, +1 is because of offset from double differencing
+        peaks=np.abs(RMSFcube[RMSFcube.size//2:])[y] 
+        print('First sidelobe FD and amplitude:     {:.4g} rad m^-2'.format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]]))
+        print('                                     {:.4g} % of peak'.format(np.max(peaks)*100))
+    except:
+        pass
+    
     
     #Plotting:
     plt.figure(figsize=(7,7))
@@ -155,18 +162,23 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
                     'Measured FWHM:                       {:.4g} rad m^-2\n'+
                     'Theoretical largest FD scale probed: {:.4g} rad m^-2\n'+
                     'Theoretical maximum FD:              {:.4g} rad m^-2\n'+
-                    'First sidelobe FD and amplitude:     {:.4g} rad m^-2\n'+
-                    '                                     {:.4g} % of peak\n\n'+
+                    '\n\n\n'+
                     'Lowest frequency/wavelength [GHz/cm]:  {:>7.4g}/{:.4g}\n'+
                     'Highest frequency/wavelength [GHz/cm]: {:>7.4g}/{:.4g}\n'+
                     '# of channels:                                {:.4g}\n').format(3.8 / (l2_max-l2_min),
             fwhmRMSFArr,np.pi/l2_min,np.sqrt(3.0)/dl2,
-            phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]],np.max(peaks)*100,
-            np.min(freq_array)/1e9,C/np.min(freq_array)*100.,
+                        np.min(freq_array)/1e9,C/np.min(freq_array)*100.,
             np.max(freq_array)/1e9,C/np.max(freq_array)*100.,
             freq_array.size),family='monospace',
             horizontalalignment='left',verticalalignment='top')
 
+    try:
+        ax.text(0.1,0.8,('\n\n\n\n'+'First sidelobe FD and amplitude:     {:.4g} rad m^-2\n'+
+                 '                                     {:.4g} % of peak').format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]],np.max(peaks)*100),
+                family='monospace',horizontalalignment='left',verticalalignment='top')
+    except:
+        pass                    
+                                                                 
 #    ax.text(0.,0.7,('Theoretical (unweighted) FWHM:      {:.4g} rad m^-2'.format(2*np.sqrt(3.0) / (l2_max-l2_min)))
 #    ax.text(0.,0.58,'Measured FWHM:                               {:.4g} rad m^-2'.format(fwhmRMSFArr))
 #    ax.text(0.,0.46,'Theoretical largest FD scale probed: {:.4g} rad m^-2'.format(np.pi/l2_min))

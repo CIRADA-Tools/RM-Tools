@@ -118,25 +118,25 @@ def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
     headI,datacube=readFitsCube(fitsI, verbose)
     
     
-    nDim = headI["NAXIS"]
+    nDim = datacube.ndim
     if nDim < 3 or nDim > 4:
         print("Err: only 3 or 4 dimensions supported: D = %d." % headI["NAXIS"])
         sys.exit()
 
 
-    freq_axis=find_freq_axis(headI) 
-    #If the frequency axis isn't the last one, rotate the array until it is.
-    #Recall that pyfits reverses the axis ordering, so we want frequency on
-    #axis 0 of the numpy array.
-    if freq_axis != 0 and freq_axis != nDim:
-        datacube=np.moveaxis(datacube,nDim-freq_axis,0)
+    # freq_axis=find_freq_axis(headI) 
+    # #If the frequency axis isn't the last one, rotate the array until it is.
+    # #Recall that pyfits reverses the axis ordering, so we want frequency on
+    # #axis 0 of the numpy array.
+    # if freq_axis != 0 and freq_axis != nDim:
+    #     datacube=np.moveaxis(datacube,nDim-freq_axis,0)
 
 
     nBits=np.abs(headI['BITPIX'])    
     dtFloat = "float" + str(nBits)
 
     
-    nChan = headI["NAXIS"+str(freq_axis)]
+    nChan = datacube.shape[0]
     
     # Read the frequency vector
     print("Reading frequency vector from '%s'." % freqFile)

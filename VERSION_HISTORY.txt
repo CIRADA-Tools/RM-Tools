@@ -6,6 +6,20 @@ Github main branch:
 -modified RMpeakfit_3D to be more stable when FDF cubes have NaNs present.
 -Stokes I fit coefficients no longer become NaNs when negative Stokes I 
   models are renormalized to a new reference frequency.
+-added test for unreasonably large peak RM (compared to computed range)
+  as this can happen when peak is on edge of spectrum. Changes RM to NaN in
+  these cases.
+-Fixed crash when sigmaAdd calculations received NaNs in inputs.
+-added experimental tool to compute QU models from clean components, 
+  requested by Luke Pratley. This currently has a normalization error of some 
+  kind, which I've asked Luke to chase down.
+-dropping support for Python3.5, since the QUfitting code has problems with it
+ and it's already end-of-life.
+-improved the calculate_RMSF script to not crash when given width smaller than
+ first sidelobes. Also corrected it to produce the correct width: previously
+ when width was specified by user it would be 2x wider than specified.
+-fixed problem with do_fitIcube.py which would crash when fed 4D Stokes I cube.
+
 
 1.1.1:
 -updated calculate_RMSF to use same theoretical width as rmsynth1D
