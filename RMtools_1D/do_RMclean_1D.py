@@ -183,7 +183,7 @@ def run_rmclean(mDict, aDict, cutoff,
     # Pause if plotting enabled
     if showPlots:
         plt.show()
-    elif saveFigures:
+    if saveFigures:
         if verbose: print("Saving CLEAN FDF plot:")
         outFilePlot = prefixOut + "_cleanFDF-plots.pdf"
         if verbose: print("> " + outFilePlot)
