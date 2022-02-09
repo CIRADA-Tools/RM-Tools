@@ -54,7 +54,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
-                pool=None, chunksize=None, verbose = True, log = print):
+                pool=None, chunksize=None, verbose = True, log = print, window=False):
     """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
 
     If you want to run RM-CLEAN on arrays, just use util_RM.do_rmclean_hogbom.
@@ -120,7 +120,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
                           verbose          = verbose,
                           doPlots          = False,
                           pool             = pool,
-                          chunksize        = chunksize)
+                          chunksize        = chunksize,
+                          window           = window
+                          )
 
 
     endTime = time.time()
@@ -369,6 +371,8 @@ def main():
                         help="Maximum number of CLEAN iterations per pixel [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
                         help="CLEAN loop gain [0.1].")
+    parser.add_argument("-w", dest="window", action="store_true",
+                    help="CLEAN in window around first peak [False].")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-f", dest="write_separate_FDF", action="store_false",
@@ -424,6 +428,7 @@ def main():
                                                         gain        = args.gain,
                                                         chunksize   = chunksize,
                                                         nBits       = 32,
+                                                        window      = args.window,
                                                         verbose = verbose)
     # Write results to disk
     writefits(cleanFDF,

@@ -394,7 +394,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
-                      pool=None, chunksize=None,log=print):
+                      pool=None, chunksize=None,log=print, window=False):
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -413,6 +413,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     pool           ... thread pool for multithreading (from schwimmbad) [None]
     chunksize      ... number of pixels to be given per thread (for 3D) [None]
     log            ... function to be used to output messages [print]
+    window         ... Only clean in ±RMSF_FWHM window around first peak [False]
 
     """
 
@@ -487,7 +488,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     # Loop through the pixels containing a polarised signal
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
-                    iterCountArr, maxIter, gain, cutoff, nBits, verbose)
+                    iterCountArr, maxIter, gain, cutoff, nBits, verbose, window)
 
 
     if pool is None:
@@ -540,7 +541,7 @@ class RMcleaner:
 
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
                  iterCountArr, maxIter=1000, gain=0.1, cutoff=0,nbits=32, 
-                 verbose=False):
+                 verbose=False, window=False):
         self.RMSFArr = RMSFArr
         self.phi2Arr_radm2 = phi2Arr_radm2
         self.phiArr_radm2 = phiArr_radm2
@@ -551,11 +552,12 @@ class RMcleaner:
         self.cutoff = cutoff
         self.verbose = verbose
         self.nbits = nbits
+        self.window = window
 
     def cleanloop(self, args):
         return self._cleanloop(*args)
 
-    def _cleanloop(self, yi, xi, dirtyFDF, window=False):
+    def _cleanloop(self, yi, xi, dirtyFDF):
         dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
@@ -580,10 +582,10 @@ class RMcleaner:
         iterCount = 0
         while (np.max(np.abs(residFDF)) >= self.cutoff
                 and iterCount <= self.maxIter):
-            if not window or iterCount==0:
+            if not self.window or iterCount==0:
                 window_idx = np.ones_like(residFDF).astype(bool)
                 window_pad = 0
-            elif window and iterCount > 0:
+            elif self.window and iterCount > 0:
                 # Exlude pixels ± 1RMSF from first peak
                 window_idx = ~((self.phiArr_radm2 > phiPeak_0 + fwhmRMSFArr) | \
                                 (self.phiArr_radm2 < phiPeak_0 - fwhmRMSFArr))
