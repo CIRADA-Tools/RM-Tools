@@ -555,7 +555,7 @@ class RMcleaner:
     def cleanloop(self, args):
         return self._cleanloop(*args)
 
-    def _cleanloop(self, yi, xi, dirtyFDF):
+    def _cleanloop(self, yi, xi, dirtyFDF, window=False):
         dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
@@ -571,13 +571,26 @@ class RMcleaner:
         # Assumes only integer shifts and symmetric
         nPhiPad = int((len(self.phi2Arr_radm2)-len(self.phiArr_radm2))/2)
 
+        # Find first peak before main loop
+        indxPeakFDF_0 = np.argmax(np.abs(residFDF))
+        peakFDFval_0 = residFDF[indxPeakFDF_0]
+        phiPeak_0 = self.phiArr_radm2[indxPeakFDF_0]
+
         # Main CLEAN loop
         iterCount = 0
         while (np.max(np.abs(residFDF)) >= self.cutoff
                 and iterCount <= self.maxIter):
-
+            if not window or iterCount==0:
+                window_idx = np.ones_like(residFDF).astype(bool)
+                window_pad = 0
+            elif window and iterCount > 0:
+                # Exlude pixels ± 1RMSF from first peak
+                window_idx = ~((self.phiArr_radm2 > phiPeak_0 + fwhmRMSFArr) | \
+                                (self.phiArr_radm2 < phiPeak_0 - fwhmRMSFArr))
+                window_pad = np.where(window_idx)[0][0]
             # Get the absolute peak channel, values and Faraday depth
-            indxPeakFDF = np.argmax(np.abs(residFDF))
+            indxPeakFDF = np.argmax(np.abs(residFDF)[window_idx])
+            indxPeakFDF += window_pad
             peakFDFval = residFDF[indxPeakFDF]
             phiPeak = self.phiArr_radm2[indxPeakFDF]
 
