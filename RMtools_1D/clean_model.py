@@ -12,7 +12,6 @@ import numpy as np
 from RMtools_1D.do_RMsynth_1D import readFile as read_freqFile
 from RMutils.util_misc import create_frac_spectra
 from RMutils.util_misc import calculate_StokesI_model
-from RMutils.util_misc import toscalar
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_misc import calculate_StokesI_model
 import json
