@@ -93,6 +93,13 @@ def read_files(freqfile,rmSynthfile, CCfile):
 
 
 def plot_model(freqfile, QUarr,Imodel):
+    """Plot the Stokes Q and U model.
+
+    Args:
+        freqfile (str): File to read original data from
+        QUarr (np.ndarray): CLEAN QU model
+        Imodel (np.ndarray): Stokes I model
+    """    
     # Parse the data array
     # freq_Hz, I, Q, U, dI, dQ, dU
     data=read_freqFile(freqfile, 64, verbose=False, debug=False)
@@ -109,6 +116,8 @@ def plot_model(freqfile, QUarr,Imodel):
             noStokesI = True
         except Exception:
             print("\nError: Failed to parse data file!")
+    # Compute fractional spectra
+    # TODO: Currently re-computes Stokes I model - should be passed in
     dataArr = create_frac_spectra(freqArr=freqArr_Hz,
                                     IArr=IArr,
                                     QArr=QArr,
@@ -120,10 +129,6 @@ def plot_model(freqfile, QUarr,Imodel):
                                     verbose=True,
                                     fit_function='log')
     (IModArr, qArr, uArr, dqArr, duArr, IfitDict) = dataArr
-
-    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-
-    IModHirArr = calculate_StokesI_model(IfitDict, freqHirArr_Hz)
 
     specFig = plt.figure(facecolor='w',figsize=(10, 6))
     plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
