@@ -459,7 +459,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     # Pause if plotting enabled
     if showPlots:
         plt.show()
-    elif saveFigures or debug:
+    if saveFigures or debug:
         if verbose: print("Saving RMSF and dirty FDF plot:")
         outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
         if verbose: print("> " + outFilePlot)
