@@ -52,7 +52,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmclean(mDict, aDict, cutoff,
                 maxIter=1000, gain=0.1, nBits=32,
                 showPlots=False, prefixOut="", verbose=False, log=print, 
-                saveFigures=False):
+                saveFigures=False, window=False):
     """Run RM-CLEAN on a complex FDF spectrum given a RMSF.
 
     Args:
@@ -104,7 +104,9 @@ def run_rmclean(mDict, aDict, cutoff,
                                 maxIter         = maxIter,
                                 gain            = gain,
                                 verbose         = verbose,
-                                doPlots         = showPlots)
+                                doPlots         = showPlots,
+                                window          = window
+                                )
 
     # ALTERNATIVE RM_CLEAN CODE ----------------------------------------------#
     '''
@@ -383,6 +385,8 @@ def main():
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
                         help="CLEAN loop gain [0.1].")
+    parser.add_argument("-w", dest="window", action="store_true",
+                    help="CLEAN in window around first peak [False].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
@@ -415,7 +419,8 @@ def main():
                                      showPlots    = args.showPlots,
                                      prefixOut    = fileRoot,
                                      verbose      = args.verbose,
-                                     saveFigures  = args.saveOutput
+                                     saveFigures  = args.saveOutput,
+                                     window       = args.window
                                 )
 
     # Save output
