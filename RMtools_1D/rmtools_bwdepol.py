@@ -189,15 +189,15 @@ def plot_adjoint_info(mylist, units='Jy/beam'):
     [phiArr_radm2, adjoint_sens, adjoint_noise] = mylist
     
            
-    ax[1].plot(phiArr_radm2, adjoint_noise,)
+    ax[1].plot(phiArr_radm2, adjoint_sens/adjoint_noise*np.max(adjoint_noise),)
     ax[1].set_xlabel('$\phi$ (rad m$^{-2}$)')
-    ax[1].set_ylabel('Noise' + ' (' + units + ')')
-    ax[1].set_title('Theoretical Noise')
+    ax[1].set_ylabel('S:N multiplier')
+    ax[1].set_title('Theoretical S:N after bandwidth depolarization')
     # plot 2   
     ax[0].plot(phiArr_radm2, adjoint_sens,)
     ax[0].set_xlabel('$\phi$ (rad m$^{-2}$)')
-    #ax[0].set_ylabel('Theoretical Sensitivity')
-    ax[0].set_title('Theoretical Sensitivity')
+    ax[0].set_ylabel('Sensitivity')
+    ax[0].set_title('Theoretical Sensitivity after bandwidth depolarization')
     return
 
 #-----------------------------------------------------------------------------#
