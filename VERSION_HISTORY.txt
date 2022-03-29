@@ -1,6 +1,9 @@
 
 Github main branch:
-(no updates since last release)
+-changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).
+  This is because the fitter was found to be vulnerable to numerical issues
+  when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
+  discovering the problem).
 
 1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that
