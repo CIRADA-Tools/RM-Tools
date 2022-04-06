@@ -94,3 +94,6 @@ ENV/
 
 # Data directory
 data*
+
+# Egg
+*.egg-info
