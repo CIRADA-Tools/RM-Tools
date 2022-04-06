@@ -453,7 +453,13 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
     elif modStokesI is None:
         # Fit a <=5th order polynomial model to the Stokes I spectrum
         try:
-            fitDict=fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function)
+            #The input values are forced to 64-bit in order to maximize the
+            #stability and quality of the fits. It was found that the fitter
+            #is more susceptible to numerical issues in 32-bit.
+            fitDict=fit_StokesI_model(freqArr.astype('float64'),
+                                      IArr.astype('float64'),
+                                      dIArr.astype('float64'),
+                                      polyOrd,fit_function)
             IModArr = calculate_StokesI_model(fitDict,freqArr)
             
             if np.min(IModArr) < 0:   #Flag sources with negative models.
