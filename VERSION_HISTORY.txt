@@ -1,5 +1,11 @@
 
 Github main branch:
+-changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).
+  This is because the fitter was found to be vulnerable to numerical issues
+  when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
+  discovering the problem).
+
+1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that
   it occurs in its own function rather than as part of the file writing
   function; this allows it to be run inside a notebook.
@@ -15,6 +21,12 @@ Github main branch:
   kind, which I've asked Luke to chase down.
 -dropping support for Python3.5, since the QUfitting code has problems with it
  and it's already end-of-life.
+-improved the calculate_RMSF script to not crash when given width smaller than
+ first sidelobes. Also corrected it to produce the correct width: previously
+ when width was specified by user it would be 2x wider than specified.
+-fixed problem with do_fitIcube.py which would crash when fed 4D Stokes I cube.
+-fixed undesired behaviour in rmsynth1d and rmclean1d where spectra plots
+ wouldn't be saved when plotting to screen was turned on.
 
 1.1.1:
 -updated calculate_RMSF to use same theoretical width as rmsynth1D
