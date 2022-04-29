@@ -143,3 +143,4 @@ simdata
 tests/*/
 tests/*.pdf
 *.pdf
+.vscode/settings.json
