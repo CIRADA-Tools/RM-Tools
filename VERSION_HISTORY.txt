@@ -1,6 +1,15 @@
 
 Github main branch:
-(no updates since last release)
+-changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).
+  This is because the fitter was found to be vulnerable to numerical issues
+  when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
+  discovering the problem).
+-added parameter errors of Stokes I fit as output to Stokes I fitDict, to
+ RMsynth1D outputs, and QU-fitting outputs. These are the 1-sigma errors 
+ computed by the mpfit routine.
+-the renormalize_StokesI_model function is now depreciated, since it cannot
+ transform the errors. It is left in for the time being in case it is needed
+ for any legacy reasons.
 
 1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that
