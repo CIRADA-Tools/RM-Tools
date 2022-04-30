@@ -385,6 +385,7 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
     fitDict["chiSq"] = mp.fnorm
     fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
     fitDict["nIter"] = mp.niter
+    fitDict["perror"] = mp.perror
 
 
     return fitDict
@@ -411,7 +412,12 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
     and fixes the fit parameters such that the the model is the same. This is
     important because the initial Stokes I fitted model uses an arbitrary
     reference frequency, and it may be desirable for users to know the exact
-    reference frequency of the model."""
+    reference frequency of the model.
+    
+    This function is depreciated because it can't propagate the errors in 
+    the fit parameters."""
+    print("The renormalize_StokesI_model function is depreciated because it can't propagate errors.\n"
+          "If this message appears, it's been invoked (perhaps by legacy code?)")
     #Renormalization ratio:
     x=new_reference_frequency/fitDict['reference_frequency_Hz']
     (a,b,c,d,f,g)=fitDict['p']
