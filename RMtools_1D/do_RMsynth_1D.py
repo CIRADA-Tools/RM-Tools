@@ -323,9 +323,9 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
         Ifreq0 = modStokesI_interp(freq0_Hz)
     dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux
 
-    if modStokesI is None:   
-        #Need to renormalize the Stokes I parameters here to the actual reference frequency.
-        fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
+    # if modStokesI is None:   
+    #     #Need to renormalize the Stokes I parameters here to the actual reference frequency.
+    #     fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
@@ -342,15 +342,18 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0"] = toscalar(Ifreq0)
     mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
+    mDict["polyCoefferr"] = ",".join([str(x) for x in fitDict["perror"]])
+    mDict["poly_reffreq"] = fitDict['reference_frequency_Hz']
+    mDict['polyOrd'] = fitDict['polyOrd']
     mDict["IfitStat"] = fitDict["fitStatus"]
     mDict["IfitChiSqRed"] = fitDict["chiSqRed"]
+    mDict["fit_function"] = fit_function
     mDict["lam0Sq_m2"] = toscalar(lam0Sq_m2)
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU"] = toscalar(nanmedian(dQUArr))
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
-    mDict['polyOrd'] = fitDict['polyOrd']
     
     if (fitDict["fitStatus"] >= 128) and verbose:
         log("WARNING: Stokes I model contains negative values!")
