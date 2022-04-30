@@ -253,6 +253,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
                 MPI.Finalize()
             return
 
+
+
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
         if mpiRank==0:
@@ -471,7 +473,8 @@ def run_qufit(dataFile, modelNum, outDir="", polyOrd=2, nBits=32,
                     "ln(EVIDENCE) ": toscalar(lnEvidence),
                     "dLn(EVIDENCE)": toscalar(dLnEvidence),
                     "nFree":         toscalar(nFree),
-                    "Imodel":        toscalar(IfitDict["p"]),
+                    "Imodel":        toscalar(",".join([str(x) for x in IfitDict["p"]])),
+                    "Imodel_errs":   toscalar(",".join([str(x) for x in IfitDict["perror"]])),
                     "IfitChiSq":     toscalar(IfitDict["chiSq"]),
                     "IfitChiSqRed":  toscalar(IfitDict["chiSqRed"]),
                     "IfitPolyOrd":   toscalar(IfitDict["polyOrd"]),
