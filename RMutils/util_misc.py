@@ -344,7 +344,8 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
                "p": None,
                "polyOrd":0,
                "AIC":0,
-               "reference_frequency_Hz":1}
+               "reference_frequency_Hz":1,
+               "perror": None}
 
     goodchan=np.logical_and(np.isfinite(IArr),np.isfinite(dIArr)) #Ignore NaN channels!
     #The fitting code is susceptible to numeric overflows because the frequencies are large.
