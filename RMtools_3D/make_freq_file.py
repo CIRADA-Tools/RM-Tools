@@ -42,22 +42,21 @@ def get_fits_header(filename):
     return header
 
 def get_freq_array(filename):
-    hduList = fits.open(filename)
-    header = hduList[0].header
-    for key, value in header.items():
-        if type(value) is str:
-            if value.lower() == "freq":
-                n_axis = int(key[-1])
+    header = fits.getheader(filename)
 
-    iter_pixel= int(header["NAXIS{}".format(n_axis)]- header["CRPIX{}".format(n_axis)])
-    freq_data = [header["CRVAL{}".format(n_axis)]]
+    for i in range(1,header['NAXIS']+1):  #Identify frequency axis
+        try:
+            if 'FREQ' in header['CTYPE'+str(i)].upper():
+                freq_axis=str(i)
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                   # have CTYPE keywords for some axes.   
 
-    for i in range(0, iter_pixel):
-        freq_data.append(freq_data[i] + header["CDELT{}".format(n_axis)])
+    freqs=((np.arange(1,header['NAXIS'+freq_axis]+1,1)-header['CRPIX'+freq_axis])
+            *header['CDELT'+freq_axis]+header['CRVAL'+freq_axis])
 
 
-    freq_data_array = np.asarray(freq_data)
-    return freq_data_array
+    return freqs
 
 
 
