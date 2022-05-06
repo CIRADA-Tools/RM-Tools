@@ -13,6 +13,7 @@
 from astropy.io import fits
 import numpy as np
 import argparse
+from astropy.wcs import WCS
 
 
 def save_freq_file():
@@ -43,20 +44,13 @@ def get_fits_header(filename):
 
 def get_freq_array(filename):
     header = fits.getheader(filename)
-
-    for i in range(1,header['NAXIS']+1):  #Identify frequency axis
-        try:
-            if 'FREQ' in header['CTYPE'+str(i)].upper():
-                freq_axis=str(i)
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                   # have CTYPE keywords for some axes.   
-
-    freqs=((np.arange(1,header['NAXIS'+freq_axis]+1,1)-header['CRPIX'+freq_axis])
-            *header['CDELT'+freq_axis]+header['CRVAL'+freq_axis])
+    wcs = WCS(header)
+    spec_wcs = wcs.spectral
+    nchan = spec_wcs.array_shape[0]
+    freqs = spec_wcs.pixel_to_world(np.arange(nchan))
 
 
-    return freqs
+    return freqs.value
 
 
 
