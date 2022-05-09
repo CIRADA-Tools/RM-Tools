@@ -10,6 +10,9 @@ Github main branch:
 -the renormalize_StokesI_model function is now depreciated, since it cannot
  transform the errors. It is left in for the time being in case it is needed
  for any legacy reasons.
+-the make_freq_file.py/rmtools_freqfile tool was found to sometime produce
+ truncated output (not all channels included). This was fixed and changed
+ to a more rigourous calculation (using WCS, as suggested by Alec Thomson).
 
 1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that
