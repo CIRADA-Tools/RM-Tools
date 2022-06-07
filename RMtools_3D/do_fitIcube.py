@@ -202,7 +202,8 @@ def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
                overwrite=True)
-        
+
+    
     # Create a blank FITS file on disk using the large file method
     # http://docs.astropy.org/en/stable/io/fits/appendix/faq.html
     #  #how-can-i-create-a-very-large-fits-file-from-scratch
@@ -243,9 +244,11 @@ def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
     datacube=np.squeeze(datacube) #Remove any degenerate axes if needed.'
     modelIcube=np.zeros_like(datacube)
     modelIcube[:]=np.nan
-
+    Coeffs=np.array([mskArr]*6)
+    Coeffserr=np.array([mskArr]*6)
 #    Loop through pixels individually
     i=0
+    
     for pixCoords in srcCoords:
         x=pixCoords[0]
         y=pixCoords[1]
@@ -254,24 +257,35 @@ def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
         pixFitDict=fit_StokesI_model(freqArr_Hz,Ispectrum,rmsArr,
                           polyOrd=polyOrd,
                           fit_function=fit_function)
+        
 
         pixImodel=calculate_StokesI_model(pixFitDict,freqArr_Hz)
         modelIcube[:,x,y]=pixImodel
+        for k,j,l in zip(range(len(Coeffs)),pixFitDict['p'],pixFitDict['perror']):
+            Coeffs[5-k,x,y]=j     
+            Coeffserr[5-k,x,y]=l   
         i+=1
         if verbose:
             progress(40, i/nDetectPix*100.)
-    
-    
+    headcoeff=headMsk 
+    del headcoeff['DATAMIN']
+    del headcoeff['DATAMAX']
+    for i in range(np.abs(polyOrd)+1):
+        outname=fitsFileOut.replace('IsrcMask.fits','')+'Icoeff'+str(i)+'.fits'
+        pf.writeto(outname,Coeffs[i],headcoeff,overwrite=True)
+        outname=fitsFileOut.replace('IsrcMask.fits','')+'Icoeff'+str(i)+'_err.fits'
+        pf.writeto(outname,Coeffserr[i],headcoeff,overwrite=True)
+        
+        
     HDULst = pf.open(fitsModelFile, "update", memmap=True)
     HDULst[0].data = modelIcube
     HDULst.close()
-    
 
         
     endTime = time.time()
     cputime = (endTime - startTime)
     print("Fitting completed in %.2f seconds." % cputime)
-    
+
     
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
