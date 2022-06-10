@@ -394,7 +394,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
-                      pool=None, chunksize=None,log=print, window=False):
+                      pool=None, chunksize=None,log=print, window=0):
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -528,6 +528,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     cleanFDF = np.squeeze(cleanFDF)
     ccArr = np.squeeze(ccArr)
     iterCountArr = np.squeeze(iterCountArr)
+    residFDF = np.squeeze(residFDF)
 
     return cleanFDF, ccArr, iterCountArr, residFDF
 
@@ -541,7 +542,7 @@ class RMcleaner:
 
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
                  iterCountArr, maxIter=1000, gain=0.1, cutoff=0,nbits=32, 
-                 verbose=False, window=False):
+                 verbose=False, window=0):
         self.RMSFArr = RMSFArr
         self.phi2Arr_radm2 = phi2Arr_radm2
         self.phiArr_radm2 = phiArr_radm2
@@ -573,26 +574,10 @@ class RMcleaner:
         # Assumes only integer shifts and symmetric
         nPhiPad = int((len(self.phi2Arr_radm2)-len(self.phiArr_radm2))/2)
 
-        # Find first peak before main loop
-        indxPeakFDF_0 = np.argmax(np.abs(residFDF))
-        peakFDFval_0 = residFDF[indxPeakFDF_0]
-        phiPeak_0 = self.phiArr_radm2[indxPeakFDF_0]
-
-        # Main CLEAN loop
         iterCount = 0
-        while (np.max(np.abs(residFDF)) >= self.cutoff
-                and iterCount <= self.maxIter):
-            if not self.window or iterCount==0:
-                window_idx = np.ones_like(residFDF).astype(bool)
-                window_pad = 0
-            elif self.window and iterCount > 0:
-                # Exlude pixels ± 1RMSF from first peak
-                window_idx = ~((self.phiArr_radm2 > phiPeak_0 + fwhmRMSFArr) | \
-                                (self.phiArr_radm2 < phiPeak_0 - fwhmRMSFArr))
-                window_pad = np.where(window_idx)[0][0]
+        while (np.max(np.abs(residFDF)) >= self.cutoff and iterCount <= self.maxIter):
             # Get the absolute peak channel, values and Faraday depth
-            indxPeakFDF = np.argmax(np.abs(residFDF)[window_idx])
-            indxPeakFDF += window_pad
+            indxPeakFDF = np.argmax(np.abs(residFDF))
             peakFDFval = residFDF[indxPeakFDF]
             phiPeak = self.phiArr_radm2[indxPeakFDF]
 
@@ -616,7 +601,50 @@ class RMcleaner:
             iterCount += 1
             self.iterCountArr[yi, xi] = iterCount
 
+        # Create a mask for the pixels that have been cleaned
+        mask = np.abs(ccArr) > 0
+        dPhi = self.phiArr_radm2[1] - self.phiArr_radm2[0]
+        fwhmRMSFArr_pix = fwhmRMSFArr / dPhi
+        for i in np.where(mask)[0]:
+            start = int(i - fwhmRMSFArr_pix /2)
+            end = int(i + fwhmRMSFArr_pix /2)
+            mask[start:end] = True
+        residFDF_mask = np.ma.array(residFDF, mask=~mask)
+        # Clean again within mask
+        iterCount = 0
+        while (np.ma.max(np.ma.abs(residFDF_mask)) >= self.window and iterCount <= self.maxIter):
+            if residFDF_mask.mask.all():
+                break
+            # Get the absolute peak channel, values and Faraday depth
+            indxPeakFDF = np.ma.argmax(np.abs(residFDF_mask))
+            peakFDFval = residFDF_mask[indxPeakFDF]
+            phiPeak = self.phiArr_radm2[indxPeakFDF]
+
+            # A clean component is "loop-gain * peakFDFval
+            CC = self.gain * peakFDFval
+            ccArr[indxPeakFDF] += CC
+
+            # At which channel is the CC located at in the RMSF?
+            indxPeakRMSF = indxPeakFDF + nPhiPad
+
+            # Shift the RMSF & clip so that its peak is centred above this CC
+            shiftedRMSFArr = np.roll(RMSFArr,
+                                     indxPeakRMSF-indxMaxRMSF)[nPhiPad:-nPhiPad]
+
+            # Subtract the product of the CC shifted RMSF from the residual FDF
+            residFDF -= CC * shiftedRMSFArr
+
+            # Restore the CC * a Gaussian to the cleaned FDF
+            cleanFDF += \
+                gauss1D(CC, phiPeak, fwhmRMSFArr)(self.phiArr_radm2)
+            iterCount += 1
+            self.iterCountArr[yi, xi] = iterCount
+
+            # Remake masked residual FDF
+            residFDF_mask = np.ma.array(residFDF, mask=~mask)
+
         cleanFDF = np.squeeze(cleanFDF)
+        residFDF = np.squeeze(residFDF)
         ccArr = np.squeeze(ccArr)
 
         return cleanFDF, residFDF, ccArr
