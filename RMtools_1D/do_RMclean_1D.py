@@ -401,8 +401,8 @@ def main():
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
                         help="CLEAN loop gain [0.1].")
-    parser.add_argument("-w", dest="window", action="store_true",
-                    help="CLEAN in window around first peak [False].")
+    parser.add_argument("-w", dest="window", type=float, default=None, 
+                        help="Further CLEAN in mask to this threshold [False].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",
