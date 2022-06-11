@@ -611,7 +611,6 @@ class RMcleaner:
             mask[start:end] = True
         residFDF_mask = np.ma.array(residFDF, mask=~mask)
         # Clean again within mask
-        iterCount = 0
         while (np.ma.max(np.ma.abs(residFDF_mask)) >= self.window and iterCount <= self.maxIter):
             if residFDF_mask.mask.all():
                 break
