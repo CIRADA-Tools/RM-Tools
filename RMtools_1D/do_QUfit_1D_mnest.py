@@ -60,6 +60,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import bilby
 
+from RMtools_1D.do_RMsynth_1D import readFile
 from RMutils.util_misc import create_frac_spectra
 from RMutils.util_misc import calculate_StokesI_model
 from RMutils.util_misc import toscalar
@@ -182,9 +183,17 @@ def main():
         print("File does not exist: '%s'." % args.dataFile[0])
         sys.exit()
 
+    prefixOut, ext = os.path.splitext(args.dataFile[0])
+    data = readFile(
+        args.dataFile[0], 
+        32, 
+        verbose=args.verbose, 
+        debug=args.debug
+    )
+
     # Run the QU-fitting procedure
     run_qufit(
-        dataFile=args.dataFile[0],
+        data=data,
         modelNum=args.modelNum,
         polyOrd=args.polyOrd,
         nBits=32,
@@ -196,6 +205,7 @@ def main():
         sampler=args.sampler,
         ncores=args.ncores,
         nlive=args.nlive,
+        prefixOut=prefixOut,
     )
 
 
@@ -231,7 +241,7 @@ def load_model(modelNum, verbose=False):
 
 # -----------------------------------------------------------------------------#
 def run_qufit(
-    dataFile,
+    data,
     modelNum,
     polyOrd=2,
     nBits=32,
@@ -243,10 +253,25 @@ def run_qufit(
     fit_function="log",
     ncores=1,
     nlive=1000,
+    prefixOut="prefixOut",
 ):
     """Carry out QU-fitting using the supplied parameters:
-        dataFile (str, required): relative or absolute path of file containing 
-            frequencies and Stokes parameters with errors.
+        data (list): Contains frequency and polarization data as either:
+            [freq_Hz, I, Q, U, dI, dQ, dU]
+                freq_Hz (array_like): Frequency of each channel in Hz.
+                I (array_like): Stokes I intensity in each channel.
+                Q (array_like): Stokes Q intensity in each channel.
+                U (array_like): Stokes U intensity in each channel.
+                dI (array_like): Error in Stokes I intensity in each channel.
+                dQ (array_like): Error in Stokes Q intensity in each channel.
+                dU (array_like): Error in Stokes U intensity in each channel.
+            or
+            [freq_Hz, q, u,  dq, du]
+                freq_Hz (array_like): Frequency of each channel in Hz.
+                q (array_like): Fractional Stokes Q intensity (Q/I) in each channel.
+                u (array_like): Fractional Stokes U intensity (U/I) in each channel.
+                dq (array_like): Error in fractional Stokes Q intensity in each channel.
+                du (array_like): Error in fractional Stokes U intensity in each channel.
         modelNum (int, required): number of model to be fit to data. Models and
              priors are specified as Python code in files called 'mX.py' within  
             the 'models_ns' directory.
@@ -265,26 +290,18 @@ def run_qufit(
         
         Returns: nothing. Results saved to files and/or printed to terminal."""
 
-    # Default data types
-    dtFloat = "float" + str(nBits)
-    dtComplex = "complex" + str(2 * nBits)
-
     # Output prefix is derived from the input file name
-    prefixOut, ext = os.path.splitext(dataFile)
     nestOut = f"{prefixOut}_m{modelNum}_{sampler}/"
-
-    # Read the data file in the root process
-    dataArr = np.loadtxt(dataFile, unpack=True, dtype=dtFloat)
 
     # Parse the data array
     # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = dataArr
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
         print("\nFormat [freq_Hz, I, Q, U, dI, dQ, dU]")
     except Exception:
         # freq_Hz, Q, U, dQ, dU
         try:
-            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = dataArr
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data
             print("\nFormat [freq_Hz, Q, U,  dQ, dU]")
             noStokesI = True
         except Exception:
