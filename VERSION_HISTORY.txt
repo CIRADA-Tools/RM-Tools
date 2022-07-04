@@ -15,6 +15,12 @@ Github main branch:
  to a more rigourous calculation (using WCS, as suggested by Alec Thomson).
 -modified do_fitIcube.py/rmtools_fitIcube to output maps of the fit coefficients
  and their errors. Thanks to Biny Sebastian for providing this code.
+-merged pull request from Alec Thomson that changes the fractional polarization
+ reported by rmsynth1d to use the bias-corrected polarized intensity.
+ !!!Previous versions used the non-corrected polarized intensity, from this
+    version onwards the corrected polarized intensity will be used!!!
+-merged pull request from Alec Thomson that implements windowed cleaning
+ and adds a command line flag to set the windowed clean threshold.
 
 1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that
