@@ -75,7 +75,7 @@ C = 2.997924538e8  # Speed of light [m/s]
 def main():
     """
     Start the run_qufit procedure if called from the command line.
-    
+
     Run QU-fitting on polarised spectra (1D) stored in an ASCII file. The
     Stokes I spectra is first fit with a polynomial and the resulting model
     used to create fractional q = Q/I and u = U/I spectra. If the 'noStokesI'
@@ -173,8 +173,8 @@ def main():
     parser.add_argument(
         "--nlive",
         type=int,
-        default=1000,
-        help="Number of live points to use for sampling [1000].",
+        default=300,
+        help="Number of live points to use for sampling [300].",
     )
     args = parser.parse_args()
 
@@ -185,9 +185,9 @@ def main():
 
     prefixOut, ext = os.path.splitext(args.dataFile[0])
     data = readFile(
-        args.dataFile[0], 
-        32, 
-        verbose=args.verbose, 
+        args.dataFile[0],
+        32,
+        verbose=args.verbose,
         debug=args.debug
     )
 
@@ -273,7 +273,7 @@ def run_qufit(
                 dq (array_like): Error in fractional Stokes Q intensity in each channel.
                 du (array_like): Error in fractional Stokes U intensity in each channel.
         modelNum (int, required): number of model to be fit to data. Models and
-             priors are specified as Python code in files called 'mX.py' within  
+             priors are specified as Python code in files called 'mX.py' within
             the 'models_ns' directory.
         outDir (str): relative or absolute path to save outputs to. Defaults to
             working directory.
@@ -283,11 +283,11 @@ def run_qufit(
         noStokesI (bool): set True if the Stokes I spectrum should be ignored.
         showPlots (bool): Set true if the spectrum and parameter space plots
             should be displayed.
-        sigma_clip (float): How many standard deviations to clip around the 
+        sigma_clip (float): How many standard deviations to clip around the
             mean of each mode in the parameter postierors.
         debug (bool): Display debug messages.
         verbose (bool): Print verbose messages/results to terminal.
-        
+
         Returns: nothing. Results saved to files and/or printed to terminal."""
 
     # Output prefix is derived from the input file name
