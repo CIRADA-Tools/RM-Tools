@@ -29,7 +29,6 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-#        conda install -c conda-forge pymultinest
         conda install pip pytest
         pip install .[QUfitting,parallel] --upgrade
     - name: Test with pytest
