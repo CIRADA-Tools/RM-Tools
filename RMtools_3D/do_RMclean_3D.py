@@ -54,7 +54,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
-                pool=None, chunksize=None, verbose = True, log = print):
+                pool=None, chunksize=None, verbose = True, log = print, window=np.nan):
     """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
 
     If you want to run RM-CLEAN on arrays, just use util_RM.do_rmclean_hogbom.
@@ -120,7 +120,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
                           verbose          = verbose,
                           doPlots          = False,
                           pool             = pool,
-                          chunksize        = chunksize)
+                          chunksize        = chunksize,
+                          window           = window
+                          )
 
 
     endTime = time.time()
@@ -363,8 +365,10 @@ def main():
                         help="FITS cube containing the dirty FDF.\n(Can be any of the FDF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("fitsRMSF", metavar="RMSF.fits", nargs=1,
                         help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)")
-    parser.add_argument("-c", dest="cutoff", type=float, nargs=1,
-                        default=1.0, help="CLEAN cutoff in flux units")
+    parser.add_argument("-c", dest="cutoff", type=float, default=1,
+                        help="Initial CLEAN cutoff in flux units [1].")
+    parser.add_argument("-w", dest="window", type=float, default=np.nan, 
+                        help="Threshold for (deeper) windowed clean [Not used if not set].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="Maximum number of CLEAN iterations per pixel [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
@@ -424,6 +428,7 @@ def main():
                                                         gain        = args.gain,
                                                         chunksize   = chunksize,
                                                         nBits       = 32,
+                                                        window      = args.window,
                                                         verbose = verbose)
     # Write results to disk
     writefits(cleanFDF,

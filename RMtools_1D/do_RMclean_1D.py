@@ -52,13 +52,15 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmclean(mDict, aDict, cutoff,
                 maxIter=1000, gain=0.1, nBits=32,
                 showPlots=False, prefixOut="", verbose=False, log=print, 
-                saveFigures=False):
+                saveFigures=False, window=None):
     """Run RM-CLEAN on a complex FDF spectrum given a RMSF.
 
     Args:
         mDict (dict): Summary of RM synthesis results.
         aDict (dict): Data output by RM synthesis.
-        cutoff (float): CLEAN cutoff in flux units
+        cutoff (float): CLEAN cutoff in flux units (positive)
+                        or as multiple of theoretical noise (negative)
+                        (i.e. -8 = clean to 8 sigma threshold)
 
     Kwargs:
         maxIter (int): Maximum number of CLEAN iterations per pixel.
@@ -67,6 +69,7 @@ def run_rmclean(mDict, aDict, cutoff,
         showPlots (bool): Show plots?
         verbose (bool): Verbosity.
         log (function): Which logging function to use.
+        window (float): Threshold for deeper windowed cleaning
 
     Returns:
         mDict_cl (dict): Summary of RMCLEAN results.
@@ -92,6 +95,17 @@ def run_rmclean(mDict, aDict, cutoff,
     else:
         if verbose: log("Using an absolute cutoff of %.3g (%.1f x expected RMS)." % (cutoff, cutoff/mDict["dFDFth"]))
 
+    if window is None:
+        window = np.nan
+    else:
+        if window < 0:
+            if verbose: log("Using a window sigma cutoff of %.1f." %  (-1 * window))
+            window = -1 * mDict["dFDFth"] * window
+            if verbose: log("Absolute value = %.3g" % window)
+        else:
+            if verbose: log("Using an absolute window cutoff of %.3g (%.1f x expected RMS)." % (window, window/mDict["dFDFth"]))
+
+
     startTime = time.time()
     # Perform RM-clean on the spectrum
     cleanFDF, ccArr, iterCountArr, residFDF = \
@@ -104,7 +118,9 @@ def run_rmclean(mDict, aDict, cutoff,
                                 maxIter         = maxIter,
                                 gain            = gain,
                                 verbose         = verbose,
-                                doPlots         = showPlots)
+                                doPlots         = showPlots,
+                                window          = window
+                                )
 
     # ALTERNATIVE RM_CLEAN CODE ----------------------------------------------#
     '''
@@ -179,7 +195,7 @@ def run_rmclean(mDict, aDict, cutoff,
     # Pause to display the figure
     if showPlots or saveFigures:
         fdfFig = plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                                 cutoff,mDict["units"])
+                                 cutoff,window,mDict["units"])
     # Pause if plotting enabled
     if showPlots:
         plt.show()
@@ -281,7 +297,7 @@ def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
 
 
 def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
-                    cutoff,units):
+                    cutoff,window,units):
     """
     Plotting code for CLEANed Faraday depth spectra.
     Inputs: 
@@ -291,6 +307,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
         ccArr (array): clean component array
         residFDF (array): residual Faraday depth spectrum
         cutoff (float): clean threshold
+        window (float): window threshold
         units (str): name of flux unit
     """
     from matplotlib.ticker import MaxNLocator
@@ -320,6 +337,8 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
              marker="None", mfc="w", mec="g", ms=10, where="mid", lw=1.5,
              label="Clean FDF")
     ax1.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
+    if window > 0:
+        ax1.axhline(window, color="r", ls=":", label="Window cutoff")
     ax1.yaxis.set_major_locator(MaxNLocator(4))
     ax1.set_ylabel("Flux Density ("+units+')')
     leg = ax1.legend(numpoints=1, loc='upper right', shadow=False,
@@ -336,7 +355,9 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
              marker="None", mfc="w", mec="g", ms=10, where="mid",
              label="Clean Components")
     ax2.axhline(cutoff, color="r", ls="--", label="Clean cutoff")
-    ax2.set_ylim(0, cutoff*3.0)
+    if window > 0:
+        ax2.axhline(window, color="r", ls=":", label="Window cutoff")
+    ax2.set_ylim(0, max(cutoff*3.0, window*3.0))
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.set_ylabel("Flux Density ("+units+')')
     ax2.set_xlabel("$\phi$ rad m$^{-2}$")
@@ -360,8 +381,10 @@ def main():
     descStr = """
     Run RM-CLEAN on an ASCII Faraday dispersion function (FDF), applying
     the rotation measure spread function created by the script
-    'do_RMsynth_1D.py'. Saves ASCII files containing a deconvolved FDF &
-    clean-component spectrum.
+    'do_RMsynth_1D.py'. Runs in two steps: an initial clean of the whole FDF,
+    to the specified depth (set by -c flag), followed by a deeper clean (set by
+    -w flag) limited to windows around the previous clean components.
+    Saves ASCII files containing a deconvolved FDF & clean-component spectrum.
     """
 
     epilog_text="""
@@ -378,7 +401,9 @@ def main():
     parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
                         help="ASCII file containing original frequency spectra.")
     parser.add_argument("-c", dest="cutoff", type=float, default=-3,
-                        help="CLEAN cutoff (+ve = absolute, -ve = sigma) [-3].")
+                        help="Initial CLEAN cutoff (+ve = absolute, -ve = sigma) [-3].")
+    parser.add_argument("-w", dest="window", type=float, default=None, 
+                        help="Threshold for (deeper) windowed clean [Not used if not set].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
@@ -415,7 +440,8 @@ def main():
                                      showPlots    = args.showPlots,
                                      prefixOut    = fileRoot,
                                      verbose      = args.verbose,
-                                     saveFigures  = args.saveOutput
+                                     saveFigures  = args.saveOutput,
+                                     window       = args.window
                                 )
 
     # Save output

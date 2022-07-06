@@ -144,3 +144,10 @@ tests/*/
 tests/*.pdf
 *.pdf
 .vscode/settings.json
+dist/*
+build/*
+RM.egg-info/*
+RM_tools.egg-info/*
+tests/simdata
+tests/models_ns
+*egg-info
