@@ -423,19 +423,29 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
         ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=1, lw=0.1, label='Model p')
     if model_dict is not None:
         errDict = {}
+        QUerrmodel = []
         # Sample the posterior randomly 100 times
-        for i in range(100): 
-            idx = np.random.choice(np.arange(model_dict['chains'][:,0].size)) 
-            for j in range(len(model_dict['values'])): 
-                errDict[model_dict['parNames'][j]] = model_dict['chains'][idx,j] 
-            QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2) 
-            ax.plot(lamSqHirArr_m2, np.real(QUerrmodel),  
-                    '-', color='tab:blue', linewidth=0.1, alpha=0.5)
-            ax.plot(lamSqHirArr_m2, np.imag(QUerrmodel),  
-                    '-', color='tab:red', linewidth=0.1, alpha=0.5)
-            if qModArr is not None and uModArr is not None:
-                ax.plot(lamSqHirArr_m2, np.abs(QUerrmodel),  
-                    '-', color='k', linewidth=0.1, alpha=0.5)
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
+            QUerrmodel.append(model_dict['model'](errDict, lamSqHirArr_m2))
+        QUerrmodel = np.array(QUerrmodel)
+        low, med, high = np.percentile(QUerrmodel, [16, 50, 84], axis=0)
+
+        ax.plot(lamSqHirArr_m2, np.real(med),  
+                '-', color='tab:blue', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, np.real(low), np.real(high),
+                color='tab:blue', alpha=0.5)
+        ax.plot(lamSqHirArr_m2, np.imag(med),  
+                '-', color='tab:red', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, np.imag(low), np.imag(high),
+                color='tab:red', alpha=0.5)
+        if qModArr is not None and uModArr is not None:
+            ax.plot(lamSqHirArr_m2, np.abs(med),  
+                '-', color='k', linewidth=0.1, alpha=1)
+            ax.fill_between(lamSqHirArr_m2, np.abs(low), np.abs(high),
+                color='k', alpha=0.5)
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -500,17 +510,25 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
                  label='Model $\psi$')
     if model_dict is not None:
         errDict = {}
+        psi_errmodel = []
         # Sample the posterior randomly 100 times
-        for i in range(100): 
-            idx = np.random.choice(np.arange(model_dict['chains'][:,0].size)) 
-            for j in range(len(model_dict['values'])): 
-                errDict[model_dict['parNames'][j]] = model_dict['chains'][idx,j] 
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
             QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2)
             Qerrmodel = np.real(QUerrmodel)
             Uerrmodel = np.imag(QUerrmodel)
-            psi_errmodel = np.degrees( np.arctan2(Uerrmodel, Qerrmodel) / 2.0 )
-            ax.plot(lamSqHirArr_m2, psi_errmodel,  
-                    '-', color='tab:red', linewidth=0.1, alpha=0.5)
+            psi_errmodel.append(np.degrees( np.arctan2(Uerrmodel, Qerrmodel) / 2.0 ))
+
+        psi_errmodel = np.array(psi_errmodel)
+        low, med, high = np.percentile(psi_errmodel, [16, 50, 84], axis=0)
+
+
+        ax.plot(lamSqHirArr_m2, med,  
+                '-', color='tab:red', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, low, high,  
+            color='tab:red', linewidth=0.1, alpha=0.5)
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -557,10 +575,10 @@ def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     if model_dict is not None:
         errDict = {}
         # Sample the posterior randomly 100 times
-        for i in range(100): 
-            idx = np.random.choice(np.arange(model_dict['chains'][:,0].size)) 
-            for j in range(len(model_dict['values'])): 
-                errDict[model_dict['parNames'][j]] = model_dict['chains'][idx,j] 
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
             QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2)
             Qerrmodel = np.real(QUerrmodel)
             Uerrmodel = np.imag(QUerrmodel)

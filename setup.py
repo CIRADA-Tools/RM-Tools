@@ -16,10 +16,11 @@ VERSION = '1.1.2'
 DOWNLOAD_URL = 'https://github.com/CIRADA-Tools/RM-Tools/archive/v'+VERSION+'.tar.gz'
 
 REQUIRED = [
-    'numpy', 'scipy', 'matplotlib', 'astropy',
+    'numpy', 'scipy', 'matplotlib>=3.4.0', 'astropy',
 ]
 
-extras_require={'QUfitting': ['pymultinest'],'parallel':["schwimmbad"]}
+# Using AT's fork for now - includes tiny bug fix for bilby
+extras_require={'QUfitting': ["bilby>=1.1.5"],'parallel':["schwimmbad"]}
 
 here = os.path.abspath(os.path.dirname(__file__))
 

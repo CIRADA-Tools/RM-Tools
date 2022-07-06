@@ -2,7 +2,7 @@
 #                          MODEL DEFINITION FILE                              #
 #=============================================================================#
 import numpy as np
-
+import bilby
 
 #-----------------------------------------------------------------------------#
 # Function defining the model.                                                #
@@ -25,49 +25,34 @@ def model(pDict, lamSqArr_m2):
 
 
 #-----------------------------------------------------------------------------#
-# Parameters for the above model.                                             #
+# Priors for the above model.                                                 #
+# See https://lscsoft.docs.ligo.org/bilby/prior.html for details.             #
 #                                                                             #
-# Each parameter is defined by a dictionary with the following keywords:      #
-#   parname    ...   parameter name used in the model function above          #
-#   label      ...   latex style label used by plotting functions             #
-#   value      ...   value of the parameter if priortype = "fixed"            #
-#   bounds     ...   [low, high] limits of the prior                          #
-#   priortype  ...   "uniform", "normal", "log" or "fixed"                    #
-#   wrap       ...   set > 0 for periodic parameters (e.g., for an angle)     #
 #-----------------------------------------------------------------------------#
-inParms = [
-    {"parname":   "fracPol",
-     "label":     "$p$",
-     "value":     0.1,
-     "bounds":    [0.0000001, 1.0],
-     "priortype": "uniform",
-     "wrap":      0},
-    
-    {"parname":   "psi0_deg",
-     "label":     "$\psi_0$ (deg)",
-     "value":     0.0,
-     "bounds":    [0.0, 180.0],
-     "priortype": "uniform",
-     "wrap":      1},
-    
-    {"parname":   "RM_radm2",
-     "label":     "RM (rad m$^{-2}$)",
-     "value":     0.0,
-     "bounds":    [-1100.0, 1100.0],
-     "priortype": "uniform",
-     "wrap":      0},
-    
-    {"parname":   "sigmaRM_radm2",
-     "label":     "$\sigma_{RM}$ (rad m$^{-2}$)",
-     "value":     0.0,
-     "bounds":    [0.0, 1000.0],
-     "priortype": "uniform",
-     "wrap":      0}
-]
-
-
-#-----------------------------------------------------------------------------#
-# Switches controlling the Nested Sampling algorithm                          #
-#-----------------------------------------------------------------------------#
-nestArgsDict = {"n_live_points": 1000,
-                "verbose": False}
+priors = {
+    "fracPol": bilby.prior.Uniform(
+        minimum=0.001, 
+        maximum=1.0, 
+        name="fracPol", 
+        latex_label="$p$"
+    ),
+    "psi0_deg": bilby.prior.Uniform(
+        minimum=0,
+        maximum=180.0,
+        name="psi0_deg",
+        latex_label="$\psi_0$ (deg)",
+        boundary="periodic",
+    ),
+    "RM_radm2": bilby.prior.Uniform(
+        minimum=-1100.0,
+        maximum=1100.0,
+        name="RM_radm2",
+        latex_label="RM (rad m$^{-2}$)",
+    ),
+    "sigmaRM_radm2": bilby.prior.Uniform(
+        minimum=0.0,
+        maximum=1000.0,
+        name="sigmaRM_radm2",
+        latex_label="$\sigma_{RM}$ (rad m$^{-2}$)",
+    ),
+}
