@@ -11,15 +11,16 @@ from setuptools import find_packages, setup, Command
 NAME = 'RM-Tools'
 DESCRIPTION = 'RM-synthesis, RM-clean and QU-fitting on polarised radio spectra'
 URL = 'https://github.com/CIRADA-Tools/RM-Tools'
-REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.1.2'
+REQUIRES_PYTHON = '>=3.7.0'
+VERSION = '1.2.0'
 DOWNLOAD_URL = 'https://github.com/CIRADA-Tools/RM-Tools/archive/v'+VERSION+'.tar.gz'
 
 REQUIRED = [
-    'numpy', 'scipy', 'matplotlib', 'astropy',
+    'numpy', 'scipy', 'matplotlib>=3.4.0', 'astropy',
 ]
 
-extras_require={'QUfitting': ['pymultinest'],'parallel':["schwimmbad"]}
+# Using AT's fork for now - includes tiny bug fix for bilby
+extras_require={'QUfitting': ["bilby>=1.1.5"],'parallel':["schwimmbad"]}
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -65,7 +66,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],

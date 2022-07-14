@@ -58,7 +58,9 @@ def run_rmclean(mDict, aDict, cutoff,
     Args:
         mDict (dict): Summary of RM synthesis results.
         aDict (dict): Data output by RM synthesis.
-        cutoff (float): CLEAN cutoff in flux units
+        cutoff (float): CLEAN cutoff in flux units (positive)
+                        or as multiple of theoretical noise (negative)
+                        (i.e. -8 = clean to 8 sigma threshold)
 
     Kwargs:
         maxIter (int): Maximum number of CLEAN iterations per pixel.
@@ -67,6 +69,7 @@ def run_rmclean(mDict, aDict, cutoff,
         showPlots (bool): Show plots?
         verbose (bool): Verbosity.
         log (function): Which logging function to use.
+        window (float): Threshold for deeper windowed cleaning
 
     Returns:
         mDict_cl (dict): Summary of RMCLEAN results.
@@ -378,8 +381,10 @@ def main():
     descStr = """
     Run RM-CLEAN on an ASCII Faraday dispersion function (FDF), applying
     the rotation measure spread function created by the script
-    'do_RMsynth_1D.py'. Saves ASCII files containing a deconvolved FDF &
-    clean-component spectrum.
+    'do_RMsynth_1D.py'. Runs in two steps: an initial clean of the whole FDF,
+    to the specified depth (set by -c flag), followed by a deeper clean (set by
+    -w flag) limited to windows around the previous clean components.
+    Saves ASCII files containing a deconvolved FDF & clean-component spectrum.
     """
 
     epilog_text="""
@@ -396,7 +401,9 @@ def main():
     parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
                         help="ASCII file containing original frequency spectra.")
     parser.add_argument("-c", dest="cutoff", type=float, default=-3,
-                        help="CLEAN cutoff (+ve = absolute, -ve = sigma) [-3].")
+                        help="Initial CLEAN cutoff (+ve = absolute, -ve = sigma) [-3].")
+    parser.add_argument("-w", dest="window", type=float, default=None, 
+                        help="Threshold for (deeper) windowed clean [Not used if not set].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,

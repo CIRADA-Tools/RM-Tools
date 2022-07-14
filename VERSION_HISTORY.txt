@@ -1,5 +1,8 @@
 
 Github main branch:
+
+
+1.2.0:
 -changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).
   This is because the fitter was found to be vulnerable to numerical issues
   when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
@@ -15,6 +18,19 @@ Github main branch:
  to a more rigourous calculation (using WCS, as suggested by Alec Thomson).
 -modified do_fitIcube.py/rmtools_fitIcube to output maps of the fit coefficients
  and their errors. Thanks to Biny Sebastian for providing this code.
+-merged pull request from Alec Thomson that changes the fractional polarization
+ reported by rmsynth1d to use the bias-corrected polarized intensity.
+ !!!Previous versions used the non-corrected polarized intensity, from this
+    version onwards the corrected polarized intensity will be used!!!
+-merged pull request from Alec Thomson that implements windowed cleaning
+ and adds a command line flag to set the windowed clean threshold.
+-merged pull request from Alec Thomson that changed the QU-fitting routine
+ to use the bilby package for the nested sampling. This package allows the
+ user to specify which sampler they wish to use -- the default is dynesty,
+ but users can choose to use pymultinest or other supported samplers.
+-removed support for Python 3.6, as a consequence of the change to bilby.
+ From this point forward, Python 3.7 is the minimum version supported
+ (at least for the QU-fitting portion of the package).
 
 1.1.2:
 -modified the generation of maxPI and peakRM maps in RMsynth3D so that

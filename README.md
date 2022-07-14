@@ -9,7 +9,7 @@ RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
  Initial version by Cormac R. Purcell  
  Currently maintained by CIRADA
 
-Version 1.1 is now released! Check the wiki for new functionality.
+Version 1.2 is now released! Check the wiki for new functionality.
 
 Installation, usage instructions and detailed algorithm information can be found in the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
 
