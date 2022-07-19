@@ -45,7 +45,7 @@ if sys.version_info.major == 2:
 
 
 from astropy.io import fits
-from RMtools_1D.make_freq_file import get_freq_array
+from RMtools_3D.make_freq_file import get_freq_array
 from RMtools_1D.do_RMsynth_1D import run_rmsynth, saveOutput
 import numpy as np
 from astropy import wcs
@@ -180,7 +180,8 @@ def main():
                 showPlots      = args.showPlots,
                 debug          = args.debug,
                 verbose        = verbose,
-                units          = args.units)
+                units          = args.units,
+                saveFigures    = args.saveOutput)
     #pdb.set_trace()
     if args.saveOutput:
         saveOutput(dict, aDict, prefixOut, verbose)

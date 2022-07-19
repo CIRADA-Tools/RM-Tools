@@ -13,7 +13,7 @@ class test_imports(unittest.TestCase):
             'RMtools_1D.do_RMclean_1D',
             'RMtools_1D.do_RMsynth_1D_fromFITS',
             'RMtools_1D.do_RMsynth_1D',
-            'RMtools_1D.make_freq_file',
+            'RMtools_3D.make_freq_file',
             'RMtools_1D.mk_test_ascii_data',
             'RMtools_3D.assemble_chunks',
             'RMtools_3D.create_chunks',

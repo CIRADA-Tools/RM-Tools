@@ -1,0 +1,132 @@
+
+Github main branch:
+
+
+1.2.0:
+-changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).
+  This is because the fitter was found to be vulnerable to numerical issues
+  when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
+  discovering the problem).
+-added parameter errors of Stokes I fit as output to Stokes I fitDict, to
+ RMsynth1D outputs, and QU-fitting outputs. These are the 1-sigma errors 
+ computed by the mpfit routine.
+-the renormalize_StokesI_model function is now depreciated, since it cannot
+ transform the errors. It is left in for the time being in case it is needed
+ for any legacy reasons.
+-the make_freq_file.py/rmtools_freqfile tool was found to sometime produce
+ truncated output (not all channels included). This was fixed and changed
+ to a more rigourous calculation (using WCS, as suggested by Alec Thomson).
+-modified do_fitIcube.py/rmtools_fitIcube to output maps of the fit coefficients
+ and their errors. Thanks to Biny Sebastian for providing this code.
+-merged pull request from Alec Thomson that changes the fractional polarization
+ reported by rmsynth1d to use the bias-corrected polarized intensity.
+ !!!Previous versions used the non-corrected polarized intensity, from this
+    version onwards the corrected polarized intensity will be used!!!
+-merged pull request from Alec Thomson that implements windowed cleaning
+ and adds a command line flag to set the windowed clean threshold.
+-merged pull request from Alec Thomson that changed the QU-fitting routine
+ to use the bilby package for the nested sampling. This package allows the
+ user to specify which sampler they wish to use -- the default is dynesty,
+ but users can choose to use pymultinest or other supported samplers.
+-removed support for Python 3.6, as a consequence of the change to bilby.
+ From this point forward, Python 3.7 is the minimum version supported
+ (at least for the QU-fitting portion of the package).
+
+1.1.2:
+-modified the generation of maxPI and peakRM maps in RMsynth3D so that
+  it occurs in its own function rather than as part of the file writing
+  function; this allows it to be run inside a notebook.
+-modified RMpeakfit_3D to be more stable when FDF cubes have NaNs present.
+-Stokes I fit coefficients no longer become NaNs when negative Stokes I 
+  models are renormalized to a new reference frequency.
+-added test for unreasonably large peak RM (compared to computed range)
+  as this can happen when peak is on edge of spectrum. Changes RM to NaN in
+  these cases.
+-Fixed crash when sigmaAdd calculations received NaNs in inputs.
+-added experimental tool to compute QU models from clean components, 
+  requested by Luke Pratley. This currently has a normalization error of some 
+  kind, which I've asked Luke to chase down.
+-dropping support for Python3.5, since the QUfitting code has problems with it
+ and it's already end-of-life.
+-improved the calculate_RMSF script to not crash when given width smaller than
+ first sidelobes. Also corrected it to produce the correct width: previously
+ when width was specified by user it would be 2x wider than specified.
+-fixed problem with do_fitIcube.py which would crash when fed 4D Stokes I cube.
+-fixed undesired behaviour in rmsynth1d and rmclean1d where spectra plots
+ wouldn't be saved when plotting to screen was turned on.
+
+1.1.1:
+-updated calculate_RMSF to use same theoretical width as rmsynth1D
+  (the formula from Dickey et al. 2019)
+-fixed problem where very small Stokes I model values (~1E-60) would
+  cause numeric overflow in Q/I, U/I, creating infinities that were
+  not handled gracefully. Now converting infinities to NaNs.
+-fixed peakfitcube not being callable from the command line.
+-fixed typos in rmtools_calcRMSF.
+-fixed pip installation so that QUfitting models are correctly installed.
+
+1.1.0: New feature update
+-QU-fitting updates from Alec Thomson: sigma-clipping of posteriors,
+    saving evidence to output file, option to not restart from scratch.
+-Fixed bug in chunk reassembly script (assemble_chunks.py) where it would
+    not figure out the cube size correctly when fed the last chunk.
+-Updated RMclean1D to use new derotated angle equation for Observed noise
+    (previously was using old flawed equation fixed in v1.0.2).
+-Fixed problem with handling of degenerate FITS axes in RMclean3D
+-Created new tool: RMpeakfit_3D.py,which applies the 1D peak fitting to
+    each pixel in a 3D FDF cube. Outputs 2D maps for the resulting 
+    parameters.
+-New Stokes I fitting. Two changes: 
+    1) Logarithmic polynomial fitting function added. This is essentially
+        a 5-th order polynomial in log-log space, modified into the 
+        standard power-law with curvature formulation. Added flags to
+        RMsynth1D, do_QUfitting, and do_fitIcube to let user select fitting
+        function.
+    2) Dynamic order selection. If user enters a negative polynomial order,
+        it will now trying fitting successively higher order polynomials
+        (starting with 0) until the AIC no longer improves.
+-default Stokes I fitting is now 2nd order polynomial
+-Plotting code has been made more consistent, in terms of no longer
+    requiring user to press 'Enter', for all routines.
+-QUfitting now has .dat output like that of RMsynth1D.
+-All supporting tools now have command-line hooks, which all begin with
+    'rmtools_'.
+
+1.0.5: RMSF FWHM calculation fix   (13 Aug 2020)
+-Theoretical estimate for FWHM now uses formula from Dickey et al 2019
+    instead of Brentjens & de Bruyn 2005, as this is more accurate.
+-RMSF fitting improved to be more accurate (previously would over-estimate)
+-fitReal option for RMSF fitting now works as intended (previously crashed)
+
+1.0.4: QUfitting tweaks + RMsynth3D crash fixes  (10 Aug 2020)
+-Minor QUfitting fixes by Alec Thomson.
+-Fixed crash when writing 3D cubes where all pixels are NaNs.
+-changed output names for the QUfitting multinest files.
+-Fixed crashes in RMsynth3D when input cubes are all NaNs.
+-Fixed crash when RMsynth3D normalizes output cubes by Stokes I model.
+
+1.0.3: Noise propagation improvements   (23 Jul 2020)
+-Minor fixes to new plot-saving code.
+-Changed theoretical noise estimation equation: Shinsuke Ideguchi pointed
+    out that it wasn't correctly computing the error in the fractional
+    polarization. Modified to normalize the channel errors by the model
+    Stokes I (errors in the model are not accounted for). This will alter
+    the noise behaviour for sources with steep Stokes I spectra.
+
+1.0.2: Fixing derotated angle errors + Multimodel QUfitting  (6 Jul 2020)
+-RMsynth1D: added option to save plots (pull request by Lenart Heino)
+-Error formula for the derotated polarization angle (dPolAngle0Fit/Chan)
+    was wrong (too small by a factor of sqrt(Nchan)). Corrected formula
+    incorporated.
+-Multi-modal posterior handling added to QU-fitting (by Alec Thomson).
+
+1.0.1: Minor bug fixes   (12 May 2020)
+-For RMsynth1D, the default Phimax value was previously fixed at 600,
+    which was not ideal for high-frequency data. Modified to now be
+    dynamic: 10x RMSF FWHM.
+-RMclean1D was not using the noise properly when calculating derived 
+    properties. RMclean1D error bars prior to this verison likely have
+    issues.
+
+1.0: Official release (1 May 2020)
+

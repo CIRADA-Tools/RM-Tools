@@ -43,10 +43,10 @@ import numpy as np
 import astropy.io.fits as pf
 
 from RMutils.util_misc import MAD
-from RMutils.util_misc import fit_spec_poly5
-from RMutils.util_misc import poly5
+from RMutils.util_misc import fit_StokesI_model,calculate_StokesI_model
 from RMutils.util_misc import progress
 from RMutils.util_FITS import strip_fits_dims
+from RMtools_3D.do_RMsynth_3D import readFitsCube,find_freq_axis
 
 #-----------------------------------------------------------------------------#
 def main():
@@ -57,13 +57,12 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Create a model Stokes I dataset by fitting a polynomial to emitting regions
-    above a cutoff in the Stokes I cube.
+    above a cutoff in the Stokes I cube. Also outputs a noise spectrum with the
+    Stokes I noise per channel.
 
-    NOTE: This script is very simple and designed to only produce a basic model
-    Stokes I cube and noise spectrum. In production environments you should
-    use a model cube from a full-featured source finder. Treat the output of
-    this script as an example of the data format required by the later 
-    RM-synthesis script.
+    NOTE: Each pixel is fit independently, so there are no protections in place
+    to ensure smoothness across the image-plane. Noise levels are estimated
+    per-channel using 2 passes of the MAD.
     """
 
     # Parse the command line options
@@ -73,16 +72,16 @@ def main():
                         help="FITS cube containing Stokes I data.")
     parser.add_argument("freqFile", metavar="freqs_Hz.dat", nargs=1,
                         help="ASCII file containing the frequency vector.")
-    parser.add_argument("-p", dest="polyOrd", type=int, default=3,
-                        help="polynomial order to fit to I spectrum [3].")
+    parser.add_argument("-f", dest="fit_function", type=str, default="log",
+                        help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
+    parser.add_argument("-p", dest="polyOrd", type=int, default=2,
+                        help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
     parser.add_argument("-c", dest="cutoff", type=float, default=-3,
                         help="emission cutoff (+ve = abs, -ve = sigma) [-3].")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
-    parser.add_argument("-b", dest="buffCols", type=int, default=10,
-                        help="# pixel columns to buffer for disk IO [10].")
-    parser.add_argument("-D", dest="debug", action="store_true",
-                        help="turn on debugging messages [False].")
+    parser.add_argument("-v", dest="verbose", action="store_true",
+                        help="turn on verbose messages [False].")
     args = parser.parse_args()
     
     # Sanity checks
@@ -99,39 +98,51 @@ def main():
                  cutoff       = args.cutoff,
                  prefixOut    = args.prefixOut,
                  outDir       = dataDir,
-                 debug        = args.debug,
-                 nBits        = 32,
-                 buffCols     = args.buffCols)
+                 verbose        = args.verbose,
+                 fit_function = args.fit_function)
 
 
 #-----------------------------------------------------------------------------#
-def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
-                 outDir="", debug=True, nBits=32, verbose=True, buffCols=10):
+def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
+                 outDir="", verbose=True,fit_function='log'):
     """
-    Detect emission in a cube and fit a polynomial model spectrum to the
-    emitting pixels. Create a representative noise spectrum using the residual
-    planes.
+    Detect emission in a cube and fit a polynomial or power law model spectrum 
+    to the emitting pixels. Create a representative noise spectrum using the 
+    residual planes.
     """
 
     # Default data type
-    dtFloat = "float" + str(nBits)
     
     # Sanity check on header dimensions
     print("Reading FITS cube header from '%s':" % fitsI)
-    headI = pf.getheader(fitsI, 0)
-    nDim = headI["NAXIS"]
+    headI,datacube=readFitsCube(fitsI, verbose)
+    
+    
+    nDim = datacube.ndim
     if nDim < 3 or nDim > 4:
-        print("Err: only 3 or 4 dimensions supported: D = %d." % headQ["NAXIS"])
+        print("Err: only 3 or 4 dimensions supported: D = %d." % headI["NAXIS"])
         sys.exit()
-    nDim = headI["NAXIS"]
-    nChan = headI["NAXIS3"]
+
+
+    # freq_axis=find_freq_axis(headI) 
+    # #If the frequency axis isn't the last one, rotate the array until it is.
+    # #Recall that pyfits reverses the axis ordering, so we want frequency on
+    # #axis 0 of the numpy array.
+    # if freq_axis != 0 and freq_axis != nDim:
+    #     datacube=np.moveaxis(datacube,nDim-freq_axis,0)
+
+
+    nBits=np.abs(headI['BITPIX'])    
+    dtFloat = "float" + str(nBits)
+
+    
+    nChan = datacube.shape[0]
     
     # Read the frequency vector
-    print("Reading frequency vector from '%s':" % freqFile)
+    print("Reading frequency vector from '%s'." % freqFile)
     freqArr_Hz = np.loadtxt(freqFile, dtype=dtFloat)
-    freqArr_GHz = freqArr_Hz/1e9
     if nChan!=len(freqArr_Hz):
-        print("Err: frequency vector and axis 3 of cube unequal length.")
+        print("Err: frequency vector and frequency axis of cube unequal length.")
         sys.exit()
         
     # Measure the RMS spectrum using 2 passes of MAD on each plane
@@ -141,11 +152,7 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     mskSrc = np.zeros((headI["NAXIS2"], headI["NAXIS1"]), dtype=dtFloat)
     mskSky = np.zeros((headI["NAXIS2"], headI["NAXIS1"]), dtype=dtFloat)
     for i in range(nChan):
-        HDULst = pf.open(fitsI, "readonly", memmap=True)
-        if nDim==3:
-            dataPlane = HDULst[0].data[i,:,:]
-        elif nDim==4:
-            dataPlane = HDULst[0].data[0,i,:,:]
+        dataPlane = datacube[i]
         if cutoff>0:
             idxSky = np.where(dataPlane<cutoff)
         else:
@@ -153,11 +160,11 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         
         # Pass 1
         rmsTmp = MAD(dataPlane[idxSky])
-        medTmp = np.median(dataPlane[idxSky])
+        medTmp = np.nanmedian(dataPlane[idxSky])
         
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
         idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
-        medSky = np.median(dataPlane[idxSky])
+        medSky = np.nanmedian(dataPlane[idxSky])
         rmsArr[i] = MAD(dataPlane[idxSky])
         mskSky[idxSky] +=1
         
@@ -170,10 +177,10 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         mskSrc[idxSrc] +=1
 
         # Clean up
-        HDULst.close()
-        del HDULst
 
     # Save the noise spectrum
+    if outDir == '':
+        outDir='.'
     print("Saving the RMS noise spectrum in an ASCII file:")
     outFile = outDir + "/"  + prefixOut + "Inoise.dat"
     print("> %s" % outFile)
@@ -195,7 +202,8 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
     print("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, mskArr, headMsk, output_verify="fix",
                overwrite=True)
-        
+
+    
     # Create a blank FITS file on disk using the large file method
     # http://docs.astropy.org/en/stable/io/fits/appendix/faq.html
     #  #how-can-i-create-a-very-large-fits-file-from-scratch
@@ -220,7 +228,6 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
         f.write(b"\0")
 
     # Feeback to user
-    srcIdx = np.where(mskSrc>0)
     srcCoords = np.rot90(np.where(mskSrc>0))
     if verbose:
         nPix = mskSrc.shape[-1] * mskSrc.shape[-2]
@@ -230,81 +237,55 @@ def make_model_I(fitsI, freqFile, polyOrd=3, cutoff=-1, prefixOut="",
 
     # Inform user job magnitude
     startTime = time.time()
-    print("Fitting %d/%d spectra." % (nDetectPix, nPix))
-    j = 0
-    nFailPix = 0
     if verbose:
+        print("Fitting %d/%d spectra." % (nDetectPix, nPix))
         progress(40, 0)
-        
-    # Loop through columns of pixels (buffers disk IO)
-    for i in range(0, headI["NAXIS1"], buffCols):
 
-        # Select the relevant pixel columns from the mask and cube
-        mskSub = mskSrc[:, i:i+buffCols]
-        srcCoords = np.rot90(np.where(mskSub>0))
+    datacube=np.squeeze(datacube) #Remove any degenerate axes if needed.'
+    modelIcube=np.zeros_like(datacube)
+    modelIcube[:]=np.nan
+    Coeffs=np.array([mskArr]*6)
+    Coeffserr=np.array([mskArr]*6)
+#    Loop through pixels individually
+    i=0
+    
+    for pixCoords in srcCoords:
+        x=pixCoords[0]
+        y=pixCoords[1]
         
-        # Select the relevant pixel columns from the mask
-        HDULst = pf.open(fitsI, "readonly", memmap=True)
-        if nDim==3:
-            IArr = HDULst[0].data[:, :, i:i+buffCols]
-        elif nDim==4:
-            IArr = HDULst[0].data[0,:, :, i:i+buffCols]
-        HDULst.close()
-        IModArr = np.ones_like(IArr)*medSky
+        Ispectrum=datacube[:,x,y]
+        pixFitDict=fit_StokesI_model(freqArr_Hz,Ispectrum,rmsArr,
+                          polyOrd=polyOrd,
+                          fit_function=fit_function)
+        
 
-        # Fit the spectra in turn
-        for yi, xi in srcCoords:
-            j += 1
-            if verbose:
-                progress(40, ((j)*100.0/nDetectPix))
-                
-            # Fit a <=5th order polynomial model to the Stokes I spectrum
-            # Frequency axis must be in GHz to avoid overflow errors
-            fitDict = {"fitStatus": 0,
-                       "chiSq": 0.0,
-                       "dof": len(freqArr_GHz)-polyOrd-1,
-                       "chiSqRed": 0.0,
-                       "nIter": 0,
-                       "p": None}
-            try:
-                mp = fit_spec_poly5(freqArr_GHz,
-                                    IArr[:,yi,xi],
-                                    rmsArr,
-                                    polyOrd)
-                fitDict["p"]         = mp.params
-                fitDict["fitStatus"] = mp.status
-                fitDict["chiSq"]     = mp.fnorm
-                fitDict["chiSqRed"]  = mp.fnorm/fitDict["dof"]
-                fitDict["nIter"]     = mp.niter
-                IModArr[:,yi,xi]       = poly5(fitDict["p"])(freqArr_GHz)
-            
-            except Exception:
-                nFailPix += 1
-                if debug:
-                    print("\nTRACEBACK:")
-                    print("-" * 80)
-                    print(traceback.format_exc())
-                    print("-" * 80)
-                    print() 
-                    print("> Setting Stokes I spectrum to NaN.\n")
-                fitDict["p"] = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-                IModArr[:,yi,xi] = np.ones_like(IArr[:,yi,xi]) * np.nan
+        pixImodel=calculate_StokesI_model(pixFitDict,freqArr_Hz)
+        modelIcube[:,x,y]=pixImodel
+        for k,j,l in zip(range(len(Coeffs)),pixFitDict['p'],pixFitDict['perror']):
+            Coeffs[5-k,x,y]=j     
+            Coeffserr[5-k,x,y]=l   
+        i+=1
+        if verbose:
+            progress(40, i/nDetectPix*100.)
+    headcoeff=headMsk 
+    del headcoeff['DATAMIN']
+    del headcoeff['DATAMAX']
+    for i in range(np.abs(polyOrd)+1):
+        outname=fitsFileOut.replace('IsrcMask.fits','')+'Icoeff'+str(i)+'.fits'
+        pf.writeto(outname,Coeffs[i],headcoeff,overwrite=True)
+        outname=fitsFileOut.replace('IsrcMask.fits','')+'Icoeff'+str(i)+'_err.fits'
+        pf.writeto(outname,Coeffserr[i],headcoeff,overwrite=True)
         
-        # Write the spectrum to the model file
-        HDULst = pf.open(fitsModelFile, "update", memmap=True)
-        if nDim==3:            
-            HDULst[0].data[:, :, i:i+buffCols] = IModArr
-        elif nDim==4:
-            HDULst[0].data[0, :, :, i:i+buffCols] = IModArr
-        HDULst.close()
+        
+    HDULst = pf.open(fitsModelFile, "update", memmap=True)
+    HDULst[0].data = modelIcube
+    HDULst.close()
+
         
     endTime = time.time()
     cputime = (endTime - startTime)
     print("Fitting completed in %.2f seconds." % cputime)
-    if nFailPix>0:
-        print("Warn: Fitting failed on %d/%d spectra  (%.1f percent)." % \
-              (nFailPix, nDetectPix, (nFailPix*100.0/nDetectPix)))
-    
+
     
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":

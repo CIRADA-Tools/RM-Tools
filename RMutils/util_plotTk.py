@@ -106,6 +106,16 @@ mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['font.size'] = 12.0
 
+# Quick workaround to check if there is a chance for matplotlin to catch an
+# X DISPLAY
+try:
+    if os.environ["rmsy_mpl_backend"] == "Agg":
+        print('Environment variable rmsy_mpl_backend="Agg" detected.')
+        print('Using matplotlib "Agg" backend in order to save the plots.')
+        mpl.use("Agg")
+except Exception as e:
+    pass
+
 # Constants
 C = 2.99792458e8
 
@@ -230,12 +240,12 @@ def plot_I_vs_nu_ax(ax, freqArr_Hz, IArr, dIArr=None,
 
     # Plot I versus frequency
     ax.errorbar(x=freqArr_Hz/1e9, y=IArr, yerr=dIArr, mfc="none",
-                ms=4, fmt="D", ecolor="k", alpha=0.3 , elinewidth=1.0,
+                ms=2, fmt="D", mec="k", ecolor="k", alpha=0.5 , elinewidth=1.0,
                 capsize=2, label='Stokes I')
     
     # Plot the model
     if IModArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, IModArr, color="r", lw=2.5,
+        ax.plot(freqHirArr_Hz/1e9, IModArr, color="tab:red", lw=2.5,
                 label="I Model")
 
     # Scaling & formatting
@@ -246,6 +256,7 @@ def plot_I_vs_nu_ax(ax, freqArr_Hz, IArr, dIArr=None,
                  np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
     ax.set_xlabel('$\\nu$ (GHz)')
     ax.set_ylabel('Flux Density ('+units+')')
+    ax.minorticks_on()
 
     # Format tweaks
     ax = tweakAxFormat(ax)    
@@ -278,21 +289,21 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr, UArr, dQArr=None,
         dPArr = np.sqrt(np.power(dQArr,2) + np.power(dUArr,2))
         
     # Plot P, Q, U versus frequency
-    ax.errorbar(x=freqArr_Hz/1e9, y=QArr, yerr=dQArr, mec='b',
-                mfc='none', ms=4, fmt='D', color='g', elinewidth=1.0,
+    ax.errorbar(x=freqArr_Hz/1e9, y=QArr, yerr=dQArr, mec='tab:blue',
+                mfc='none', ms=2, fmt='D', color='g', elinewidth=1.0,
                 capsize=2, label='Stokes Q')
-    ax.errorbar(x=freqArr_Hz/1e9, y=UArr, yerr=dUArr, mec='r',
-                mfc='none', ms=4, fmt='D', color='r', elinewidth=1.0,
+    ax.errorbar(x=freqArr_Hz/1e9, y=UArr, yerr=dUArr, mec='tab:red',
+                mfc='none', ms=2, fmt='D', color='tab:red', elinewidth=1.0,
                 capsize=2, label='Stokes U')
     ax.errorbar(x=freqArr_Hz/1e9, y=PArr, yerr=dPArr, mec='k',
-                mfc='none', ms=4, fmt='D', color='k', elinewidth=1.0,
+                mfc='none', ms=2, fmt='D', color='k', elinewidth=1.0,
                 capsize=2, label='Intensity P')
     
     # Plot the models
     if QmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='b', lw=0.5, label='Model Q')
+        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='tab:blue', lw=0.5, label='Model Q')
     if UmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='r', lw=0.5, label='Model U')
+        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='tab:red', lw=0.5, label='Model U')
     if QmodArr is not None and UmodArr is not None:
         PmodArr = np.sqrt(QmodArr**2.0 + UmodArr**2.0 )
         ax.plot(freqHirArr_Hz/1e9, PmodArr, color='k', lw=0.5, label='Model P')
@@ -328,9 +339,9 @@ def plot_rmsIQU_vs_nu_ax(ax, freqArr_Hz, rmsIArr,  rmsQArr,
     # Plot the rms spectra in GHz and flux units
     ax.plot(freqArr_Hz/1e9, rmsIArr, marker='o', color='k', lw=0.5,
              label='rms I')
-    ax.plot(freqArr_Hz/1e9, rmsQArr, marker='o', color='b', lw=0.5,
+    ax.plot(freqArr_Hz/1e9, rmsQArr, marker='o', color='tab:blue', lw=0.5,
              label='rms Q')
-    ax.plot(freqArr_Hz/1e9, rmsUArr, marker='o', color='r', lw=0.5,
+    ax.plot(freqArr_Hz/1e9, rmsUArr, marker='o', color='tab:red', lw=0.5,
              label='rms U')
     #ax.text(0.05, 0.94, 'I, Q & U RMS', transform=ax.transAxes)
 
@@ -350,8 +361,8 @@ def plot_rmsIQU_vs_nu_ax(ax, freqArr_Hz, rmsIArr,  rmsQArr,
 
 #-----------------------------------------------------------------------------#
 def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
-                         duArr=None, dpArr=None,
-                         lamSqHirArr_m2=None, qModArr=None, uModArr=None,
+                         duArr=None, dpArr=None, lamSqHirArr_m2=None, 
+                         qModArr=None, uModArr=None, model_dict=None, 
                          axisYright=False, axisXtop=False):
 
     # Set the axis positions
@@ -369,45 +380,72 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     # Calculate p and errors
     if pArr is None:
         pArr = np.sqrt(qArr**2.0 + uArr**2.0 )
+        pArr= np.where(np.isfinite(pArr),pArr,np.nan)
     if dpArr is None:
         if dqArr is None or duArr is None:
             dpArr = None
         else:
             dpArr = np.sqrt(dqArr**2.0 + duArr**2.0 )
+            dpArr= np.where(np.isfinite(dpArr),dpArr,np.nan)
         
     # Plot p, q, u versus lambda^2
 #    """
-    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='b', mfc='none', ms=4,
-                fmt='D', ecolor='b', alpha=0.5, elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='tab:blue', mfc='none', ms=2,
+                fmt='D', ecolor='tab:blue', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes q')
-    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='r', mfc='none', ms=4,
-                fmt='D', ecolor='r', alpha=0.5, elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='tab:red', mfc='none', ms=2,
+                fmt='D', ecolor='tab:red', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Stokes u')
-    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='none', ms=4,
+    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='none', ms=2,
                 fmt='D', ecolor='k', alpha=0.5, elinewidth=1.0, capsize=2,
                 label='Intensity p')
     """
-    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='r', ms=4,
+    ax.errorbar(x=lamSqArr_m2, y=pArr, yerr=dpArr, mec='k', mfc='tab:red', ms=2,
                 fmt='D', ecolor='k', elinewidth=1.0, capsize=2,
                 label='Intensity p')
 
-    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='b', mfc='r', ms=4,
-                fmt='D', ecolor='b', elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='tab:blue', mfc='tab:red', ms=2,
+                fmt='D', ecolor='tab:blue', elinewidth=1.0, capsize=2,
                 label='Stokes q')
     
-    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='r', mfc='b', ms=4,
-                fmt='D', ecolor='r', elinewidth=1.0, capsize=2,
+    ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='tab:red', mfc='tab:blue', ms=2,
+                fmt='D', ecolor='tab:red', elinewidth=1.0, capsize=2,
                 label='Stokes u')
     """
     
     # Plot the models
     if qModArr is not None:
-        ax.plot(lamSqHirArr_m2, qModArr, color='b', alpha=0.5, lw=1.5, label='Model q')
+        ax.plot(lamSqHirArr_m2, qModArr, color='tab:blue', alpha=1, lw=0.1, label='Model q')
     if uModArr is not None:
-        ax.plot(lamSqHirArr_m2, uModArr, color='r', alpha=0.5, lw=1.5, label='Model u')
+        ax.plot(lamSqHirArr_m2, uModArr, color='tab:red', alpha=1, lw=0.1, label='Model u')
     if qModArr is not None and uModArr is not None:
         pModArr = np.sqrt(qModArr**2.0 + uModArr**2.0 )
-        ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=0.5, lw=1.5, label='Model p')
+        ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=1, lw=0.1, label='Model p')
+    if model_dict is not None:
+        errDict = {}
+        QUerrmodel = []
+        # Sample the posterior randomly 100 times
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
+            QUerrmodel.append(model_dict['model'](errDict, lamSqHirArr_m2))
+        QUerrmodel = np.array(QUerrmodel)
+        low, med, high = np.percentile(QUerrmodel, [16, 50, 84], axis=0)
+
+        ax.plot(lamSqHirArr_m2, np.real(med),  
+                '-', color='tab:blue', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, np.real(low), np.real(high),
+                color='tab:blue', alpha=0.5)
+        ax.plot(lamSqHirArr_m2, np.imag(med),  
+                '-', color='tab:red', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, np.imag(low), np.imag(high),
+                color='tab:red', alpha=0.5)
+        if qModArr is not None and uModArr is not None:
+            ax.plot(lamSqHirArr_m2, np.abs(med),  
+                '-', color='k', linewidth=0.1, alpha=1)
+            ax.fill_between(lamSqHirArr_m2, np.abs(low), np.abs(high),
+                color='k', alpha=0.5)
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -424,7 +462,8 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
                  yDataMax + 2*medErrBar + yRange*0.1)
     ax.set_xlabel('$\\lambda^2$ (m$^2$)')
     ax.set_ylabel('Fractional Polarisation')
-    ax.axhline(0, color='grey')
+    ax.axhline(0, linestyle='--', color='grey')
+    ax.minorticks_on()
 
     # Format tweaks
     ax = tweakAxFormat(ax)
@@ -433,7 +472,7 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
 #-----------------------------------------------------------------------------#
 def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
                          lamSqHirArr_m2=None, qModArr=None, uModArr=None,
-                         axisYright=False, axisXtop=False):
+                         model_dict=None, axisYright=False, axisXtop=False):
 
     # Set the axis positions
     if axisYright:
@@ -461,14 +500,35 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     
     # Plot psi versus lambda^2
     ax.errorbar(x=lamSqArr_m2, y=psiArr_deg, yerr=dPsiArr_deg, mec='k',
-                mfc='none', ms=4, fmt='D', ecolor='k', alpha=0.3,
+                mfc='none', ms=2, fmt='D', ecolor='k', alpha=0.3,
                 elinewidth=1.0, capsize=2)
     
     # Plot the model
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees( np.arctan2(uModArr, qModArr) / 2.0 )
-        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='r', lw=2.5,
+        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='tab:red', lw=0.1,
                  label='Model $\psi$')
+    if model_dict is not None:
+        errDict = {}
+        psi_errmodel = []
+        # Sample the posterior randomly 100 times
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
+            QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2)
+            Qerrmodel = np.real(QUerrmodel)
+            Uerrmodel = np.imag(QUerrmodel)
+            psi_errmodel.append(np.degrees( np.arctan2(Uerrmodel, Qerrmodel) / 2.0 ))
+
+        psi_errmodel = np.array(psi_errmodel)
+        low, med, high = np.percentile(psi_errmodel, [16, 50, 84], axis=0)
+
+
+        ax.plot(lamSqHirArr_m2, med,  
+                '-', color='tab:red', linewidth=0.1, alpha=1)
+        ax.fill_between(lamSqHirArr_m2, low, high,  
+            color='tab:red', linewidth=0.1, alpha=0.5)
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -479,8 +539,9 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     ax.set_ylim(-99.9, 99.9)
     ax.set_xlabel('$\\lambda^2$ (m$^2$)')
     ax.set_ylabel('$\psi$ (degrees)')
-    ax.axhline(0, color='grey')
-    
+    ax.axhline(0, linestyle='--', color='grey')
+    ax.minorticks_on()
+
     # Format tweaks
     ax = tweakAxFormat(ax, showLeg=False)
     ax.autoscale_view(True,True,True)
@@ -489,7 +550,7 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
 #-----------------------------------------------------------------------------#
 def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
                    lamSqHirArr_m2=None, qModArr=None, uModArr=None,
-                   axisYright=False, axisXtop=False):
+                   model_dict=None, axisYright=False, axisXtop=False):
 
     # Set the axis positions
     if axisYright:
@@ -504,14 +565,26 @@ def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
                 ms=1, fmt=".", ecolor="grey", elinewidth=1.0, capsize=2,
                 zorder=1)
     freqArr_Hz = C/np.sqrt(lamSqArr_m2)
-    ax.scatter(x=qArr, y=uArr, c=freqArr_Hz, cmap="jet_r", s=30,
-               marker="D", edgecolor="none", linewidth=0.5, zorder=2)
+    ax.scatter(x=qArr, y=uArr, c=freqArr_Hz, cmap="rainbow_r", s=30,
+               marker="D", edgecolor="none", linewidth=0.1, zorder=2)
 
     # Plot the model
     if qModArr is not None and uModArr is not None:
-        ax.plot(qModArr, uModArr, color="k", lw=2.5, label='Model q & u',
+        ax.plot(qModArr, uModArr, color="k", lw=0.1, label='Model q & u',
                 zorder=2)
-    
+    if model_dict is not None:
+        errDict = {}
+        # Sample the posterior randomly 100 times
+        for i in range(1000): 
+            idx = np.random.choice(np.arange(model_dict['posterior'].shape[0]))
+            for j, name in enumerate(model_dict['parNames']):
+                errDict[name] = model_dict['posterior'][name][idx]
+            QUerrmodel = model_dict['model'](errDict, lamSqHirArr_m2)
+            Qerrmodel = np.real(QUerrmodel)
+            Uerrmodel = np.imag(QUerrmodel)
+            ax.plot(Qerrmodel, Uerrmodel, color="k", lw=0.1, alpha=0.5,
+                zorder=2)
+
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.xaxis.set_major_locator(MaxNLocator(4))
@@ -523,9 +596,10 @@ def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
                  np.nanmax(uArr) + yRange*0.05)
     ax.set_xlabel('Stokes q')
     ax.set_ylabel('Stokes u')
-    ax.axhline(0, color='grey')
-    ax.axvline(0, color='grey')
-    
+    ax.axhline(0, linestyle='--', color='grey')
+    ax.axvline(0, linestyle='--', color='grey')
+    ax.axis('equal')
+    ax.minorticks_on()
     # Format tweaks
     ax = tweakAxFormat(ax, showLeg=False)
 
@@ -554,9 +628,9 @@ def plot_RMSF_ax(ax, phiArr, RMSFArr, fwhmRMSF=None, axisYright=False,
         ax.xaxis.set_label_position("top")    
         
     # Plot the RMSF
-    ax.step(phiArr, RMSFArr.real, where='mid', color='b', lw=0.5,
+    ax.step(phiArr, RMSFArr.real, where='mid', color='tab:blue', lw=0.5,
             label='Real')
-    ax.step(phiArr, RMSFArr.imag, where='mid', color='r', lw=0.5,
+    ax.step(phiArr, RMSFArr.imag, where='mid', color='tab:red', lw=0.5,
             label='Imaginary')
     ax.step(phiArr, np.abs(RMSFArr) , where='mid', color='k', lw=1.0,
             label='PI')
@@ -617,9 +691,9 @@ def plot_dirtyFDF_ax(ax, phiArr, FDFArr, gaussParm=[], vLine=None,
     # Plot the FDF
     FDFpiArr = np.sqrt( np.power(FDFArr.real, 2.0) +
                             np.power(FDFArr.imag, 2.0) )
-    ax.step(phiArr, FDFArr.real, where='mid', color='b', lw=0.5,
+    ax.step(phiArr, FDFArr.real, where='mid', color='tab:blue', lw=0.5,
             label='Real')
-    ax.step(phiArr, FDFArr.imag, where='mid', color='r', lw=0.5,
+    ax.step(phiArr, FDFArr.imag, where='mid', color='tab:red', lw=0.5,
             label='Imaginary')
     ax.step(phiArr, FDFpiArr, where='mid', color='k', lw=1.0,
             label='PI')
@@ -683,9 +757,9 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr=None, ccFDFArr=None,
         ax.step(phiArr, np.abs(cleanFDFArr), where='mid', color='k',
                 lw=1.0, label='PI')
         if showComplex:
-            ax.step(phiArr, cleanFDFArr.real, where='mid', color='b',
+            ax.step(phiArr, cleanFDFArr.real, where='mid', color='tab:blue',
                     lw=0.5, label='Real')
-            ax.step(phiArr, cleanFDFArr.imag, where='mid', color='r',
+            ax.step(phiArr, cleanFDFArr.imag, where='mid', color='tab:red',
                     lw=0.5, label='Imaginary')
             #ax.text(0.05, 0.94, title, transform=ax.transAxes)
 
@@ -707,7 +781,7 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr=None, ccFDFArr=None,
 
     # Plot the clean cutoff line
     if not cutoff is None:
-        ax.axhline(cutoff, color="r", ls='--')
+        ax.axhline(cutoff, color="tab:red", ls='--')
 
     # Scaling
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -1267,12 +1341,12 @@ def plotFracQvsU(dataMan, indx, io="fig"):
 def plot_Ipqu_spectra_fig(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
                           dqArr=None, duArr=None, freqHirArr_Hz=None,
                           IModArr=None, qModArr=None, uModArr=None,
-                          fig=None,units=''):
+                          model_dict=None, fig=None,units=''):
     """Plot the Stokes I, Q/I & U/I spectral summary plots."""
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
 
     # Default to non-high-resolution inputs
     if freqHirArr_Hz is None:
@@ -1301,7 +1375,8 @@ def plot_Ipqu_spectra_fig(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
                          duArr       = duArr,
                          lamSqHirArr_m2 = lamSqHirArr_m2,
                          qModArr     = qModArr,
-                         uModArr     = uModArr)
+                         uModArr     = uModArr,
+                         model_dict  = model_dict)
     
     # Plot psi versus lambda^2 axis
     ax3 = fig.add_subplot(222, sharex=ax2)
@@ -1314,6 +1389,7 @@ def plot_Ipqu_spectra_fig(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
                          lamSqHirArr_m2 = lamSqHirArr_m2,
                          qModArr     = qModArr,
                          uModArr     = uModArr,
+                         model_dict  = model_dict,
                          axisYright=True,
                          axisXtop=True)
     
@@ -1327,12 +1403,15 @@ def plot_Ipqu_spectra_fig(freqArr_Hz, IArr, qArr, uArr, dIArr=None,
                    duArr       = duArr,
                    lamSqHirArr_m2 = lamSqHirArr_m2,
                    qModArr     = qModArr,
-                   uModArr     = uModArr, 
+                   uModArr     = uModArr,
+                   model_dict  = model_dict, 
                    axisYright  = True)
 
     # Adjust subplot spacing
     fig.subplots_adjust(left=0.1, bottom=0.08, right=0.90, top=0.92,
                         wspace=0.08, hspace=0.08)
+
+    fig.tight_layout()
 
     return fig
 
@@ -1472,7 +1551,7 @@ def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, fwhmRMSF=None,
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
     # Plot the RMSF
     ax1 = fig.add_subplot(211)    
     plot_RMSF_ax(ax=ax1,
@@ -1609,7 +1688,7 @@ def plot_cleanFDF_fig(phiArr, cleanFDFArr, ccFDFArr=None,
     
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(12.0, 8))
+        fig = plt.figure(facecolor='w',figsize=(12.0, 8))
 
     # Plot the clean FDF
     ax1 = fig.add_subplot(211)    
@@ -1870,16 +1949,16 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
 
     # Default to a pyplot figure
     if fig==None:
-        fig = plt.figure(figsize=(16.0, 8.0))
+        fig = plt.figure(facecolor='w',figsize=(16.0, 8.0))
     
     # Plot the data and the +/- 1-sigma levels
     ax1 = fig.add_subplot(231)
     ax1.xaxis.tick_top()
     ax1.xaxis.set_label_position("top")
     ax1.xaxis.set_major_locator(MaxNLocator(7))
-    ax1.errorbar(x=xArr, y=qArr, yerr=dqArr, ms=3, color="b", fmt='o',
+    ax1.errorbar(x=xArr, y=qArr, yerr=dqArr, ms=3, color="tab:blue", fmt='o',
                  alpha=0.5, capsize=0 )
-    ax1.errorbar(x=xArr, y=uArr, yerr=duArr, ms=3, color="r", fmt='o',
+    ax1.errorbar(x=xArr, y=uArr, yerr=duArr, ms=3, color="tab:red", fmt='o',
                  alpha=0.5, capsize=0)
     ax1.axhline(med, color='grey', zorder=10)
     ax1.axhline(1.0, color='k', linestyle="--", zorder=10)
@@ -1897,11 +1976,11 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     nBins = 15
     yMin = np.nanmin([np.nanmin(qArr), np.nanmin(uArr)])
     yMax = np.nanmax([np.nanmax(qArr), np.nanmax(uArr)])
-    n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), normed=1,
-                       histtype='step', color='b', linewidth=1.0)
+    n, b, p = ax2.hist(qArr, nBins, range=(yMin, yMax), density=1,
+                       histtype='step', color='tab:blue', linewidth=1.0)
     ax2.plot(xNorm, yNorm, color='k', linestyle="--", linewidth=1.5)
-    n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), normed=1,
-                       histtype='step', color='r', linewidth=1.0)
+    n, b, p = ax2.hist(uArr, nBins, range=(yMin, yMax), density=1,
+                       histtype='step', color='tab:red', linewidth=1.0)
     ax2.axvline(med, color='grey', zorder=11)
     ax2.set_title(r'Distribution of Data vs Normal')
     ax2.set_ylabel(r'Normalised Counts')
@@ -1912,8 +1991,8 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     qSrtArr = np.sort(qArr)
     uSrtArr = np.sort(uArr)
     ax3 = fig.add_subplot(235, sharex=ax2)
-    ax3.step(qSrtArr, ecdfArr, where="mid", color='b')
-    ax3.step(uSrtArr, ecdfArr, where="mid", color='r')
+    ax3.step(qSrtArr, ecdfArr, where="mid", color='tab:blue')
+    ax3.step(uSrtArr, ecdfArr, where="mid", color='tab:red')
     x, y = norm_cdf(mean=med, std=noise, N=1000)
     ax3.plot(x, y, color='k', linewidth=1.5, linestyle="--", zorder=1)
     ax3.set_ylim(0, 1.05)
@@ -1923,9 +2002,9 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
 
     # Plot reduced chi-squared
     ax4 = fig.add_subplot(234)
-    ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='b', linewidth=1.0,
+    ax4.step(x=sigmaAddqArr, y=chiSqRedqArr, color='tab:blue', linewidth=1.0,
              where="mid")
-    ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='r', linewidth=1.0,
+    ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='tab:red', linewidth=1.0,
              where="mid")
     ax4.axhline(1.0, color='k', linestyle="--")
     ax4.set_xlabel(r'$\sigma_{\rm add}$')
@@ -1934,19 +2013,19 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     # Plot the probability distribution function
     ax5 = fig.add_subplot(233)
     ax5.tick_params(labelbottom='off')  
-    ax5.step(x=sigmaAddqArr, y=probqArr, linewidth=1.0, where="mid", color="b",
+    ax5.step(x=sigmaAddqArr, y=probqArr, linewidth=1.0, where="mid", color="tab:blue",
              alpha=0.5)
-    ax5.step(x=sigmaAdduArr, y=probuArr, linewidth=1.0, where="mid", color="r",
+    ax5.step(x=sigmaAdduArr, y=probuArr, linewidth=1.0, where="mid", color="tab:red",
              alpha=0.5)
-    ax5.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
-    ax5.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+    ax5.axvline(mDict["sigmaAddQ"], color='tab:blue', linestyle="-", linewidth=1.5)    
+    ax5.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+    ax5.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
-    ax5.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+    ax5.axvline(mDict["sigmaAddU"], color='tab:red', linestyle="-", linewidth=1.5)
+    ax5.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
-    ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+    ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
     ax5.set_title('Likelihood Distribution')
     ax5.set_ylabel(r"P($\sigma_{\rm add}$|data)")
@@ -1955,19 +2034,19 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     CPDFq = np.cumsum(probqArr)/np.sum(probqArr)
     CPDFu = np.cumsum(probuArr)/np.sum(probuArr)
     ax6 = fig.add_subplot(236, sharex=ax5)
-    ax6.step(x=sigmaAddqArr, y=CPDFq, linewidth=1.0, where="mid", color="b")
-    ax6.step(x=sigmaAdduArr, y=CPDFu, linewidth=1.0, where="mid", color="r")
+    ax6.step(x=sigmaAddqArr, y=CPDFq, linewidth=1.0, where="mid", color="tab:blue")
+    ax6.step(x=sigmaAdduArr, y=CPDFu, linewidth=1.0, where="mid", color="tab:red")
     ax6.set_ylim(0, 1.05)
     ax6.axhline(0.5, color='grey', linestyle="-", linewidth=1.5)
-    ax6.axvline(mDict["sigmaAddQ"], color='b', linestyle="-", linewidth=1.5)    
-    ax6.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='b',
+    ax6.axvline(mDict["sigmaAddQ"], color='tab:blue', linestyle="-", linewidth=1.5)    
+    ax6.axvline(mDict["sigmaAddQ"]+mDict["dSigmaAddPlusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='b',
+    ax6.axvline(mDict["sigmaAddQ"]-mDict["dSigmaAddMinusQ"], color='tab:blue',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddU"], color='r', linestyle="-", linewidth=1.5)
-    ax6.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='r',
+    ax6.axvline(mDict["sigmaAddU"], color='tab:red', linestyle="-", linewidth=1.5)
+    ax6.axvline(mDict["sigmaAddU"]+mDict["dSigmaAddPlusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
-    ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='r',
+    ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
     ax6.set_xlabel(r"$\sigma_{\rm add}$")
     ax6.set_ylabel(r"Cumulative Likelihood")

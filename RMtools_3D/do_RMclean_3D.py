@@ -54,7 +54,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
 def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
-                pool=None, chunksize=None, verbose = True, log = print):
+                pool=None, chunksize=None, verbose = True, log = print, window=np.nan):
     """Run RM-CLEAN on a 2/3D FDF cube given an RMSF cube stored as FITS.
 
     If you want to run RM-CLEAN on arrays, just use util_RM.do_rmclean_hogbom.
@@ -120,7 +120,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
                           verbose          = verbose,
                           doPlots          = False,
                           pool             = pool,
-                          chunksize        = chunksize)
+                          chunksize        = chunksize,
+                          window           = window
+                          )
 
 
     endTime = time.time()
@@ -131,12 +133,25 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
 
 
 
-    #Move FD axis back to original position:
-    Ndim=cleanFDF.ndim
-    cleanFDF=np.moveaxis(cleanFDF,0,Ndim-FD_axis)
-    ccArr=np.moveaxis(ccArr,0,Ndim-FD_axis)
+    #Move FD axis back to original position, and restore dimensionality:
+    old_Ndim,FD_axis=find_axes(head)
+    new_Ndim=cleanFDF.ndim
+    #The difference is the number of dimensions that need to be added:
+    if old_Ndim-new_Ndim != 0: #add missing (degenerate) dimensions back in
+        cleanFDF=np.expand_dims(cleanFDF,axis=tuple(range(old_Ndim-new_Ndim)))
+        ccArr=np.expand_dims(ccArr,axis=tuple(range(old_Ndim-new_Ndim)))
+        residFDF=np.expand_dims(residFDF,axis=tuple(range(old_Ndim-new_Ndim)))
+    #New dimensions are added to the beginning of the axis ordering 
+    #(revserse of FITS ordering)
+    
+    #Move the FDF axis to it's original spot. Hopefully this means that all
+    # axes are in their original place after all of that.
+    cleanFDF=np.moveaxis(cleanFDF,old_Ndim-new_Ndim,old_Ndim-FD_axis)
+    ccArr=np.moveaxis(ccArr,old_Ndim-new_Ndim,old_Ndim-FD_axis)
+    residFDF=np.moveaxis(residFDF,old_Ndim-new_Ndim,old_Ndim-FD_axis)
 
     return cleanFDF, ccArr, iterCountArr, residFDF, head
+
 
 def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
             prefixOut="", outDir="", write_separate_FDF=False, verbose=True, log=print):
@@ -229,14 +244,18 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
 
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
-    # Also requires np.expand_dims to set the correct NAXIS.
-    headtemp["NAXIS3"] = 1
+
+    if headtemp['NAXIS'] > 2:
+        headtemp["NAXIS3"] = 1
+    if headtemp['NAXIS'] == 4:
+        headtemp["NAXIS4"] = 1
 
     # Save the iteration count mask
     fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
     if (verbose): log("> %s" % fitsFileOut)
     headtemp["BUNIT"] = "Iterations"
-    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), axis=0),
+    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), 
+                        axis=tuple(range(headtemp['NAXIS']-iterCountArr.ndim))),
                         headtemp)
     hduLst = pf.HDUList([hdu0])
     hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -276,6 +295,22 @@ def read_FDF_cube(filename):
 
     return complex_cube, head,FD_axis
 
+def find_axes(header):
+    """Idenfities how many axes are present in a FITS file, and which is the
+    Faraday depth axis. Necessary for bookkeeping on cube dimensionality,
+    given that RM-clean only supports 3D cubes, but data may be 4D files."""
+    Ndim=header['NAXIS']
+    FD_axis=Ndim
+    #Check for FD axes:
+    for i in range(1,Ndim+1):
+        try:
+            if 'FDEP' in header['CTYPE'+str(i)].upper():
+                FD_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+    return Ndim,FD_axis
+
 def read_FDF_cubes(filename):
     """Read in a FDF/RMSF cube. Input filename can be any of real, imag, or tot components.
     Figures out which axis is Faraday depth and
@@ -291,16 +326,7 @@ def read_FDF_cubes(filename):
     complex_cube = FDFreal + 1j * FDFimag
 
     #Identify Faraday depth axis (assumed to be last one if not explicitly found)
-    Ndim=head['NAXIS']
-    FD_axis=Ndim
-    #Check for FD axes:
-    for i in range(1,Ndim+1):
-        try:
-            if 'FDEP' in head['CTYPE'+str(i)].upper():
-                FD_axis=i
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                 # have CTYPE keywords.
+    Ndim,FD_axis=find_axes(head)
 
     #Move FD axis to first place in numpy order.
     if FD_axis != Ndim:
@@ -339,8 +365,10 @@ def main():
                         help="FITS cube containing the dirty FDF.\n(Can be any of the FDF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("fitsRMSF", metavar="RMSF.fits", nargs=1,
                         help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)")
-    parser.add_argument("-c", dest="cutoff", type=float, nargs=1,
-                        default=1.0, help="CLEAN cutoff in flux units")
+    parser.add_argument("-c", dest="cutoff", type=float, default=1,
+                        help="Initial CLEAN cutoff in flux units [1].")
+    parser.add_argument("-w", dest="window", type=float, default=np.nan, 
+                        help="Threshold for (deeper) windowed clean [Not used if not set].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="Maximum number of CLEAN iterations per pixel [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
@@ -400,6 +428,7 @@ def main():
                                                         gain        = args.gain,
                                                         chunksize   = chunksize,
                                                         nBits       = 32,
+                                                        window      = args.window,
                                                         verbose = verbose)
     # Write results to disk
     writefits(cleanFDF,

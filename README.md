@@ -1,4 +1,4 @@
-# RM
+# RM-Tools
 
 RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
 
@@ -9,22 +9,45 @@ RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
  Initial version by Cormac R. Purcell  
  Currently maintained by CIRADA
 
+Version 1.2 is now released! Check the wiki for new functionality.
 
-Installation and usage instructions can be found in the [wiki](https://github.com/CIRADA-Tools/RM/wiki).
-
+Installation, usage instructions and detailed algorithm information can be found in the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
 
 Structure:  
-RMtools_1D  ... 1D utilities to analyse Faraday spectra of single pixels.  
-RMtools_3D  ... 1D utilities to analyse Faraday spectral cubes.  
+RMtools_1D  ... Toolkit to produce Faraday spectra of single pixels.  
+RMtools_3D  ... Toolkit to produce Faraday depth cubes.  
+RMutils     ... Utilities for interacting with polarized data and Faraday depth 
 
-This will make the following modules importable in Python:
+This will make the following modules importable in Python: RMtools_1D, RMtools_3D, RMutil
 
-RMtools_1D  ... 1D utilities to analyse Faraday spectra of single pixels.
-RMtools_3D  ... 1D utilities to analyse Faraday spectral cubes.
-RMutils     ... Core functions used by the analysis utilities.
+![RM-Tools component diagram](https://github.com/CIRADA-Tools/RM-Tools/wiki/diagram.png)
 
+Five terminal commands are added to invoke the main tools:  
+rmsynth1d  
+rmclean1d  
+rmsynth3d  
+rmclean3d  
+qufit
+
+Use these commands with a -h flag to get information on the usage of each. Full documentation is on the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
+
+The following terminal commands are available to access the [additional tools](https://github.com/CIRADA-Tools/RM-Tools/wiki/Tools):  
+rmtools_freqfile  
+rmtools_calcRMSF  
+rmtools_testdata1D  
+rmtools_createchunks  
+rmtools_assemblechunks  
+rmtools_fitIcube  
+rmtools_peakfitcube  
+rmtools_testdata3D  
+rmtools_extractregion
+
+
+If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being.  
+A paper with a full description of the package is being prepared but is not available yet.
 
 Questions, bug reports, and feature requests can be posted to the GitHub issues page or sent to Cameron Van Eck, cameron.van.eck (at) dunlap.utoronto.ca.
 
-More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.org.
+More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.ca.
 
+![Tests](https://github.com/CIRADA-Tools/RM-tools/actions/workflows/python-package.yml/badge.svg)

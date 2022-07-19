@@ -13,6 +13,7 @@
 from astropy.io import fits
 import numpy as np
 import argparse
+from astropy.wcs import WCS
 
 
 def save_freq_file():
@@ -42,22 +43,14 @@ def get_fits_header(filename):
     return header
 
 def get_freq_array(filename):
-    hduList = fits.open(filename)
-    header = hduList[0].header
-    for key, value in header.items():
-        if type(value) is str:
-            if value.lower() == "freq":
-                n_axis = int(key[-1])
-
-    iter_pixel= int(header["NAXIS{}".format(n_axis)]- header["CRPIX{}".format(n_axis)])
-    freq_data = [header["CRVAL{}".format(n_axis)]]
-
-    for i in range(0, iter_pixel):
-        freq_data.append(freq_data[i] + header["CDELT{}".format(n_axis)])
+    header = fits.getheader(filename)
+    wcs = WCS(header)
+    spec_wcs = wcs.spectral
+    nchan = spec_wcs.array_shape[0]
+    freqs = spec_wcs.pixel_to_world(np.arange(nchan))
 
 
-    freq_data_array = np.asarray(freq_data)
-    return freq_data_array
+    return freqs.value
 
 
 

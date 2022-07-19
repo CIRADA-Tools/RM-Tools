@@ -120,7 +120,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         dPhi_radm2 = fwhmRMSF_radm2 / nSamples
     if phiMax_radm2 is None:
         phiMax_radm2 = m.sqrt(3.0) / dLambdaSqMax_m2
-        phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
+        phiMax_radm2 = max(phiMax_radm2, fwhmRMSF_radm2*10.)    # Force the minimum phiMax to 10 FWHM
 
     # Faraday depth sampling. Zero always centred on middle channel
     nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2))) * 2 + 1
@@ -184,7 +184,9 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     # Note: the Stokes I model MUST be continuous throughout the cube,
     # i.e., no NaNs as the amplitude at freq0_Hz is interpolated from the
     # nearest two planes.
-    freq0_Hz = C / m.sqrt(lam0Sq_m2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        freq0_Hz = np.true_divide(C , m.sqrt(lam0Sq_m2))
+                                  
     if dataI is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx]<freq0_Hz:
@@ -207,7 +209,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     return dataArr
 
 def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
-                nBits = 32, write_seperate_FDF=False, not_rmsf=True, verbose=True, log=print):
+                nBits = 32, write_seperate_FDF=False, not_rmsf=False, verbose=False, log=print):
     """Write data to disk in FITS
 
 
@@ -273,9 +275,11 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     header["NAXIS"+str(freq_axis)] = phiArr_radm2.size
     header["CTYPE"+str(freq_axis)] = ("FDEP", 'Faraday depth (linear)')
     header["CDELT"+str(freq_axis)] = (np.diff(phiArr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
-    header["CRPIX"+str(freq_axis)] = 1.0
-    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[0], '[rad/m^2] Coordinate value at reference point')
+    header["CRPIX"+str(freq_axis)] = phiArr_radm2.size//2+1
+    header["CRVAL"+str(freq_axis)] = (phiArr_radm2[phiArr_radm2.size//2], '[rad/m^2] Coordinate value at reference point')
     header["CUNIT"+str(freq_axis)] = "rad/m^2"
+    if not np.isfinite(lam0Sq_m2):
+        lam0Sq_m2 = 0.
     header["LAMSQ0"] = (lam0Sq_m2,'Lambda^2_0, in m^2')
     if "DATAMAX" in header:
         del header["DATAMAX"]
@@ -394,21 +398,21 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
 
+    #Generate peak maps:
+        
+    maxPI,peakRM = create_peak_maps(FDFcube,phiArr_radm2,Ndim-freq_axis)
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut,
-                np.expand_dims(np.max(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat), axis=0),
+                np.expand_dims(maxPI.astype(dtFloat), axis=0),
                 header,
                overwrite=True, output_verify="fix")
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
-    peakFDFmap = np.argmax(np.abs(FDFcube), Ndim-freq_axis).astype(dtFloat)
-    peakFDFmap = header["CRVAL"+str(freq_axis)] + (peakFDFmap + 1
-                                     - header["CRPIX"+str(freq_axis)]) * header["CDELT"+str(freq_axis)]
     if(verbose): log("> %s" % fitsFileOut)
-    pf.writeto(fitsFileOut, np.expand_dims(peakFDFmap,axis=0), header, overwrite=True,
+    pf.writeto(fitsFileOut, np.expand_dims(peakRM,axis=0), header, overwrite=True,
                output_verify="fix")
 
 #   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
@@ -423,33 +427,52 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #               output_verify="fix")
 
 
-def readFitsCube_old(file, verbose, log = print):
+def create_peak_maps(FDFcube,phiArr_radm2,phi_axis=0):
+    """Finds the location and amplitude of the highest peak in the FDF (pixelwise)
+    and returns maps of those parameters. Does not fit the peak, only finds
+    the location in terms of the quantized Faraday depth slices of the cube.
+    Used to produce the maxPI and peakRM maps.
+    Inputs:
+        FDFcube: output cube from run_rmsynth
+        phiArr_radm2: array of Faraday depth values, from run_rmsynth
+        phi_axis (int): number of the axis for Faraday depth (in python order, 
+                         not FITS order). Defaults to zero (first axis).
+    Returns:
+        maxPI: array of same dimensions as FDFcube exceppt collapsed along
+                first (Faraday depth) axis, containing the maximum polarized
+                intensity for each pixel
+        peakRM: as maxPI, but with the Faraday depth location of the peak
+    """
+    
+    maxPI=np.max(np.abs(FDFcube), axis=phi_axis)
+    peakRM_indices = np.argmax(np.abs(FDFcube), axis=phi_axis)
+    peakRM=phiArr_radm2[peakRM_indices]
+    
+    return maxPI, peakRM
 
-    if not os.path.exists(file):
-        log("Err: File not found")
+    
+    
 
-    if(verbose): log("Reading " + file + " ...")
-    data = pf.getdata(file)
-    head = pf.getheader(file)
-    if(verbose): log("done.")
 
-    if head['CTYPE3']=='FREQ':
-        freqAx=3
-        data=data[:,:,:]
-        # Feeback
-        if(verbose): log("The first 3 dimensions of the cubes are [X=%d, Y=%d, Z=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"]))
 
-    elif head["NAXIS"]==4:
-        # Feeback
-        if(verbose): log("The first 4 dimensions of the cubes are [X=%d, Y=%d, Z=%d, F=%d]." % \
-          (head["NAXIS1"], head["NAXIS2"], head["NAXIS3"], head["NAXIS4"]))
-        if(head['CTYPE4']=='FREQ'):
-            freqAx=4
-            data=data[:,0,:,:]
-        else: log("Err: No frequency axis found")
-
-    return head, data
+def find_freq_axis(header):
+    """Finds the frequency axis in a FITS header.
+    Input: header: a Pyfits header object.
+    Returns the axis number (as recorded in the FITS file, **NOT** in numpy ordering.)
+    Returns 0 if the frequency axis cannot be found.
+    """
+    freq_axis=0 #Default for 'frequency axis not identified'
+    #Check for frequency axes. Because I don't know what different formatting
+    #I might get ('FREQ' vs 'OBSFREQ' vs 'Freq' vs 'Frequency'), convert to
+    #all caps and check for 'FREQ' anywhere in the axis name.
+    for i in range(1,header['NAXIS']+1):  #Check each axis in turn.
+        try:
+            if 'FREQ' in header['CTYPE'+str(i)].upper():
+                freq_axis=i
+        except:
+            pass #The try statement is needed for if the FITS header does not
+                 # have CTYPE keywords.
+    return freq_axis
 
 
 def readFitsCube(file, verbose, log = print):
@@ -479,18 +502,7 @@ def readFitsCube(file, verbose, log = print):
             print('NAXIS{} = {}'.format(i,head['NAXIS'+str(i)]),end='  ')
         print()
 
-    freq_axis=0 #Default for 'frequency axis not identified'
-    #Check for frequency axes. Because I don't know what different formatting
-    #I might get ('FREQ' vs 'OBSFREQ' vs 'Freq' vs 'Frequency'), convert to
-    #all caps and check for 'FREQ' anywhere in the axis name.
-    for i in range(1,N_dim+1):
-        try:
-            if 'FREQ' in head['CTYPE'+str(i)].upper():
-                freq_axis=i
-        except:
-            pass #The try statement is needed for if the FITS header does not
-                 # have CTYPE keywords.
-
+    freq_axis=find_freq_axis(head) 
     #If the frequency axis isn't the last one, rotate the array until it is.
     #Recall that pyfits reverses the axis ordering, so we want frequency on
     #axis 0 of the numpy array.
@@ -561,7 +573,7 @@ def main():
     parser.add_argument("-i", dest="fitsI", default=None,
                         help="FITS cube containing Stokes I model [None].")
     parser.add_argument("-n", dest="noiseFile", default=None,
-                        help="FITS file or cube containing noise values [None].")
+                        help="Text file containing channel noise values [None].")
     parser.add_argument("-w", dest="weightType", default="uniform",
                         help="weighting [uniform] (all 1s) or 'variance'.")
     parser.add_argument("-t", dest="fitRMSF", action="store_true",

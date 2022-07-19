@@ -44,6 +44,7 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from RMutils.util_RM import do_rmsynth
 from RMutils.util_RM import do_rmsynth_planes
@@ -53,9 +54,9 @@ from RMutils.util_RM import measure_qu_complexity
 from RMutils.util_RM import measure_fdf_complexity
 from RMutils.util_misc import nanmedian
 from RMutils.util_misc import toscalar
-from RMutils.util_misc import create_frac_spectra
-from RMutils.util_misc import poly5
-from RMutils.util_misc import MAD
+from RMutils.util_misc import create_frac_spectra,calculate_StokesI_model
+from RMutils.util_misc import poly5,powerlaw_poly5
+from RMutils.util_misc import MAD,renormalize_StokesI_model
 from RMutils.util_plotTk import plot_Ipqu_spectra_fig
 from RMutils.util_plotTk import plot_rmsf_fdf_fig
 from RMutils.util_plotTk import plot_complexity_fig
@@ -69,10 +70,11 @@ if sys.version_info.major == 2:
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
-def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
+def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
-                noStokesI=False, phiNoise_radm2=1e6, nBits=32, showPlots=False,
-                debug=False, verbose=False, log=print,units='Jy/beam'):
+                noStokesI=False, modStokesI=None, phiNoise_radm2=1e6, nBits=32, showPlots=False,
+                debug=False, verbose=False, log=print,units='Jy/beam', 
+                prefixOut="prefixOut", saveFigures=None,fit_function='log'):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -103,6 +105,7 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
             "uniform" -- Weight uniformly (i.e. with 1s)
         fitRMSF (bool): Fit a Gaussian to the RMSF?
         noStokesI (bool: Is Stokes I data provided?
+        modStokesI (array_like): Stokes I model across for each channel (optional)
         phiNoise_radm2 (float): ????
         nBits (int): Precision of floating point numbers.
         showPlots (bool): Show plots?
@@ -116,6 +119,7 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         aDict (dict): Data output by RM synthesis.
 
     """
+
 
     # Default data types
     dtFloat = "float" + str(nBits)
@@ -153,7 +157,7 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Fit the Stokes I spectrum and create the fractional spectra
     IModArr, qArr, uArr, dqArr, duArr, fitDict = \
-             create_frac_spectra(freqArr  = freqArr_GHz,
+             create_frac_spectra(freqArr  = freqArr_Hz,
                                  IArr     = IArr,
                                  QArr     = QArr,
                                  UArr     = UArr,
@@ -162,14 +166,25 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                  dUArr    = dUArr,
                                  polyOrd  = polyOrd,
                                  verbose  = True,
-                                 debug    = debug)
+                                 debug    = debug,
+                                 fit_function = fit_function,
+                                 modStokesI = modStokesI,
+                                 )
+             
+    dquArr = (dqArr + duArr)/2.0
+    dquArr= np.where(np.isfinite(dquArr),dquArr,np.nan)
+
 
     # Plot the data and the Stokes I model fit
-    if showPlots:
-        if verbose: log("Plotting the input data and spectral index fit.")
-        freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz/1e9)
-        specFig = plt.figure(figsize=(12.0, 8))
+    if verbose: log("Plotting the input data and spectral index fit.")
+    freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
+    if modStokesI is None:   
+        IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
+    elif modStokesI is not None:
+        modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
+        IModHirArr = modStokesI_interp(freqHirArr_Hz)
+    if showPlots or saveFigures:
+        specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
                               IArr           = IArr,
                               qArr           = qArr,
@@ -181,35 +196,38 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                               IModArr        = IModHirArr,
                               fig            = specFig,
                               units          = units)
-        plt.savefig(dataFile+'.spec.png', dpi=200, bbox_inches='tight')
+    if saveFigures:
+        outFilePlot = prefixOut + "_spectra-plots.pdf"
+        specFig.savefig(outFilePlot, bbox_inches = 'tight')
 
-        # Use the custom navigation toolbar (does not work on Mac OS X)
+
+    # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
 #            specFig.canvas.toolbar.pack_forget()
 #            CustomNavbar(specFig.canvas, specFig.canvas.toolbar.window)
 #        except Exception:
 #            pass
 
-        # Display the figure
+    # Display the figure
 #        if not plt.isinteractive():
 #            specFig.show()
 
-        # DEBUG (plot the Q, U and average RMS spectrum)
-        if debug:
-            rmsFig = plt.figure(figsize=(12.0, 8))
-            ax = rmsFig.add_subplot(111)
-            ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
-                    label='rms <QU>')
-            ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
-                    label='rms Q')
-            ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
-                    label='rms U')
-            xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
-            ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                         np.max(freqArr_Hz)/1e9 + xRange*0.05)
-            ax.set_xlabel('$\\nu$ (GHz)')
-            ax.set_ylabel('RMS '+units)
-            ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
+    # DEBUG (plot the Q, U and average RMS spectrum)
+    if debug:
+        rmsFig = plt.figure(facecolor='w',figsize=(12.0, 8))
+        ax = rmsFig.add_subplot(111)
+        ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
+                label='rms <QU>')
+        ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
+                label='rms Q')
+        ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
+                label='rms U')
+        xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
+        ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
+                     np.max(freqArr_Hz)/1e9 + xRange*0.05)
+        ax.set_xlabel('$\\nu$ (GHz)')
+        ax.set_ylabel('RMS '+units)
+        ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
 #            rmsFig.show()
 
     #-------------------------------------------------------------------------#
@@ -228,7 +246,7 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
         dPhi_radm2 = fwhmRMSF_radm2 / nSamples
     if phiMax_radm2 is None:
         phiMax_radm2 = m.sqrt(3.0) / dLambdaSqMax_m2
-        phiMax_radm2 = max(phiMax_radm2, 600.0)    # Force the minimum phiMax
+        phiMax_radm2 = max(phiMax_radm2, fwhmRMSF_radm2*10.)    # Force the minimum phiMax to 10 FWHM
 
     # Faraday depth sampling. Zero always centred on middle channel
     nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0)
@@ -243,7 +261,7 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
     if weightType=="variance":
-        weightArr = 1.0 / np.power(dQUArr, 2.0)
+        weightArr = 1.0 / np.power(dquArr, 2.0)
     else:
         weightType = "uniform"
         weightArr = np.ones(freqArr_Hz.shape, dtype=dtFloat)
@@ -287,14 +305,24 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     cputime = (endTime - startTime)
     if verbose: log("> RM-synthesis completed in %.2f seconds." % cputime)
 
+
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
     # Multiply the dirty FDF by Ifreq0 to recover the PI
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
-    Ifreq0 = poly5(fitDict["p"])(freq0_Hz/1e9)
+    if modStokesI is None:   
+        Ifreq0 = calculate_StokesI_model(fitDict,freq0_Hz)
+    elif modStokesI is not None:
+        modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
+        Ifreq0 = modStokesI_interp(freq0_Hz)
     dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux
 
+    # if modStokesI is None:   
+    #     #Need to renormalize the Stokes I parameters here to the actual reference frequency.
+    #     fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
+
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
-    dFDFth = np.sqrt( np.sum(weightArr**2 * dQUArr**2) / (np.sum(weightArr))**2 )
+    weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+    dFDFth = Ifreq0*np.sqrt( np.nansum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
 
 
     # Measure the parameters of the dirty FDF
@@ -307,14 +335,25 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0"] = toscalar(Ifreq0)
     mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
+    mDict["polyCoefferr"] = ",".join([str(x) for x in fitDict["perror"]])
+    mDict["poly_reffreq"] = fitDict['reference_frequency_Hz']
+    mDict['polyOrd'] = fitDict['polyOrd']
     mDict["IfitStat"] = fitDict["fitStatus"]
     mDict["IfitChiSqRed"] = fitDict["chiSqRed"]
+    mDict["fit_function"] = fit_function
     mDict["lam0Sq_m2"] = toscalar(lam0Sq_m2)
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU"] = toscalar(nanmedian(dQUArr))
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
+    
+    if (fitDict["fitStatus"] >= 128) and verbose:
+        log("WARNING: Stokes I model contains negative values!")
+    elif (fitDict["fitStatus"] >= 64) and verbose:
+        log("Caution: Stokes I model has low signal-to-noise.")
+
+
 
     #Add information on nature of channels:
     good_channels=np.where(np.logical_and(weightArr != 0,np.isfinite(qArr)))[0]
@@ -324,7 +363,8 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["median_channel_width"]=float(np.median(np.diff(freqArr_Hz)))
 
     # Measure the complexity of the q and u spectra
-    mDict["fracPol"] = mDict["ampPeakPIfit"]/(Ifreq0)
+    # Use 'ampPeakPIfitEff' for bias correct PI
+    mDict["fracPol"] = mDict["ampPeakPIfitEff"]/(Ifreq0)
     mD, pD = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
                                    qArr       = qArr,
                                    uArr       = uArr,
@@ -349,7 +389,13 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                                      chiSqReduArr=pD["chiSqRedArrU"],
                                      probuArr=pD["probArrU"],
                                      mDict=mDict)
-        tmpFig.show()
+        if saveFigures:
+            if verbose: print("Saving debug plots:")
+            outFilePlot = prefixOut + ".debug-plots.pdf"
+            if verbose: print("> " + outFilePlot)
+            tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
+        else:
+            tmpFig.show()
 
     #add array dictionary
     aDict = dict()
@@ -388,14 +434,15 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
        log('sigma_add(u) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddU"],
                                             mDict["dSigmaAddPlusU"],
                                             mDict["dSigmaAddMinusU"]))
+       log('Fitted polynomial order = {} '.format(mDict['polyOrd']))
        log()
        log('-'*80)
 
 
 
     # Plot the RM Spread Function and dirty FDF
-    if showPlots:
-        fdfFig = plt.figure(figsize=(12.0, 8))
+    if showPlots or saveFigures:
+        fdfFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = dirtyFDF,
                           phi2Arr    = phi2Arr_radm2,
@@ -418,8 +465,13 @@ def run_rmsynth(data, dataFile, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 #        fdfFig.show()
 
     # Pause if plotting enabled
-    if showPlots or debug:
+    if showPlots:
         plt.show()
+    if saveFigures or debug:
+        if verbose: print("Saving RMSF and dirty FDF plot:")
+        outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
+        if verbose: print("> " + outFilePlot)
+        fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
         #        #if verbose: print "Press <RETURN> to exit ...",
 #        input()
 
@@ -525,8 +577,8 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in an ASCII
-    file. The Stokes I spectrum is first fit with a polynomial and the
-    resulting model used to create fractional q = Q/I and u = U/I spectra.
+    file. The Stokes I spectrum is first fit with a polynomial or power law 
+    and the resulting model used to create fractional q = Q/I and u = U/I spectra.
 
     The ASCII file should the following columns, in a space separated format:
     [freq_Hz, I, Q, U, I_err, Q_err, U_err]
@@ -561,9 +613,11 @@ def main():
     parser.add_argument("-s", dest="nSamples", type=float, default=10,
                         help="number of samples across the RMSF lobe [10].")
     parser.add_argument("-w", dest="weightType", default="variance",
-                        help="weighting [inverse variance] or 'uniform' (all 1s).")
+                        help="weighting [inverse 'variance'] or 'uniform' (all 1s).")
+    parser.add_argument("-f", dest="fit_function", type=str, default="log",
+                        help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
     parser.add_argument("-o", dest="polyOrd", type=int, default=2,
-                        help="polynomial order to fit to I spectrum [2].")
+                        help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
     parser.add_argument("-i", dest="noStokesI", action="store_true",
                         help="ignore the Stokes I spectrum [False].")
     parser.add_argument("-b", dest="bit64", action="store_true",
@@ -573,7 +627,7 @@ def main():
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="verbose output [False].")
     parser.add_argument("-S", dest="saveOutput", action="store_true",
-                        help="save the arrays [False].")
+                        help="save the arrays and plots [False].")
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
@@ -606,7 +660,10 @@ def main():
                 showPlots      = args.showPlots,
                 debug          = args.debug,
                 verbose        = verbose,
-                units          = args.units)
+                units          = args.units,
+                prefixOut      = prefixOut,
+                saveFigures    = args.saveOutput,
+                fit_function   = args.fit_function)
 
     if args.saveOutput:
         saveOutput(mDict, aDict, prefixOut, verbose)

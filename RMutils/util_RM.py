@@ -101,6 +101,7 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     weightArr       ... vector of weights, default [None] is Uniform (all 1s)
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
+    log             ... function to be used to output messages [print]
     
     """
     
@@ -161,6 +162,8 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
     K = 1.0 / np.sum(weightArr)
     if lam0Sq_m2 is None:
         lam0Sq_m2 = K * np.sum(weightArr * lambdaSqArr_m2)
+    if not np.isfinite(lam0Sq_m2): #Can happen if all channels are NaNs/zeros
+        lam0Sq_m2=0.
     
     # The K value used to scale each FDF spectrum must take into account
     # flagged voxels data in the datacube and can be position dependent
@@ -212,7 +215,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
     verbose         ... print feedback during calculation [False]
-    
+    log             ... function to be used to output messages [print]
+
     """
     
     # Default data types
@@ -296,7 +300,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     lam0Sq_m2 = K * np.nansum(weightArr * lambdaSqArr_m2)
 
     # Calculate the analytical FWHM width of the main lobe    
-    fwhmRMSF = 2.0 * m.sqrt(3.0)/(np.nanmax(lambdaSqArr_m2) -
+    fwhmRMSF = 3.8/(np.nanmax(lambdaSqArr_m2) -
                                   np.nanmin(lambdaSqArr_m2))
 
     # Do a simple 1D calculation and replicate along X & Y axes
@@ -315,7 +319,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting Gaussian to the main lobe.")
             if fitRMSFreal:
-                mp = fit_rmsf(phi2Arr, RMSFcube.real)
+                mp = fit_rmsf(phi2Arr, RMSFArr.real)
             else:
                 mp = fit_rmsf(phi2Arr, np.abs(RMSFArr))
             if mp is None or mp.status<1:
@@ -390,7 +394,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
                       fwhmRMSFArr, cutoff, maxIter=1000, gain=0.1,
                       mskArr=None, nBits=32, verbose=False, doPlots=False,
-                      pool=None, chunksize=None,log=print):
+                      pool=None, chunksize=None,log=print, window=0):
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -406,6 +410,10 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     nBits          ... precision of data arrays [32]
     verbose        ... print feedback during calculation [False]
     doPlots        ... plot the final CLEAN FDF [False]
+    pool           ... thread pool for multithreading (from schwimmbad) [None]
+    chunksize      ... number of pixels to be given per thread (for 3D) [None]
+    log            ... function to be used to output messages [print]
+    window         ... Only clean in ±RMSF_FWHM window around first peak [False]
 
     """
 
@@ -480,7 +488,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     # Loop through the pixels containing a polarised signal
     inputs = [[yi, xi, dirtyFDF] for yi, xi in xyCoords]
     rmc = RMcleaner(RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
-                    iterCountArr, maxIter, gain, cutoff, nBits, verbose)
+                    iterCountArr, maxIter, gain, cutoff, nBits, verbose, window)
 
 
     if pool is None:
@@ -520,6 +528,7 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     cleanFDF = np.squeeze(cleanFDF)
     ccArr = np.squeeze(ccArr)
     iterCountArr = np.squeeze(iterCountArr)
+    residFDF = np.squeeze(residFDF)
 
     return cleanFDF, ccArr, iterCountArr, residFDF
 
@@ -528,12 +537,12 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
 class RMcleaner:
     """Allows do_rmclean_hogbom to be run in parallel
-
+    Designed around use of schwimmbad parallelization tools.
     """
 
     def __init__(self, RMSFArr, phi2Arr_radm2, phiArr_radm2, fwhmRMSFArr, 
                  iterCountArr, maxIter=1000, gain=0.1, cutoff=0,nbits=32, 
-                 verbose=False):
+                 verbose=False, window=0):
         self.RMSFArr = RMSFArr
         self.phi2Arr_radm2 = phi2Arr_radm2
         self.phiArr_radm2 = phiArr_radm2
@@ -544,6 +553,7 @@ class RMcleaner:
         self.cutoff = cutoff
         self.verbose = verbose
         self.nbits = nbits
+        self.window = window
 
     def cleanloop(self, args):
         return self._cleanloop(*args)
@@ -564,11 +574,8 @@ class RMcleaner:
         # Assumes only integer shifts and symmetric
         nPhiPad = int((len(self.phi2Arr_radm2)-len(self.phiArr_radm2))/2)
 
-        # Main CLEAN loop
         iterCount = 0
-        while (np.max(np.abs(residFDF)) >= self.cutoff
-                and iterCount <= self.maxIter):
-
+        while (np.max(np.abs(residFDF)) >= self.cutoff and iterCount <= self.maxIter):
             # Get the absolute peak channel, values and Faraday depth
             indxPeakFDF = np.argmax(np.abs(residFDF))
             peakFDFval = residFDF[indxPeakFDF]
@@ -594,7 +601,49 @@ class RMcleaner:
             iterCount += 1
             self.iterCountArr[yi, xi] = iterCount
 
+        # Create a mask for the pixels that have been cleaned
+        mask = np.abs(ccArr) > 0
+        dPhi = self.phiArr_radm2[1] - self.phiArr_radm2[0]
+        fwhmRMSFArr_pix = fwhmRMSFArr / dPhi
+        for i in np.where(mask)[0]:
+            start = int(i - fwhmRMSFArr_pix /2)
+            end = int(i + fwhmRMSFArr_pix /2)
+            mask[start:end] = True
+        residFDF_mask = np.ma.array(residFDF, mask=~mask)
+        # Clean again within mask
+        while (np.ma.max(np.ma.abs(residFDF_mask)) >= self.window and iterCount <= self.maxIter):
+            if residFDF_mask.mask.all():
+                break
+            # Get the absolute peak channel, values and Faraday depth
+            indxPeakFDF = np.ma.argmax(np.abs(residFDF_mask))
+            peakFDFval = residFDF_mask[indxPeakFDF]
+            phiPeak = self.phiArr_radm2[indxPeakFDF]
+
+            # A clean component is "loop-gain * peakFDFval
+            CC = self.gain * peakFDFval
+            ccArr[indxPeakFDF] += CC
+
+            # At which channel is the CC located at in the RMSF?
+            indxPeakRMSF = indxPeakFDF + nPhiPad
+
+            # Shift the RMSF & clip so that its peak is centred above this CC
+            shiftedRMSFArr = np.roll(RMSFArr,
+                                     indxPeakRMSF-indxMaxRMSF)[nPhiPad:-nPhiPad]
+
+            # Subtract the product of the CC shifted RMSF from the residual FDF
+            residFDF -= CC * shiftedRMSFArr
+
+            # Restore the CC * a Gaussian to the cleaned FDF
+            cleanFDF += \
+                gauss1D(CC, phiPeak, fwhmRMSFArr)(self.phiArr_radm2)
+            iterCount += 1
+            self.iterCountArr[yi, xi] = iterCount
+
+            # Remake masked residual FDF
+            residFDF_mask = np.ma.array(residFDF, mask=~mask)
+
         cleanFDF = np.squeeze(cleanFDF)
+        residFDF = np.squeeze(residFDF)
         ccArr = np.squeeze(ccArr)
 
         return cleanFDF, residFDF, ccArr
@@ -637,7 +686,7 @@ def extrap(x, xp, yp):
 
 
 #-----------------------------------------------------------------------------#
-def fit_rmsf(xData, yData, thresh=0.3, ampThresh=0.5):
+def fit_rmsf(xData, yData, thresh=0.4, ampThresh=0.4):
     """
     Fit the main lobe of the RMSF with a Gaussian function. 
     """
@@ -698,31 +747,22 @@ def gauss1D(amp=1.0, mean=0.0, fwhm=1.0):
 
 
 #-----------------------------------------------------------------------------#
-def detect_peak(a, thresh=0.3):
+
+def detect_peak(a, thresh=0.4):
     """Detect the extent of the peak in the array by moving away, in both
-    directions, from the peak channel amd looking for where the slope changes
-    to some shallow value. The triggering slope is 'thresh*max(slope)'.
+    directions, from the peak channel amd looking for where the value drops
+    below a threshold.
     Returns a mask array like the input array with 1s over the extent of the
     peak and 0s elsewhere."""
 
-    # Find the peak and take the 1st derivative
-    iPkL= np.argmax(a)  # If the peak is flat, this is the left index
-    g1 = np.abs(np.gradient(a))
+    # Find the peak
+    iPk = np.argmax(a)  # If the peak is flat, this is the left index
 
-    # Specify a threshold for the 1st derivative. Channels between the peak
-    # and the first crossing point will be included in the mask.
-    threshPos = np.nanmax(g1) * thresh
+    # find first point below threshold right of peak
+    ishift = np.where(a[iPk:]<thresh)[0][0]
+    iR = iPk+ishift
+    iL = iPk-ishift+1
 
-    # Determine the right-most index of flat peaks
-    iPkR = iPkL
-    d = np.diff(a)
-    flatIndxLst = np.argwhere(d[iPkL:]==0).flatten()
-    if len(flatIndxLst)>0:
-        iPkR += (np.max(flatIndxLst)+1)
-        
-    # Search for the left & right crossing point
-    iL = np.max(np.argwhere(g1[:iPkL]<=threshPos).flatten())
-    iR = iPkR + np.min(np.argwhere(g1[iPkR+1:]<=threshPos).flatten()) + 2
     msk = np.zeros_like(a)
     msk[iL:iR] = 1
     
@@ -732,19 +772,66 @@ def detect_peak(a, thresh=0.3):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.step(np.arange(len(a)),a, where="mid", label="arr")
-        ax.step(np.arange(len(g1)), np.abs(g1), where="mid", label="g1")
         ax.step(np.arange(len(msk)), msk*0.5, where="mid", label="msk")
         ax.axhline(0, color='grey')
-        ax.axvline(iPkL, color='k', linewidth=3.0)
-        ax.axhline(threshPos, color='magenta', ls="--")
-        ax.set_xlim([iPkL-20, iPkL+20])
+        ax.axvline(iPk, color='k', linewidth=3.0)
+        ax.axhline(thresh, color='magenta', ls="--")
+        ax.set_xlim([iL-20, iR+20])
         leg = ax.legend(numpoints=1, loc='upper right', shadow=False,
                         borderaxespad=0.3, ncol=1,
                         bbox_to_anchor=(1.00, 1.00))
         fig.show()
-        input()
-
     return msk
+
+
+#-----------------------------------------------------------------------------#
+# def detect_peak(a, thresh=0.3):
+#     """Detect the extent of the peak in the array by moving away, in both
+#     directions, from the peak channel amd looking for where the slope changes
+#     to some shallow value. The triggering slope is 'thresh*max(slope)'.
+#     Returns a mask array like the input array with 1s over the extent of the
+#     peak and 0s elsewhere."""
+
+#     # Find the peak and take the 1st derivative
+#     iPkL= np.argmax(a)  # If the peak is flat, this is the left index
+#     g1 = np.abs(np.gradient(a))
+
+#     # Specify a threshold for the 1st derivative. Channels between the peak
+#     # and the first crossing point will be included in the mask.
+#     threshPos = np.nanmax(g1) * thresh
+
+#     # Determine the right-most index of flat peaks
+#     iPkR = iPkL
+#     d = np.diff(a)
+#     flatIndxLst = np.argwhere(d[iPkL:]==0).flatten()
+#     if len(flatIndxLst)>0:
+#         iPkR += (np.max(flatIndxLst)+1)
+        
+#     # Search for the left & right crossing point
+#     iL = np.max(np.argwhere(g1[:iPkL]<=threshPos).flatten())
+#     iR = iPkR + np.min(np.argwhere(g1[iPkR+1:]<=threshPos).flatten()) + 2
+#     msk = np.zeros_like(a)
+#     msk[iL:iR] = 1
+    
+#     # DEBUG PLOTTING
+#     if False:
+#         from matplotlib import pyplot as plt
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111)
+#         ax.step(np.arange(len(a)),a, where="mid", label="arr")
+#         ax.step(np.arange(len(g1)), np.abs(g1), where="mid", label="g1")
+#         ax.step(np.arange(len(msk)), msk*0.5, where="mid", label="msk")
+#         ax.axhline(0, color='grey')
+#         ax.axvline(iPkL, color='k', linewidth=3.0)
+#         ax.axhline(threshPos, color='magenta', ls="--")
+#         ax.set_xlim([iPkL-20, iPkL+20])
+#         leg = ax.legend(numpoints=1, loc='upper right', shadow=False,
+#                         borderaxespad=0.3, ncol=1,
+#                         bbox_to_anchor=(1.00, 1.00))
+#         fig.show()
+#         input()
+
+#     return msk
 
 
 #-----------------------------------------------------------------------------#
@@ -754,6 +841,7 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     Measure standard parameters from a complex Faraday Dispersion Function.
     Currently this function assumes that the noise levels in the Stokes Q
     and U spectra are the same.
+    Returns a dictionary containing measured parameters.
     """
     
     # Determine the peak channel in the FDF, its amplitude and index
@@ -794,17 +882,17 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     peakFDFimagChan = FDF.imag[indxPeakPIchan]
     peakFDFrealChan = FDF.real[indxPeakPIchan]
     polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
-                                         peakFDFrealChan))
+                                         peakFDFrealChan)) % 180
     dPolAngleChan_deg = np.degrees(dFDF / (2.0 * ampPeakPIchan))
 
     # Calculate the derotated polarisation angle and uncertainty
     polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
-                                  phiPeakPIchan * lam0Sq)
+                                  phiPeakPIchan * lam0Sq) % 180
     nChansGood = np.sum(np.where(lamSqArr_m2==lamSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
     dPolAngle0Chan_rad = \
-        np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
+        np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
                  ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
     dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
     
@@ -835,6 +923,14 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         
         snrPIfit = ampPeakPIfit / dFDF
         
+        #In rare cases, a parabola can be fitted to the edge of the spectrum,
+        #producing a unreasonably large RM and polarized intensity.
+        #In these cases, everything should get NaN'd out.
+        if np.abs(phiPeakPIfit) > np.max(np.abs(phiArr)):
+            phiPeakPIfit=np.nan
+            ampPeakPIfit=np.nan
+        
+        
         # Error on fitted Faraday depth (RM) is same as channel, but using fitted PI
         dPhiPeakPIfit = fwhmRMSF * dFDF / (2.0 * ampPeakPIfit)
         
@@ -851,15 +947,15 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
         peakFDFimagFit = np.interp(phiPeakPIfit, phiArr, FDF.imag)
         peakFDFrealFit = np.interp(phiPeakPIfit, phiArr, FDF.real)
         polAngleFit_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagFit,
-                                                  peakFDFrealFit))
+                                                  peakFDFrealFit)) % 180
         dPolAngleFit_deg = np.degrees(dFDF / (2.0 * ampPeakPIfit))
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
-                                      phiPeakPIfit * lam0Sq)) % 180.0
+                                      phiPeakPIfit * lam0Sq)) % 180
         dPolAngle0Fit_rad = \
-            np.sqrt( dFDF**2.0 / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
+            np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
@@ -916,7 +1012,10 @@ def cdf_percentile(x, p, q=50.0):
     function."""
 
     # Determine index where cumulative percentage is achieved
-    i = np.where(p>q/100.0)[0][0]
+    try: #Can fail if NaNs present, so return NaN in this case.
+        i = np.where(p>q/100.0)[0][0]
+    except:
+        return np.nan
 
     # If at extremes of the distribution, return the limiting value
     if i==0 or i==len(x):
@@ -1317,7 +1416,7 @@ def get_RMSF(lamSqArr, phiArr, weightArr=None, lam0Sq_m2=None, double=True,
     RMSFArr = K * np.nansum(weightArr * np.exp( np.outer(a, b) ), 1)
 
     # Calculate (B&dB Equation 61) or fit the main-lobe FWHM of the RMSF
-    fwhmRMSF = 2.0 * m.sqrt(3.0)/(np.nanmax(lamSqArr) - np.nanmin(lamSqArr))
+    fwhmRMSF = 3.8/(np.nanmax(lamSqArr) - np.nanmin(lamSqArr))
     if not uniformWt:
         if fitRMSFreal:
             mp = fit_rmsf(phi2Arr, RMSFArr.real)
