@@ -227,14 +227,8 @@ def get_model(name):
             UArr = QUArr.imag
 
             # model cable delay leakage
-            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"])*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"])*VModArr
-            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"])*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"])*UArr
-            UArr=U_leak
-            VArr=-V_leak
-            
-            # secondary delay leakage
-            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s2"])*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s2"])*VArr
-            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s2"])*VArr + np.sin(2*np.pi*freqArr*pDict["lag_s2"])*UArr
+            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
+            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
             UArr=U_leak
             VArr=-V_leak
             
@@ -514,12 +508,12 @@ def get_params(name):
                  "priortype": "uniform",
                  "wrap":      0},
                  
-                {"parname":   "lag_s2",
-                 "label":     "lag (sec)",
+                {"parname":   "lag_phi",
+                 "label":     "lag_phi (deg.)",
                  "value":     0.0,
-                 "bounds":    [-1e-7, 1e-7],
+                 "bounds":    [0.0, 360.0],
                  "priortype": "uniform",
-                 "wrap":      0},
+                 "wrap":      1},
 
                 {"parname":   "gamma",
                  "label":     "$\gamma_L$",
