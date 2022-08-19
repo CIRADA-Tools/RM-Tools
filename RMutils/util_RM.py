@@ -1084,7 +1084,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax1.axhline(yMed+noise, color='r', linestyle="--", zorder=10)
         ax1.axhline(yMed-noise, color='r', linestyle="--", zorder=10)
         ax1.set_title(r'Input Data')
-        ax1.set_xlabel(r'$\lambda^2$')
+        ax1.set_xlabel(r"\$\lambda^2\$")
         ax1.set_ylabel('Amplitude')
 
         # Plot the histogram of the data overlaid by the normal distribution
@@ -1118,9 +1118,9 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax4 = fig.add_subplot(234)
         ax4.step(x=sigmaAddArr, y=chiSqRedArr, linewidth=1.5, where="mid")
         ax4.axhline(1.0, color='r', linestyle="--")
-        ax4.set_title(r'$\chi^2_{\rm reduced}$ vs $\sigma_{\rm additional}$')
-        ax4.set_xlabel(r'$\sigma_{\rm additional}$')
-        ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
+        ax4.set_title(r"\$\chi^2_{\rm reduced}\$ vs \$\sigma_{\rm additional}\$")
+        ax4.set_xlabel(r"\$\sigma_{\rm additional}\$")
+        ax4.set_ylabel(r"\$\chi^2_{\rm reduced}\$")
 
         # Plot the probability distribution function
         ax5 = fig.add_subplot(235)
@@ -1129,8 +1129,8 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax5.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
         ax5.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
         ax5.set_title('Relative Likelihood')
-        ax5.set_xlabel(r"$\sigma_{\rm additional}$")
-        ax5.set_ylabel(r"P($\sigma_{\rm additional}$|data)")
+        ax5.set_xlabel(r"\$\sigma_{\rm additional}\$")
+        ax5.set_ylabel(r"P(\$\sigma_{\rm additional}\$|data)")
 
         # Plot the CPDF
         ax6 = fig.add_subplot(236)
@@ -1141,7 +1141,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax6.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
         ax6.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
         ax6.set_title('Cumulative Likelihood')
-        ax6.set_xlabel(r"$\sigma_{\rm additional}$")
+        ax6.set_xlabel(r"\$\sigma_{\rm additional}\$")
         ax6.set_ylabel(r"Cumulative Likelihood")
 
         # Zoom in
@@ -1333,6 +1333,9 @@ def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
     # Do the synthesis at each pixel of the image
     for k in trange(nY, desc='RM-synthesis'):
         for i in range(nX):
+            j += 1
+            progress(40, ((j)*100.0/nPix))
+
             # Calculate the FDF, B&dB Eqns. (25) and (36)
             # B&dB Eqns. (25) and (36)
             FDFcube[k,i,:] = K * np.nansum(pCube[k,i,:] * arg, axis=1)
@@ -1689,8 +1692,8 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     ax2.axhline(0, color='grey')
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.xaxis.set_major_locator(MaxNLocator(4))
-    ax2.set_xlabel('$\\lambda^2$ (m$^2$)')
-    #ax2.set_ylabel('Residual ($\sigma$)')
+    ax2.set_xlabel(r"\$\lambda^2\$ (m\$^2\$)")
+    #ax2.set_ylabel('Residual (\$\sigma\$)')
     ax2.set_ylabel('Residual (fractional polarisation)')
 
     # Plot the distribution of the residual
@@ -1709,7 +1712,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     g = gauss1D(amp=H, mean=0.0, fwhm=FWHM)(x)
     ax3.plot(x, g, color='k', linewidth=2, linestyle="--", zorder=1)
     ax3.set_ylabel('Normalised Units')
-    ax3.set_xlabel('Residual ($\sigma$)')
+    ax3.set_xlabel('Residual (\$\sigma\$)')
 
     # Plot the cumulative distribution function
     N = len(qResidNorm)
@@ -1722,7 +1725,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     x, y = norm_cdf(mean=0.0, std=1.0, N=1000)
     ax4.step(x, y, color='k', linewidth=2, linestyle="--", zorder=1)
     ax4.set_ylabel('CDF')
-    ax4.set_xlabel('Residual ($\sigma$)')
+    ax4.set_xlabel('Residual (\$\sigma\$)')
 
     return fig
 

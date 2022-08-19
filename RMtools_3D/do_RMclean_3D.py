@@ -141,9 +141,9 @@ def run_rmclean(fitsFDF, fitsRMSF, cutoff, maxIter=1000, gain=0.1, nBits=32,
         cleanFDF=np.expand_dims(cleanFDF,axis=tuple(range(old_Ndim-new_Ndim)))
         ccArr=np.expand_dims(ccArr,axis=tuple(range(old_Ndim-new_Ndim)))
         residFDF=np.expand_dims(residFDF,axis=tuple(range(old_Ndim-new_Ndim)))
-    #New dimensions are added to the beginning of the axis ordering 
+    #New dimensions are added to the beginning of the axis ordering
     #(revserse of FITS ordering)
-    
+
     #Move the FDF axis to it's original spot. Hopefully this means that all
     # axes are in their original place after all of that.
     cleanFDF=np.moveaxis(cleanFDF,old_Ndim-new_Ndim,old_Ndim-FD_axis)
@@ -254,7 +254,7 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
     fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
     if (verbose): log("> %s" % fitsFileOut)
     headtemp["BUNIT"] = "Iterations"
-    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), 
+    hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat),
                         axis=tuple(range(headtemp['NAXIS']-iterCountArr.ndim))),
                         headtemp)
     hduLst = pf.HDUList([hdu0])
@@ -367,12 +367,14 @@ def main():
                         help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)")
     parser.add_argument("-c", dest="cutoff", type=float, default=1,
                         help="Initial CLEAN cutoff in flux units [1].")
-    parser.add_argument("-w", dest="window", type=float, default=np.nan, 
+    parser.add_argument("-w", dest="window", type=float, default=np.nan,
                         help="Threshold for (deeper) windowed clean [Not used if not set].")
     parser.add_argument("-n", dest="maxIter", type=int, default=1000,
                         help="Maximum number of CLEAN iterations per pixel [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
                         help="CLEAN loop gain [0.1].")
+    parser.add_argument("-w", dest="window", action="store_true",
+                    help="CLEAN in window around first peak [False].")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-f", dest="write_separate_FDF", action="store_false",

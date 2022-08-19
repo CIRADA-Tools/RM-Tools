@@ -254,7 +254,7 @@ def plot_I_vs_nu_ax(ax, freqArr_Hz, IArr, dIArr=None,
     xRange = (np.nanmax(freqArr_Hz) - np.nanmin(freqArr_Hz))/1e9 
     ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
                  np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
-    ax.set_xlabel('$\\nu$ (GHz)')
+    ax.set_xlabel(r"\$\nu\$ (GHz)")
     ax.set_ylabel('Flux Density ('+units+')')
     ax.minorticks_on()
 
@@ -314,7 +314,7 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr, UArr, dQArr=None,
     xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
     ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
                  np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
-    ax.set_xlabel('$\\nu$ (GHz)')
+    ax.set_xlabel(r"\$\nu\$ (GHz)")
     ax.set_ylabel('Flux Density')
     ax.axhline(0, color='grey')
 
@@ -351,7 +351,7 @@ def plot_rmsIQU_vs_nu_ax(ax, freqArr_Hz, rmsIArr,  rmsQArr,
     xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9 
     ax.set_xlim( np.nanmin(freqArr_Hz)/1e9 - xRange*0.05,
                  np.nanmax(freqArr_Hz)/1e9 + xRange*0.05)
-    ax.set_xlabel('$\\nu$ (GHz)')
+    ax.set_xlabel(r"\$\nu\$ (GHz)")
     ax.set_ylabel('Flux Density')
     
     # Format tweaks
@@ -460,7 +460,7 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
                            float(nanmedian(duArr))])
     ax.set_ylim( yDataMin - 2*medErrBar - yRange*0.05,
                  yDataMax + 2*medErrBar + yRange*0.1)
-    ax.set_xlabel('$\\lambda^2$ (m$^2$)')
+    ax.set_xlabel(r"\$\lambda^2\$ (m\$^2\$)")
     ax.set_ylabel('Fractional Polarisation')
     ax.axhline(0, linestyle='--', color='grey')
     ax.minorticks_on()
@@ -507,7 +507,7 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees( np.arctan2(uModArr, qModArr) / 2.0 )
         ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='tab:red', lw=0.1,
-                 label='Model $\psi$')
+                 label='Model \$\psi\$')
     if model_dict is not None:
         errDict = {}
         psi_errmodel = []
@@ -537,8 +537,8 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     ax.set_xlim( np.nanmin(lamSqArr_m2) - xRange*0.05,
                  np.nanmax(lamSqArr_m2) + xRange*0.05)
     ax.set_ylim(-99.9, 99.9)
-    ax.set_xlabel('$\\lambda^2$ (m$^2$)')
-    ax.set_ylabel('$\psi$ (degrees)')
+    ax.set_xlabel(r"\$\lambda^2\$ (m\$^2\$)")
+    ax.set_ylabel(r"\$\psi\$ (degrees)")
     ax.axhline(0, linestyle='--', color='grey')
     ax.minorticks_on()
 
@@ -651,7 +651,7 @@ def plot_RMSF_ax(ax, phiArr, RMSFArr, fwhmRMSF=None, axisYright=False,
     ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
                  np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Normalised Units')
-    ax.set_xlabel('$\phi$ rad m$^{-2}$')
+    ax.set_xlabel(r"\$\phi\$ rad m\$^{-2}\$")
     ax.axhline(0, color='grey')
 
     # Format tweaks
@@ -722,7 +722,7 @@ def plot_dirtyFDF_ax(ax, phiArr, FDFArr, gaussParm=[], vLine=None,
     ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
                  np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Flux Density ('+units+')')
-    ax.set_xlabel('$\phi$ (rad m$^{-2}$)')
+    ax.set_xlabel(r"\$\phi\$ (rad m\$^{-2}\$)")
     ax.axhline(0, color='grey')
 
     # Format tweaks
@@ -790,7 +790,7 @@ def plot_cleanFDF_ax(ax, phiArr, cleanFDFArr=None, ccFDFArr=None,
     ax.set_xlim( np.nanmin(phiArr) - xRange*0.01,
                  np.nanmax(phiArr) + xRange*0.01)
     ax.set_ylabel('Flux Density ('+units+')')
-    ax.set_xlabel('$\phi$ (rad m$^{-2}$)')
+    ax.set_xlabel(r"\$\phi\$ (rad m\$^{-2}\$)")
     ax.axhline(0, color='grey')
 
     # Format tweaks
@@ -1934,9 +1934,9 @@ def label_format_exp(switchExp=3.0):
             sign = "-" if int(num/absNum)<0 else ""
             exponent = m.log10(absNum)
         if abs(exponent)>=switchExp:
-            return r"$%s10^{%i}$" % (sign, m.log10(absNum))
+            return r"\$%s10^{%i}\$" % (sign, m.log10(absNum))
         else:
-            return  r"$%s%g$" % (sign, absNum)
+            return  r"\$%s%g\$" % (sign, absNum)
         
     return rfunc
 
@@ -1963,7 +1963,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax1.axhline(med, color='grey', zorder=10)
     ax1.axhline(1.0, color='k', linestyle="--", zorder=10)
     ax1.axhline(-1.0, color='k', linestyle="--", zorder=10)
-    ax1.set_xlabel(r'$\lambda^2$')
+    ax1.set_xlabel(r"\$\lambda^2\$")
     ax1.set_ylabel('Normalised Residual')
 
     # Plot the histogram of the data overlaid by the normal distribution
@@ -2007,8 +2007,8 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax4.step(x=sigmaAddqArr, y=chiSqReduArr, color='tab:red', linewidth=1.0,
              where="mid")
     ax4.axhline(1.0, color='k', linestyle="--")
-    ax4.set_xlabel(r'$\sigma_{\rm add}$')
-    ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
+    ax4.set_xlabel(r"\$\sigma_{\rm add}\$")
+    ax4.set_ylabel(r"\$\chi^2_{\rm reduced}\$")
     
     # Plot the probability distribution function
     ax5 = fig.add_subplot(233)
@@ -2028,7 +2028,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
     ax5.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
     ax5.set_title('Likelihood Distribution')
-    ax5.set_ylabel(r"P($\sigma_{\rm add}$|data)")
+    ax5.set_ylabel(r"P(\$\sigma_{\rm add}\$|data)")
     
     # Plot the CPDF
     CPDFq = np.cumsum(probqArr)/np.sum(probqArr)
@@ -2048,7 +2048,7 @@ def plot_complexity_fig(xArr, qArr, dqArr, sigmaAddqArr, chiSqRedqArr,
                 linestyle="--", linewidth=1.0)
     ax6.axvline(mDict["sigmaAddU"]-mDict["dSigmaAddMinusU"], color='tab:red',
                 linestyle="--", linewidth=1.0)
-    ax6.set_xlabel(r"$\sigma_{\rm add}$")
+    ax6.set_xlabel(r"\$\sigma_{\rm add}\$")
     ax6.set_ylabel(r"Cumulative Likelihood")
     
     # Zoom in

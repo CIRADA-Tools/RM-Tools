@@ -97,7 +97,7 @@ def config_read(filename, delim='=', doValueSplit=True):
 
     configTable = {}
     CONFIGFILE = open(filename, "r")
-    
+
     # Compile a few useful regular expressions
     spaces = re.compile('\s+')
     commaAndSpaces = re.compile(',\s+')
@@ -146,7 +146,7 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
 
     outLst = []
     DATFILE = open(fileName, "r")
-     
+
     # Compile a few useful regular expressions
     spaces = re.compile('\s+')
     comma_and_spaces = re.compile(',\s+')
@@ -172,7 +172,7 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
             continue
         if doFloat:
             line = [float(x) for x in line]
-        
+
         outLst.append(line)
 
     return outLst
@@ -180,7 +180,7 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
 
 #-----------------------------------------------------------------------------#
 def cleanup_str_input(textBlock):
-    
+
     # Compile a few useful regular expressions
     spaces = re.compile(r"[^\S\r\n]+")
     newlines = re.compile(r"\n+")
@@ -197,7 +197,7 @@ def cleanup_str_input(textBlock):
 
 #-----------------------------------------------------------------------------#
 def split_repeat_lst(inLst, nPre, nRepeat):
-    """Split entries in a list into a preamble and repeating columns. The 
+    """Split entries in a list into a preamble and repeating columns. The
     repeating entries are pushed into a 2D array of type float64."""
 
 
@@ -218,7 +218,7 @@ def deg2dms(deg, delim=':', doSign=False, nPlaces=2):
         angle = abs(deg)
         sign=1
         if angle!=0: sign = angle/deg
-        
+
         # Calcuate the degrees, min and sec
         dd = int(angle)
         rmndr = 60.0*(angle - dd)
@@ -244,7 +244,7 @@ def deg2dms(deg, delim=':', doSign=False, nPlaces=2):
         else:
             formatCode = "-%02d%s%02d%s" + formatCode
         return formatCode % (dd, delim, mm, delim, ss)
-        
+
     except Exception:
         return None
 
@@ -255,7 +255,7 @@ def progress(width, percent):
     Print a progress bar to the terminal.
     Stolen from Mike Bell.
     """
-    
+
     marks = m.floor(width * (percent / 100.0))
     spaces = m.floor(width - marks)
     loader = '  [' + ('=' * int(marks)) + (' ' * int(spaces)) + ']'
@@ -271,12 +271,12 @@ def calc_mom2_FDF(FDF, phiArr):
     Calculate the 2nd moment of the polarised intensity FDF. Can be applied to
     a clean component spectrum or a standard FDF
     """
-    
+
     K = np.sum( np.abs(FDF) )
     phiMean = np.sum( phiArr * np.abs(FDF) ) / K
     phiMom2 = np.sqrt( np.sum( np.power((phiArr - phiMean), 2.0) *
                                 np.abs(FDF) ) / K )
-    
+
     return phiMom2
 
 
@@ -284,7 +284,7 @@ def calc_mom2_FDF(FDF, phiArr):
 def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
     """
     Calculate the vertex of a parabola given three adjacent points.
-    Normalization of coordinates must be performed first to reduce risk of 
+    Normalization of coordinates must be performed first to reduce risk of
     floating point errors.
     """
     midpoint=x2
@@ -292,8 +292,8 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
     yscale=y2
     (x1,x2,x3)=[(x-x2)/deltax for x in (x1,x2,x3)]  #slide spectrum to zero
     (y1,y2,y3)=[y/yscale for y in (y1,y2,y3) ]
-    
-    
+
+
     D = (x1 - x2) * (x1 - x3) * (x2 - x3)
     A = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D
     B = (x3*x3 * (y1 - y2) + x2*x2 * (y3 - y1) + x1*x1 * (y2 - y3)) / D
@@ -312,7 +312,7 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
 def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
     """Fit a model to a Stokes I spectrum with specified errors.
     Supports linear or log polynomials, and fixed or dynamic order selection.
-    
+
     Args:
         freqArr (array): Numpy array-like containing channel frequencies (in Hz)
         IArr (array): array of Stokes I values (any units)
@@ -321,7 +321,7 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
             If negative (-1 to -5), will dynamically find the best order up
             to the maximum of |polyOrd|.
         fit_function (str): 'linear' or 'log' to fit the corresponding function.
-    
+
     Returns:
         dict: Dictionary with model information.
             'p': array of polynomial parameters (highest to lowest order)
@@ -332,7 +332,7 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
             'nIter': Number of iterations used by fitter.
             'reference_frequency_Hz': reference frequency for polynomial.
             'dof': degrees of freedom in the fit.
-    
+
     """
     # Frequency axis must be in GHz to avoid overflow errors
     fitDict = {"fit_function": fit_function,
@@ -353,18 +353,18 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
     #to make all the numbers close to 1:
     fitDict['reference_frequency_Hz']=nanmean(freqArr[goodchan])
 
-#negative orders indicate that the code should dynamically increase 
+#negative orders indicate that the code should dynamically increase
 #order of polynomial so long as it improves the fit
-    if polyOrd < 0: 
+    if polyOrd < 0:
         highest_order=np.abs(polyOrd)
     #Try zero-th order (constant) fit first:
-        mp = fit_spec_poly5(freqArr[goodchan]/fitDict['reference_frequency_Hz'], 
+        mp = fit_spec_poly5(freqArr[goodchan]/fitDict['reference_frequency_Hz'],
                             IArr[goodchan], dIArr[goodchan], 0,fit_function)
         old_aic=2+mp.fnorm
         current_order=1
         while current_order <= highest_order:
             new_mp = fit_spec_poly5(freqArr[goodchan]/fitDict['reference_frequency_Hz'],
-                                    IArr[goodchan], dIArr[goodchan], 
+                                    IArr[goodchan], dIArr[goodchan],
                                     current_order,fit_function)
             new_aic=2*(current_order+1)+new_mp.fnorm
             if new_aic < old_aic: #if there's an improvement, keep going
@@ -374,13 +374,13 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
             else: #if not an improvement, stop here.
                 break
         fitDict["polyOrd"] = current_order-1  #Best order is always one less than the last one checked.
-        fitDict["AIC"] = old_aic 
+        fitDict["AIC"] = old_aic
     else:
         mp = fit_spec_poly5(freqArr[goodchan]/fitDict['reference_frequency_Hz'],
                             IArr[goodchan],dIArr[goodchan], polyOrd,fit_function)
         fitDict["AIC"] = 2*(polyOrd+1)+mp.fnorm
         fitDict["polyOrd"] = polyOrd
-        
+
     fitDict["p"] = mp.params
     fitDict["fitStatus"] = int(np.abs(mp.status))
     fitDict["chiSq"] = mp.fnorm
@@ -393,11 +393,11 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
 
 def calculate_StokesI_model(fitDict,freqArr_Hz):
     """Calculates channel values for a Stokes I model.
-    
-    Inputs: 
+
+    Inputs:
         fitDict (dict): a dictionary returned from the Stokes I model fitting.
         freqArr_Hz (array): an array of frequency values (assumed to be in Hz).
-    
+
     Returns: array containing Stokes I model values corresponding to each frequency."""
     if fitDict['fit_function'] == 'linear':
         IModArr = poly5(fitDict["p"])(freqArr_Hz/fitDict['reference_frequency_Hz'])
@@ -414,8 +414,8 @@ def renormalize_StokesI_model(fitDict,new_reference_frequency):
     important because the initial Stokes I fitted model uses an arbitrary
     reference frequency, and it may be desirable for users to know the exact
     reference frequency of the model.
-    
-    This function is depreciated because it can't propagate the errors in 
+
+    This function is depreciated because it can't propagate the errors in
     the fit parameters."""
     print("The renormalize_StokesI_model function is depreciated because it can't propagate errors.\n"
           "If this message appears, it's been invoked (perhaps by legacy code?)")
@@ -452,6 +452,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
             "chiSqRed": 0.0,
             "nIter": 0,
             "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
+            "perror": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], #default if fail: flat 0s.
             "polyOrd":polyOrd,
             "AIC":0,
             "reference_frequency_Hz":1}
@@ -468,7 +469,7 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
                                       dIArr.astype('float64'),
                                       polyOrd,fit_function)
             IModArr = calculate_StokesI_model(fitDict,freqArr)
-            
+
             if np.min(IModArr) < 0:   #Flag sources with negative models.
                 fitDict["fitStatus"] += 128
             if (IModArr < dIArr).sum() > 0:  #Flag sources with models with S/N < 1.
@@ -499,11 +500,12 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
                 "chiSqRed": 0.0,
                 "nIter": 0,
                 "p": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], #default if fail: flat 1s.
+                "perror": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], #default if fail: flat 0s.
                 "polyOrd":polyOrd,
                 "AIC":0,
                 "reference_frequency_Hz":1}
             IModArr = np.ones_like(IArr)
-    
+
     # Calculate the fractional spectra and errors
     with np.errstate(divide='ignore', invalid='ignore'):
         qArr = np.true_divide(QArr, IModArr)
@@ -563,24 +565,24 @@ def create_frac_spectra(freqArr, IArr, QArr, UArr, dIArr, dQArr, dUArr,
 #-----------------------------------------------------------------------------#
 def interp_images(arr1, arr2, f=0.5):
     """Create an interpolated image between two other images."""
-    
+
     nY, nX =  arr1.shape
-    
+
     # Concatenate arrays into a single array of shape (2, nY, nX)
     arr = np.r_["0,3", arr1, arr2]
-    
+
     # Define the grid coordinates where you want to interpolate
     X, Y = np.meshgrid(np.arange(nX), np.arange(nY))
-    
+
     # Create coordinates for interpolated frame
     coords = np.ones(arr1.shape) * f, Y, X
-    
+
     # Interpolate using the map_coordinates function
     interpArr = ndi.map_coordinates(arr, coords, order=1)
 
     return interpArr
 
-    
+
 #-----------------------------------------------------------------------------#
 def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
     """Fit a 5th order polynomial to a spectrum. To avoid overflow errors the
@@ -596,7 +598,7 @@ def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
         dyData = np.ones_like(yData)
     if np.all(dyData==0):
         dyData = np.ones_like(yData)
-        
+
     # Estimate starting coefficients
     C1 = 0.0
     C0 = np.nanmean(yData)
@@ -610,7 +612,7 @@ def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
               {'value': C2, 'parname': 'C2', 'fixed': False},
               {'value': C1, 'parname': 'C1', 'fixed': False},
               {'value': C0, 'parname': 'C0', 'fixed': False} ]
-    
+
     # Set the parameters as fixed of > order
     for i in range(len(inParms)):
         if len(inParms)-i-1>order:
@@ -626,11 +628,11 @@ def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
         def errFn(p, fjac=None):
             status = 0
             return status, (powerlaw_poly5(p)(xData) - yData)/dyData
-        
+
 
     # Use MPFIT to perform the LM-minimisation
     mp = mpfit(errFn, parinfo=inParms, quiet=True)
-    
+
     return mp
 
 
@@ -638,32 +640,32 @@ def fit_spec_poly5(xData, yData, dyData=None, order=5,fit_function="log"):
 
 def poly5(p):
     """Returns a function to evaluate a polynomial. The subfunction can be
-    accessed via 'argument unpacking' like so: 'y = poly5(p)(*x)', 
+    accessed via 'argument unpacking' like so: 'y = poly5(p)(*x)',
     where x is a vector of X values and p is a vector of coefficients."""
 
     # Fill out the vector to length 6 if necessary
     p = np.append(np.zeros((6-len(p))), p)
-    
+
     def rfunc(x):
         y = (p[0]*x**5.0 + p[1]*x**4.0 + p[2]*x**3.0 + p[3]*x**2.0 + p[4]*x
              + p[5])
         return y
-             
+
     return rfunc
 
 def powerlaw_poly5(p):
     """Returns a function to evaluate a power law polynomial. The subfunction can be
-    accessed via 'argument unpacking' like so: 'y = powerlaw_poly5(p)(*x)', 
+    accessed via 'argument unpacking' like so: 'y = powerlaw_poly5(p)(*x)',
     where x is a vector of X values and p is a vector of coefficients."""
 
     # Fill out the vector to length 6 if necessary
     p = np.append(np.zeros((6-len(p))), p)
-    
+
     def rfunc(x):
         y = (p[0]*np.log10(x)**4.0 + p[1]*np.log10(x)**3.0 + p[2]*np.log10(x)**2.0 + p[3]*np.log10(x)
              + p[4])
         return p[5]*np.power(x,y)
-             
+
     return rfunc
 
 
@@ -672,7 +674,7 @@ def nanmedian(arr, **kwargs):
     """
     Returns median ignoring NaNs.
     """
-    
+
     return ma.median( ma.masked_where(arr!=arr, arr), **kwargs )
 
 
@@ -681,7 +683,7 @@ def nanmean(arr, **kwargs):
     """
     Returns mean ignoring NaNs.
     """
-    
+
     return ma.mean( ma.masked_where(arr!=arr, arr), **kwargs )
 
 #-----------------------------------------------------------------------------#
@@ -689,19 +691,19 @@ def nanstd(arr, **kwargs):
     """
     Returns standard deviation ignoring NaNs.
     """
-    
+
     return ma.std( ma.masked_where(arr!=arr, arr), **kwargs )
 
 #-----------------------------------------------------------------------------#
 def extrap(x, xp, yp):
     """
     Wrapper to allow np.interp to linearly extrapolate at function ends.
-    
+
     np.interp function with linear extrapolation
     http://stackoverflow.com/questions/2745329/how-to-make-scipy-interpolate
     -give-a-an-extrapolated-result-beyond-the-input-ran
     """
-    
+
     y = np.interp(x, xp, yp)
     y = np.where(x < xp[0], yp[0]+(x-xp[0])*(yp[0]-yp[1])/(xp[0]-xp[1]), y)
     y = np.where(x > xp[-1], yp[-1]+(x-xp[-1])*(yp[-1]-yp[-2])/(xp[-1]-xp[-2]),
@@ -727,7 +729,7 @@ def MAD(a, c=0.6745, axis=None):
     median(abs(a - median(a))) / c
     c = 0.6745 is the constant to convert from MAD to std
     """
-    
+
     a = ma.masked_where(a!=a, a)
     if a.ndim == 1:
         d = ma.median(a)
@@ -748,7 +750,7 @@ def calc_stats(a, maskzero=False):
     """
     Calculate the statistics of an array.
     """
-    
+
     statsDict = {}
     a = np.array(a)
 
@@ -757,7 +759,7 @@ def calc_stats(a, maskzero=False):
         a = np.where( np.equal(a, 0.0), np.nan, a)
     am = ma.masked_invalid(a)
     statsDict['npix'] = np.sum(~am.mask)
-    
+
     if statsDict['npix']>=2:
         statsDict['stdev'] = float(np.std(am))
         statsDict['mean'] = float(np.mean(am))
@@ -768,7 +770,7 @@ def calc_stats(a, maskzero=False):
                                                      a.shape))
         statsDict['madfm'] = float(MAD(am.flatten()))
         statsDict['success'] = True
-        
+
     else:
         statsDict['npix'] == 0
         statsDict['stdev']   = 0.0
@@ -779,7 +781,7 @@ def calc_stats(a, maskzero=False):
         statsDict['centmax'] = (0.0, 0.0)
         statsDict['madfm']   = 0.0
         statsDict['success'] = False
-        
+
     return statsDict
 
 
@@ -788,10 +790,10 @@ def sort_nicely(l):
     """
     Sort a list in the order a human would.
     """
-    
-    convert = lambda text: int(text) if text.isdigit() else text 
+
+    convert = lambda text: int(text) if text.isdigit() else text
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    l.sort( key=alphanum_key ) 
+    l.sort( key=alphanum_key )
 
 
 #-----------------------------------------------------------------------------#
@@ -807,9 +809,9 @@ def twodgaussian(params, shape):
                 cy  - width of Gaussian in Y (sigma or c, not FWHM)
                 pa  - position angle of Gaussian, aka theta (radians)
         shape - (y, x) dimensions of region
-    Returns a 2D numpy array with shape="shape" 
+    Returns a 2D numpy array with shape="shape"
     """
-    
+
     assert(len(shape) == 2)
     amp, xo, yo, cx, cy, pa = params
     y, x = np.indices(shape)
@@ -820,7 +822,7 @@ def twodgaussian(params, shape):
     b = s2t/4 *(1/cy**2-1/cx**2)
     c = (st/cx**2 + ct/cy**2)/2
     v = amp*np.exp(-1*(a*(x-xo)**2 + 2*b*(x-xo)*(y-yo) + c*(y-yo)**2))
-    
+
     return v
 
 
@@ -849,26 +851,26 @@ def create_pqu_spectra_burn(freqArr_Hz, fracPolArr, psi0Arr_deg,
     nComps = len(fracPolArr)
     lamArr_m = C/freqArr_Hz
     lamSqArr_m2 = np.power(lamArr_m, 2.0)
-            
+
     # Convert the inputs to column vectors
     fracPolArr = fracPolArr.reshape((nComps, 1))
     psi0Arr_deg = psi0Arr_deg.reshape((nComps, 1))
     RMArr_radm2 = RMArr_radm2.reshape((nComps, 1))
     sigmaRMArr_radm2 = sigmaRMArr_radm2.reshape((nComps, 1))
-    
+
     # Calculate the p, q and u Spectra for all components
     pArr = fracPolArr *  np.ones((nComps, nChans), dtype="f8")
     quArr = pArr * (
         np.exp( 2j * (np.radians(psi0Arr_deg) + RMArr_radm2*lamSqArr_m2) )
         * np.exp(-2.0 * sigmaRMArr_radm2 * np.power(lamArr_m, 4.0))
         )
-    
+
     # Sum along the component axis to create the final spectra
     quArr = quArr.sum(0)
     qArr = quArr.real
     uArr = quArr.imag
     pArr = np.abs(quArr)
-    
+
     return pArr, qArr, uArr
 
 
@@ -878,30 +880,30 @@ def create_IQU_spectra_burn(freqArr_Hz, fluxI, SI, fracPolArr, psi0Arr_deg,
                               freq0_Hz=None):
     """Create Stokes I, Q & U spectra for a source with 1 or more polarised
     Faraday components affected by external (burn) depolarisation."""
-    
+
     # Create the polarised fraction spectra
     pArr, qArr, uArr = create_pqu_spectra_burn(freqArr_Hz,
                                                fracPolArr,
                                                psi0Arr_deg,
                                                RMArr_radm2,
                                                sigmaRMArr_radm2)
-    
+
     # Default reference frequency is first channel
     if freq0_Hz is None:
         freq0_Hz = freqArr_Hz[0]
-        
+
     # Create the absolute value spectra
     IArr = fluxI * np.power(freqArr_Hz/freq0_Hz, SI)
     PArr = IArr * pArr
     QArr = IArr * qArr
     UArr = IArr * uArr
-    
+
     return IArr, QArr, UArr
 
 
 #-----------------------------------------------------------------------------#
 def create_pqu_spectra_diff(freqArr_Hz, fracPolArr, psi0Arr_deg, RMArr_radm2):
-    """Return fractional P/I, Q/I & U/I spectra for a sum of Faraday 
+    """Return fractional P/I, Q/I & U/I spectra for a sum of Faraday
     components which are affected by internal (differential) Faraday
     depolariation."""
 
@@ -929,13 +931,13 @@ def create_pqu_spectra_diff(freqArr_Hz, fracPolArr, psi0Arr_deg, RMArr_radm2):
     for i in range(nComps):
         RMLamSqArr[i] *= 0.5
         pArr[i] *= np.exp(2j * (psi0Arr_rad[i] + RMLamSqArr[i:].sum(0)))
-    
+
     # Sum along the component axis to create the final spectra
     pArr =pArr.sum(0)
     qArr = pArr.real
     uArr = pArr.imag
     pArr = np.abs(pArr)
-    
+
     return pArr, qArr, uArr
 
 
@@ -944,30 +946,30 @@ def create_IQU_spectra_diff(freqArr_Hz, fluxI, SI, fracPolArr, psi0Arr_deg,
                               RMArr_radm2, freq0_Hz=None):
     """Create Stokes I, Q & U spectra for a source with 1 or more polarised
     Faraday components affected by internal Faraday depolarisation"""
-    
+
     # Create the polarised fraction spectra
     pArr, qArr, uArr = create_pqu_spectra_diff(freqArr_Hz,
                                                fracPolArr,
                                                psi0Arr_deg,
                                                RMArr_radm2)
-    
+
     # Default reference frequency is first channel
     if freq0_Hz is None:
         freq0_Hz = freqArr_Hz[0]
-        
+
     # Create the absolute value spectra
     IArr = fluxI * np.power(freqArr_Hz/freq0_Hz, SI)
     PArr = IArr * pArr
     QArr = IArr * qArr
     UArr = IArr * uArr
-    
+
     return IArr, QArr, UArr
 
-    
+
 #-----------------------------------------------------------------------------#
 def create_pqu_spectra_RMthin(freqArr_Hz, fracPol, psi0_deg, RM_radm2):
     """Return fractional P/I, Q/I & U/I spectra for a Faraday thin source"""
-    
+
     # Calculate the p, q and u Spectra
     lamSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
     pArr = fracPol * np.ones_like(lamSqArr_m2)
@@ -975,18 +977,18 @@ def create_pqu_spectra_RMthin(freqArr_Hz, fracPol, psi0_deg, RM_radm2):
                                  RM_radm2 * lamSqArr_m2 ) )
     qArr = quArr.real
     uArr = quArr.imag
-    
+
     return pArr, qArr, uArr
 
 
 #-----------------------------------------------------------------------------#
-def create_IQU_spectra_RMthin(freqArr_Hz, fluxI, SI, fracPol, psi0_deg, 
+def create_IQU_spectra_RMthin(freqArr_Hz, fluxI, SI, fracPol, psi0_deg,
                               RM_radm2, freq0_Hz=None):
     """Return Stokes I, Q & U spectra for a Faraday thin source"""
 
     pArr, qArr, uArr = create_pqu_spectra_RMthin(freqArr_Hz,
                                                  fracPol,
-                                                 psi0_deg, 
+                                                 psi0_deg,
                                                  RM_radm2)
     if freq0_Hz is None:
         freq0_Hz = freqArr_Hz[0]
@@ -1024,16 +1026,16 @@ def xfloat(x, default=None):
     except Exception:
         return default
 
-    
+
 #-----------------------------------------------------------------------------#
 def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
     """Return the CDF of a normal distribution between -6 and 6 sigma, or at
     the values of an input array."""
-    
+
     if xArr is None:
         x = np.linspace(-6.0*std, 6.0*std, N)
     else:
         x = xArr
     y = norm.cdf(x, loc=mean, scale=std)
-    
+
     return x, y
