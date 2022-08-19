@@ -175,7 +175,7 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
 
     # Do the RM-synthesis on each plane
     a = lambdaSqArr_m2 - lam0Sq_m2
-    for i in trange(nPhi, desc="Running RM-synthesis by channel.", disable=not verbose):
+    for i in trange(nPhi, desc="Running RM-synthesis by channel", disable=not verbose):
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)[:, np.newaxis,np.newaxis]
         FDFcube[i,:,:] =  KArr * np.sum(pCube * arg, axis=0)
 
@@ -345,7 +345,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
 
         # Calculate the RMSF for each plane
         a = (lambdaSqArr_m2 - lam0Sq_m2)
-        for i in trange(nPhi, desc="Calculating RMSF by channel.", disable=not verbose):
+        for i in trange(nPhi, desc="Calculating RMSF by channel", disable=not verbose):
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
 
@@ -359,7 +359,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
             k = 0
-            for i in trange(nX, desc="Fitting RMSF by pixel.", disable=not verbose):
+            for i in trange(nX, desc="Fitting RMSF by pixel", disable=not verbose):
                 for j in range(nY):
                     k += 1
                     if fitRMSFreal:
@@ -1332,7 +1332,7 @@ def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
     arg = np.exp( np.outer(a, b) )
 
     # Do the synthesis at each pixel of the image
-    for k in trange(nY, desc='RM-synthesis', disable=not verbose):
+    for k in trange(nY, desc='RM-synthesis'):
         for i in range(nX):
             # Calculate the FDF, B&dB Eqns. (25) and (36)
             # B&dB Eqns. (25) and (36)

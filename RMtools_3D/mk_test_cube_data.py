@@ -366,7 +366,7 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
         successCount +=1
 
     # Loop through the frequency channels & insert the IQU planes
-    for iChan, _ in enumerate(tqdm(freqArr_Hz), desc=f"Looping through {nChans} frequency channels:"):
+    for iChan, _ in enumerate(tqdm(freqArr_Hz), desc=f"Looping through {nChans} frequency channels"):
         for iSrc, _ in enumerate(spectraILst):
             params = [spectraILst[iSrc][iChan],  # amplitude
                       coordLst_pix[iSrc][0],     # X centre (pix)

@@ -247,7 +247,7 @@ def make_model_I(fitsI, freqFile, polyOrd=2, cutoff=-1, prefixOut="",
     for pixCoords in tqdm(
         srcCoords,
         disable=not verbose,
-        desc=f"Fitting {nDetectPix}/{nPix} spectra."
+        desc=f"Fitting {nDetectPix}/{nPix} spectra"
     ):
         x=pixCoords[0]
         y=pixCoords[1]
