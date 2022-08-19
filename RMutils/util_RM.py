@@ -72,9 +72,9 @@ from scipy.stats import kurtosistest
 from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
+from tqdm.auto import tqdm, trange
 
 from RMutils.mpfit import mpfit
-from RMutils.util_misc import progress
 from RMutils.util_misc import toscalar
 from RMutils.util_misc import calc_parabola_vertex
 from RMutils.util_misc import create_pqu_spectra_burn
@@ -259,8 +259,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
         log("Err: mask dimensions must be <= 3.")
         return None, None, None, None
     if not mskArr.shape[0] == lambdaSqArr_m2.shape[0]:
-        log("Err: mask depth does not match lambda^2 vector (%d vs %d).", end=' ')
-        (mskArr.shape[0], lambdaSqArr_m2.shape[-1])
+        log(f"Err: mask depth does not match lambda^2 vector ({mskArr.shape[0]} vs {lambdaSqArr_m2.shape[-1]}).", end=' ')
         log("     Check that the mask is in [z, y, x] order.")
         return None, None, None, None
 
@@ -343,7 +342,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     # Calculate the RMSF at each pixel
     else:
         if verbose:
-            log("Calculating RMSF by channel.")
+            log()
 
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
@@ -354,12 +353,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        if verbose:
-            progress(40, 0)
         a = (lambdaSqArr_m2 - lam0Sq_m2)
-        for i in range(nPhi):
-            if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
+        for i in trange(nPhi, desc="Calculating RMSF by channel", disable=not verbose):
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
 
@@ -372,13 +367,10 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-                progress(40, 0)
             k = 0
-            for i in range(nX):
+            for i in trange(nX, desc="Fitting RMSF by pixel", disable=not verbose):
                 for j in range(nY):
                     k += 1
-                    if verbose:
-                        progress(40, ((i+1)*100.0/nPhi))
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:,j,i].real)
                     else:
@@ -497,22 +489,16 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
 
     if pool is None:
-        if verbose:
-            progress(40,0)
-            i=0
         output=[]
-        for pix in inputs:
+        for pix in tqdm(inputs, desc="RM-CLEANing", disable=not verbose):
             output.append(rmc.cleanloop(pix))
-            if verbose:
-                progress(40, ((i)*100.0/nCleanPix))
-                i+=1
     else:
         if verbose:
             log('(Progress bar is not supported for parallel mode. Please wait for the code to finish.')
         if chunksize is not None:
             output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
         else:
-                output = list(pool.map(rmc.cleanloop, inputs))
+            output = list(pool.map(rmc.cleanloop, inputs))
         pool.close()
     # Put data back in correct shape
 #    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
@@ -1108,7 +1094,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax1.axhline(yMed+noise, color='r', linestyle="--", zorder=10)
         ax1.axhline(yMed-noise, color='r', linestyle="--", zorder=10)
         ax1.set_title(r'Input Data')
-        ax1.set_xlabel(r'$\lambda^2$')
+        ax1.set_xlabel(r"\$\lambda^2\$")
         ax1.set_ylabel('Amplitude')
 
         # Plot the histogram of the data overlaid by the normal distribution
@@ -1142,9 +1128,9 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax4 = fig.add_subplot(234)
         ax4.step(x=sigmaAddArr, y=chiSqRedArr, linewidth=1.5, where="mid")
         ax4.axhline(1.0, color='r', linestyle="--")
-        ax4.set_title(r'$\chi^2_{\rm reduced}$ vs $\sigma_{\rm additional}$')
-        ax4.set_xlabel(r'$\sigma_{\rm additional}$')
-        ax4.set_ylabel(r'$\chi^2_{\rm reduced}$')
+        ax4.set_title(r"\$\chi^2_{\rm reduced}\$ vs \$\sigma_{\rm additional}\$")
+        ax4.set_xlabel(r"\$\sigma_{\rm additional}\$")
+        ax4.set_ylabel(r"\$\chi^2_{\rm reduced}\$")
 
         # Plot the probability distribution function
         ax5 = fig.add_subplot(235)
@@ -1153,8 +1139,8 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax5.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
         ax5.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
         ax5.set_title('Relative Likelihood')
-        ax5.set_xlabel(r"$\sigma_{\rm additional}$")
-        ax5.set_ylabel(r"P($\sigma_{\rm additional}$|data)")
+        ax5.set_xlabel(r"\$\sigma_{\rm additional}\$")
+        ax5.set_ylabel(r"P(\$\sigma_{\rm additional}\$|data)")
 
         # Plot the CPDF
         ax6 = fig.add_subplot(236)
@@ -1165,7 +1151,7 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000,
         ax6.axvline(sigmaAddMinus, color='r', linestyle="--", linewidth=1.0)
         ax6.axvline(sigmaAddPlus, color='r', linestyle="--", linewidth=1.0)
         ax6.set_title('Cumulative Likelihood')
-        ax6.set_xlabel(r"$\sigma_{\rm additional}$")
+        ax6.set_xlabel(r"\$\sigma_{\rm additional}\$")
         ax6.set_ylabel(r"Cumulative Likelihood")
 
         # Zoom in
@@ -1355,10 +1341,7 @@ def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
     arg = np.exp( np.outer(a, b) )
 
     # Do the synthesis at each pixel of the image
-    nPix = nX * nY
-    j = 0
-    progress(40, 0)
-    for k in range(nY):
+    for k in trange(nY, desc='RM-synthesis'):
         for i in range(nX):
             j += 1
             progress(40, ((j)*100.0/nPix))
@@ -1719,8 +1702,8 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     ax2.axhline(0, color='grey')
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.xaxis.set_major_locator(MaxNLocator(4))
-    ax2.set_xlabel('$\\lambda^2$ (m$^2$)')
-    #ax2.set_ylabel('Residual ($\sigma$)')
+    ax2.set_xlabel(r"\$\lambda^2\$ (m\$^2\$)")
+    #ax2.set_ylabel('Residual (\$\sigma\$)')
     ax2.set_ylabel('Residual (fractional polarisation)')
 
     # Plot the distribution of the residual
@@ -1739,7 +1722,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     g = gauss1D(amp=H, mean=0.0, fwhm=FWHM)(x)
     ax3.plot(x, g, color='k', linewidth=2, linestyle="--", zorder=1)
     ax3.set_ylabel('Normalised Units')
-    ax3.set_xlabel('Residual ($\sigma$)')
+    ax3.set_xlabel('Residual (\$\sigma\$)')
 
     # Plot the cumulative distribution function
     N = len(qResidNorm)
@@ -1752,7 +1735,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
     x, y = norm_cdf(mean=0.0, std=1.0, N=1000)
     ax4.step(x, y, color='k', linewidth=2, linestyle="--", zorder=1)
     ax4.set_ylabel('CDF')
-    ax4.set_xlabel('Residual ($\sigma$)')
+    ax4.set_xlabel('Residual (\$\sigma\$)')
 
     return fig
 
@@ -1857,13 +1840,8 @@ def threeDnoise_do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
         KArr = np.nan_to_num(KArr)
 
     # Do the RM-synthesis on each plane
-    if verbose:
-        log("Running RM-synthesis by channel.")
-        progress(40, 0)
     a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - lam0Sq_m2[np.newaxis, :, :]
-    for i in range(nPhi):
-        if verbose:
-            progress(40, ((i+1)*100.0/nPhi))
+    for i in trange(nPhi, desc="Running RM-synthesis by channel", disable=not verbose):
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)
         FDFcube[i, :, :] = KArr * np.sum(pCube * arg, axis=0)
     # Remove redundant dimensions in the FDF array
@@ -2008,9 +1986,6 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
 
     # Calculate the RMSF at each pixel
     else:
-        if verbose:
-            log("Calculating RMSF in 3D.")
-
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -2019,13 +1994,9 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        if verbose:
-            progress(40, 0)
         a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - \
             lam0Sq_m2[np.newaxis, :, :]
-        for i in range(nPhi):
-            if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
+        for i in trange(nPhi, desc="Calculating RMSF in 3D", disable=not verbose):
             arg = np.exp(-2.0j * phi2Arr[i] * a)
 #            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
             RMSFcube[i,:,:] =  KArr * np.sum(weightArr * arg, axis=0)
@@ -2038,13 +2009,8 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-            progress(40, 0)
-            k = 0
-            for i in range(nX):
+            for i in trange(nX, desc="Fitting RMSF", disable=not verbose):
                 for j in range(nY):
-                    k += 1
-                    if verbose:
-                        progress(40, (k*100.0/nPix))
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:,j,i].real)
                     else:

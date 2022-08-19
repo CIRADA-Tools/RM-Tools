@@ -360,7 +360,7 @@ def plot_clean_spec(phiArr_radm2, dirtyFDF, cleanFDF, ccArr, residFDF,
     ax2.set_ylim(0, max(cutoff*3.0, window*3.0))
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.set_ylabel("Flux Density ("+units+')')
-    ax2.set_xlabel("$\phi$ rad m$^{-2}$")
+    ax2.set_xlabel(r"\$\phi$ rad m\$^{-2}\$")
     leg = ax2.legend(numpoints=1, loc='upper right', shadow=False,
                      borderaxespad=0.3, bbox_to_anchor=(1.00, 1.00))
     for t in leg.get_texts():
@@ -408,6 +408,8 @@ def main():
                         help="maximum number of CLEAN iterations [1000].")
     parser.add_argument("-g", dest="gain", type=float, default=0.1,
                         help="CLEAN loop gain [0.1].")
+    parser.add_argument("-w", dest="window", type=float, default=None, 
+                        help="Further CLEAN in mask to this threshold [False].")
     parser.add_argument("-p", dest="showPlots", action="store_true",
                         help="show the plots [False].")
     parser.add_argument("-v", dest="verbose", action="store_true",

@@ -12,8 +12,9 @@ import sys
 import os
 import numpy as np
 import astropy.io.fits as pf
+from tqdm.auto import tqdm, trange
 from RMutils.util_RM import measure_FDF_parms
-from RMutils.util_misc import interp_images,progress  
+from RMutils.util_misc import interp_images
 from RMutils.util_RM import fits_make_lin_axis
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
 
@@ -30,7 +31,7 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
     Performs the 1D FDF peak fitting used in RMsynth/RMclean_1D, pixelwise on
     all pixels in a 3D FDF cube.
 
-    Inputs: 
+    Inputs:
         FDF: FDF cube (3D array). This is assumed to be in astropy axis ordering
             (Phi, dec, ra)
         phiArr: (1D) array of phi values
@@ -38,7 +39,7 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
         lamSqArr_m2: 1D array of channel lambda^2 values.
         lam0Sq: scalar value for lambda^2_0, the reference wavelength squared.
         product_list: list containing the names of the fitting products to save.
-        dFDF: 2D array of theoretical noise values. If not supplied, the 
+        dFDF: 2D array of theoretical noise values. If not supplied, the
             peak fitting will default to using the measured noise.
     Outputs: dictionary of 2D maps, 1 per fit output
     """
@@ -48,7 +49,7 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
     #fwhm: 2D map produced synth3D
     #dFDFth: not currently produced (default mode not to input noise!)
     #   If not present, measure_FDF_parms uses the corMAD noise.
-    #   
+    #
     #lamSqArr is only needed for computing errors in derotated angles
     #   This could be compressed to a map or single value from RMsynth?
     #lam0Sq is necessary for de-rotation
@@ -61,13 +62,13 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
     xarr,yarr=np.meshgrid(range(map_size[0]),range(map_size[1]))
     xarr=xarr.ravel()
     yarr=yarr.ravel()
-    
+
     #Create empty maps:
     map_dict={}
     for parameter in product_list:
         map_dict[parameter]=np.zeros(map_size)
-        
- 
+
+
 
     freqArr_Hz=C/np.sqrt(lamSqArr_m2)
     freq0_Hz=C/np.sqrt(lam0Sq)
@@ -97,8 +98,7 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
 
 
     #Run fitting pixel-wise:
-    progress(40, 0)
-    for i in range(xarr.size):
+    for i in trange(xarr.size):
         FDF_pix=FDF[:,xarr[i],yarr[i]]
         fwhmRMSF_pix=fwhmRMSF[xarr[i],yarr[i]]
         if type(dFDF) == type(None):
@@ -106,8 +106,8 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
         else:
             dFDF_pix=dFDF[xarr[i],yarr[i]]
         try:
-            mDict=measure_FDF_parms(FDF_pix, phiArr, fwhmRMSF_pix, dFDF=dFDF_pix, 
-                                lamSqArr_m2=lamSqArr_m2,lam0Sq=lam0Sq, 
+            mDict=measure_FDF_parms(FDF_pix, phiArr, fwhmRMSF_pix, dFDF=dFDF_pix,
+                                lamSqArr_m2=lamSqArr_m2,lam0Sq=lam0Sq,
                                 snrDoBiasCorrect=5.0)
         #Add keywords not included by the above function:
             mDict['lam0Sq_m2']=lam0Sq
@@ -129,8 +129,6 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
             for parameter in product_list:
                 map_dict[parameter][xarr[i],yarr[i]]=np.nan
 
-        if i % 100 == 0:
-                progress(40, i/xarr.size*100)
     return map_dict
 
 
@@ -138,17 +136,17 @@ def pixelwise_peak_fitting(FDF, phiArr, fwhmRMSF,lamSqArr_m2, lam0Sq,
 def delete_FITSheader_axis(fitsheader,axis_number):
     """Deletes FITS keywords associated with the specified axis."""
     axis_keywords=['NAXIS','CRVAL','CRPIX','CDELT','CUNIT','CTYPE']
-    axis_str=str(axis_number)    
+    axis_str=str(axis_number)
     for keyword in axis_keywords:
-        try:            
+        try:
             del fitsheader[keyword+axis_str]
         except:
             pass
-    
+
 
 def save_maps(map_dict, prefix_path,FDFheader):
     """
-    Saves the selected 2D maps of the fit output. 
+    Saves the selected 2D maps of the fit output.
     Inputs:
         map_dict: a dictionary of 2D maps for the fitting outputs.
         prefix_path: the full or relative path to save the files, plus the file
@@ -162,7 +160,7 @@ def save_maps(map_dict, prefix_path,FDFheader):
         delete_FITSheader_axis(product_header, 3)
     if 'NAXIS4' in product_header:
         delete_FITSheader_axis(product_header, 4)
-    
+
 
     #Set flux unit from FITS header if possible
     if 'BUNIT' in FDFheader:
@@ -170,31 +168,31 @@ def save_maps(map_dict, prefix_path,FDFheader):
     else:
         flux_unit=''
 
-    
+
     #Dictionary of units for peak fitting output parameters (for FITS headers)
-    unit_dict={"dFDFcorMAD": flux_unit, "dFDFrms": flux_unit, 
+    unit_dict={"dFDFcorMAD": flux_unit, "dFDFrms": flux_unit,
            "phiPeakPIchan_rm2": 'rad/m^2', "dPhiPeakPIchan_rm2": 'rad/m^2',
-           "ampPeakPIchan": flux_unit, "ampPeakPIchanEff": flux_unit, 
-           "dAmpPeakPIchan": flux_unit, 
-           "snrPIchan": '', 
-           "indxPeakPIchan": '', 
-           "peakFDFimagChan": flux_unit, "peakFDFrealChan": flux_unit, 
-           "polAngleChan_deg": 'deg', "dPolAngleChan_deg": 'deg', 
-           "polAngle0Chan_deg": 'deg', "dPolAngle0Chan_deg": 'deg', 
-           "phiPeakPIfit_rm2": 'rad/m^2', "dPhiPeakPIfit_rm2": 'rad/m^2', 
+           "ampPeakPIchan": flux_unit, "ampPeakPIchanEff": flux_unit,
+           "dAmpPeakPIchan": flux_unit,
+           "snrPIchan": '',
+           "indxPeakPIchan": '',
+           "peakFDFimagChan": flux_unit, "peakFDFrealChan": flux_unit,
+           "polAngleChan_deg": 'deg', "dPolAngleChan_deg": 'deg',
+           "polAngle0Chan_deg": 'deg', "dPolAngle0Chan_deg": 'deg',
+           "phiPeakPIfit_rm2": 'rad/m^2', "dPhiPeakPIfit_rm2": 'rad/m^2',
            "ampPeakPIfit": flux_unit, "ampPeakPIfitEff": flux_unit,
-           "dAmpPeakPIfit": flux_unit, 
+           "dAmpPeakPIfit": flux_unit,
            "snrPIfit": '', "indxPeakPIfit": '',
-           "peakFDFimagFit": flux_unit, "peakFDFrealFit": flux_unit, 
-           "polAngleFit_deg": 'deg', "dPolAngleFit_deg": 'deg', 
-           "polAngle0Fit_deg": 'deg', "dPolAngle0Fit_deg": 'deg', 
-           "Ifreq0": flux_unit, "polyCoeffs": "", 
-           "IfitStat": '', "IfitChiSqRed": '', 
-           "lam0Sq_m2": 'm^2', "freq0_Hz": 'Hz', 
-           "fwhmRMSF": 'rad/m^2', "dQU": flux_unit, "dFDFth": flux_unit, 
+           "peakFDFimagFit": flux_unit, "peakFDFrealFit": flux_unit,
+           "polAngleFit_deg": 'deg', "dPolAngleFit_deg": 'deg',
+           "polAngle0Fit_deg": 'deg', "dPolAngle0Fit_deg": 'deg',
+           "Ifreq0": flux_unit, "polyCoeffs": "",
+           "IfitStat": '', "IfitChiSqRed": '',
+           "lam0Sq_m2": 'm^2', "freq0_Hz": 'Hz',
+           "fwhmRMSF": 'rad/m^2', "dQU": flux_unit, "dFDFth": flux_unit,
            "min_freq": 'Hz', "max_freq": 'Hz', "N_channels": '',
-           "median_channel_width": 'Hz', 
-           "fracPol": '', 
+           "median_channel_width": 'Hz',
+           "fracPol": '',
            "sigmaAddQ": '', "dSigmaAddMinusQ": '', "dSigmaAddPlusQ": '',
            "sigmaAddU": '', "dSigmaAddMinusU": '', "dSigmaAddPlusU": ''}
 
@@ -202,7 +200,7 @@ def save_maps(map_dict, prefix_path,FDFheader):
     #Check that directory exists (in case it is requested to save maps to new subdirectory):
     if not os.path.exists(os.path.dirname(prefix_path)):
         os.mkdir(os.path.dirname(prefix_path))
-    
+
     #per product, customize FITS header as needed and save file
     for product in map_dict.keys():
         product_header['BUNIT']=unit_dict[product]
@@ -230,7 +228,7 @@ def read_files(FDF_filename,freq_filename):
     Read in the files needed for peak fitting. Files assumed to be the standard
     outputs of RMsynth3D (and, optionally, RMclean3D). also, freq file.
     """
-    
+
     HDUreal = pf.open(FDF_filename.replace('_tot','_real').replace('_im','_real'), "readonly", memmap=True)
     head = HDUreal[0].header.copy()
     FDFreal = HDUreal[0].data
@@ -248,15 +246,15 @@ def read_files(FDF_filename,freq_filename):
 
     #Remove degenerate axes to prevent problems with later steps.
     complex_cube=complex_cube.squeeze()
-    
+
     lam0Sq=head['LAMSQ0']
-    
+
     freqArr_Hz = np.loadtxt(freq_filename, dtype=float)
     lambdaSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
-    
-    
+
+
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1)
-    
+
     HDUfwhm = pf.open(FDF_filename.replace('FDF_tot_dirty','RMSF_FWHM').replace(
         'FDF_real_dirty','RMSF_FWHM').replace('FDF_im_dirty','RMSF_FWHM').replace(
             'FDF_clean_tot','RMSF_FWHM').replace('FDF_clean_real','RMSF_FWHM').replace(
@@ -264,8 +262,8 @@ def read_files(FDF_filename,freq_filename):
         "readonly", memmap=True)
     fwhmRMSF = HDUfwhm[0].data.squeeze()
 
-    
-    
+
+
     return complex_cube, phiArr_radm2, fwhmRMSF, lambdaSqArr_m2, lam0Sq, head
 
 
@@ -279,7 +277,7 @@ def main():
     """
 
     import argparse
-    
+
     descStr = """
     Perform pixel-wise fitting of the brightest peak in the FDF. This script
     performs the same fitting used in the RMsynth_1D for every pixel in a 3D
@@ -288,7 +286,7 @@ def main():
     """
 
     epilog_text="""
-    The script saves 2D maps of the parameters from the peak fitting and 
+    The script saves 2D maps of the parameters from the peak fitting and
     FDF characterization function. The user can select how many products are
     saved:
     no flag: a curated list of potentially interesting parameters is saved
@@ -329,28 +327,28 @@ def main():
     if not os.path.exists(args.freq_file[0]):
         print('Cannot find frequency file. Please check filename/path.')
         sys.exit()
-    
+
     if args.output_name[0][0] != '/':
         args.output_name[0]='./'+args.output_name[0]
-    
+
     #Define default product lists:
     if args.peak_only:
         product_list=["dFDFcorMAD","phiPeakPIfit_rm2","dPhiPeakPIfit_rm2",
                       "ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",
                       "polAngle0Fit_deg","dPolAngle0Fit_deg"]
     elif args.all_products:
-        product_list=['dFDFcorMAD', 'dFDFrms', 'phiPeakPIchan_rm2', 
+        product_list=['dFDFcorMAD', 'dFDFrms', 'phiPeakPIchan_rm2',
                       'dPhiPeakPIchan_rm2', 'ampPeakPIchan', 'ampPeakPIchanEff',
                       'dAmpPeakPIchan', 'snrPIchan', 'indxPeakPIchan',
                       'peakFDFimagChan', 'peakFDFrealChan', 'polAngleChan_deg',
-                      'dPolAngleChan_deg', 'polAngle0Chan_deg', 
-                      'dPolAngle0Chan_deg', 'phiPeakPIfit_rm2', 
+                      'dPolAngleChan_deg', 'polAngle0Chan_deg',
+                      'dPolAngle0Chan_deg', 'phiPeakPIfit_rm2',
                       'dPhiPeakPIfit_rm2', 'ampPeakPIfit', 'ampPeakPIfitEff',
-                      'dAmpPeakPIfit', 'snrPIfit', 'indxPeakPIfit', 
-                      'peakFDFimagFit', 'peakFDFrealFit', 'polAngleFit_deg', 
+                      'dAmpPeakPIfit', 'snrPIfit', 'indxPeakPIfit',
+                      'peakFDFimagFit', 'peakFDFrealFit', 'polAngleFit_deg',
                       'dPolAngleFit_deg', 'polAngle0Fit_deg',
                       'dPolAngle0Fit_deg', 'Ifreq0','dFDFth',
-                      'lam0Sq_m2', 'freq0_Hz', 'fwhmRMSF', 
+                      'lam0Sq_m2', 'freq0_Hz', 'fwhmRMSF',
                       'min_freq', 'max_freq', 'N_channels',
                       'median_channel_width', 'fracPol']
     else: #Default option is a curated list of products I think are most useful.
@@ -359,14 +357,14 @@ def main():
                       "peakFDFimagFit","peakFDFrealFit",'Ifreq0','lam0Sq_m2',
                       "polAngle0Fit_deg","dPolAngle0Fit_deg"]
 
-    
+
 
     #Read in files
     FDF, phiArr_radm2, fwhmRMSF, lambdaSqArr_m2, lam0Sq, header=read_files(
                                         args.FDF_filename[0],args.freq_file[0])
 
     if args.fitsI is not None:
-        dataI = readFitsCube(args.fitsI, args.verbose)[1]    
+        dataI = readFitsCube(args.fitsI, args.verbose)[1]
     else:
         dataI=None
     if args.noiseFile is not None:
@@ -378,17 +376,17 @@ def main():
     map_dict=pixelwise_peak_fitting(FDF, phiArr_radm2, fwhmRMSF,lambdaSqArr_m2,
                                     lam0Sq,product_list,noiseArr=rmsArr,
                                     stokesIcube=dataI)
-    
-    save_maps(map_dict, args.output_name[0],header)
-    
-    
-    
-    
 
-    
+    save_maps(map_dict, args.output_name[0],header)
+
+
+
+
+
+
 if __name__ == "__main__":
     main()
 
-    
-    
+
+
 

@@ -182,22 +182,27 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
         IModHirArr = modStokesI_interp(freqHirArr_Hz)
     if showPlots or saveFigures:
-        specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
-        plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
-                              IArr           = IArr,
-                              qArr           = qArr,
-                              uArr           = uArr,
-                              dIArr          = dIArr,
-                              dqArr          = dqArr,
-                              duArr          = duArr,
-                              freqHirArr_Hz  = freqHirArr_Hz,
-                              IModArr        = IModHirArr,
-                              fig            = specFig,
-                              units          = units)
+        try:
+            specFig = plt.figure(facecolor='w',figsize=(12.0, 8))
+            plot_Ipqu_spectra_fig(freqArr_Hz     = freqArr_Hz,
+                                IArr           = IArr,
+                                qArr           = qArr,
+                                uArr           = uArr,
+                                dIArr          = dIArr,
+                                dqArr          = dqArr,
+                                duArr          = duArr,
+                                freqHirArr_Hz  = freqHirArr_Hz,
+                                IModArr        = IModHirArr,
+                                fig            = specFig,
+                                units          = units)
+        except Exception as e:
+            print(f"Caught exception: {e}")
     if saveFigures:
-        outFilePlot = prefixOut + "_spectra-plots.pdf"
-        specFig.savefig(outFilePlot, bbox_inches = 'tight')
-
+        try:
+            outFilePlot = prefixOut + "_spectra-plots.pdf"
+            specFig.savefig(outFilePlot, bbox_inches = 'tight')
+        except Exception as e:
+            print(f"Caught exception: {e}")
 
     # Use the custom navigation toolbar (does not work on Mac OS X)
 #        try:
@@ -212,20 +217,24 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # DEBUG (plot the Q, U and average RMS spectrum)
     if debug:
-        rmsFig = plt.figure(facecolor='w',figsize=(12.0, 8))
-        ax = rmsFig.add_subplot(111)
-        ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
-                label='rms <QU>')
-        ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
-                label='rms Q')
-        ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
-                label='rms U')
-        xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
-        ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
-                     np.max(freqArr_Hz)/1e9 + xRange*0.05)
-        ax.set_xlabel('$\\nu$ (GHz)')
-        ax.set_ylabel('RMS '+units)
-        ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
+        try:
+            rmsFig = plt.figure(facecolor='w',figsize=(12.0, 8))
+            ax = rmsFig.add_subplot(111)
+            ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
+                    label='rms <QU>')
+            ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
+                    label='rms Q')
+            ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
+                    label='rms U')
+            xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
+            ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
+                        np.max(freqArr_Hz)/1e9 + xRange*0.05)
+            ax.set_xlabel(r"\$\nu\$ (GHz)")
+            ax.set_ylabel('RMS '+units)
+            ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
+        except Exception as e:
+            print(f"Caught exception: {e}")
+
 #            rmsFig.show()
 
     #-------------------------------------------------------------------------#
@@ -375,25 +384,28 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Debugging plots for spectral complexity measure
     if debug:
-        tmpFig = plot_complexity_fig(xArr=pD["xArrQ"],
-                                     qArr=pD["yArrQ"],
-                                     dqArr=pD["dyArrQ"],
-                                     sigmaAddqArr=pD["sigmaAddArrQ"],
-                                     chiSqRedqArr=pD["chiSqRedArrQ"],
-                                     probqArr=pD["probArrQ"],
-                                     uArr=pD["yArrU"],
-                                     duArr=pD["dyArrU"],
-                                     sigmaAdduArr=pD["sigmaAddArrU"],
-                                     chiSqReduArr=pD["chiSqRedArrU"],
-                                     probuArr=pD["probArrU"],
-                                     mDict=mDict)
-        if saveFigures:
-            if verbose: print("Saving debug plots:")
-            outFilePlot = prefixOut + ".debug-plots.pdf"
-            if verbose: print("> " + outFilePlot)
-            tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
-        else:
-            tmpFig.show()
+        try:
+            tmpFig = plot_complexity_fig(xArr=pD["xArrQ"],
+                                        qArr=pD["yArrQ"],
+                                        dqArr=pD["dyArrQ"],
+                                        sigmaAddqArr=pD["sigmaAddArrQ"],
+                                        chiSqRedqArr=pD["chiSqRedArrQ"],
+                                        probqArr=pD["probArrQ"],
+                                        uArr=pD["yArrU"],
+                                        duArr=pD["dyArrU"],
+                                        sigmaAdduArr=pD["sigmaAddArrU"],
+                                        chiSqReduArr=pD["chiSqRedArrU"],
+                                        probuArr=pD["probArrU"],
+                                        mDict=mDict)
+            if saveFigures:
+                if verbose: print("Saving debug plots:")
+                outFilePlot = prefixOut + ".debug-plots.pdf"
+                if verbose: print("> " + outFilePlot)
+                tmpFig.savefig(outFilePlot, bbox_inches = 'tight')
+            else:
+                tmpFig.show()
+        except Exception as e:
+            print(f"Caught exception: {e}")
 
     #add array dictionary
     aDict = dict()
@@ -440,15 +452,18 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Plot the RM Spread Function and dirty FDF
     if showPlots or saveFigures:
-        fdfFig = plt.figure(facecolor='w',figsize=(12.0, 8))
-        plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
-                          FDF        = dirtyFDF,
-                          phi2Arr    = phi2Arr_radm2,
-                          RMSFArr    = RMSFArr,
-                          fwhmRMSF   = fwhmRMSF,
-                          vLine      = mDict["phiPeakPIfit_rm2"],
-                          fig        = fdfFig,
-                          units      = units)
+        try:
+            fdfFig = plt.figure(facecolor='w',figsize=(12.0, 8))
+            plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
+                            FDF        = dirtyFDF,
+                            phi2Arr    = phi2Arr_radm2,
+                            RMSFArr    = RMSFArr,
+                            fwhmRMSF   = fwhmRMSF,
+                            vLine      = mDict["phiPeakPIfit_rm2"],
+                            fig        = fdfFig,
+                            units      = units)
+        except Exception as e:
+            print(f"Caught exception: {e}")
 
         # Use the custom navigation toolbar
 #        try:
@@ -464,12 +479,15 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     if showPlots:
         plt.show()
     if saveFigures or debug:
-        if verbose: print("Saving RMSF and dirty FDF plot:")
-        outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
-        if verbose: print("> " + outFilePlot)
-        fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
-        #        #if verbose: print "Press <RETURN> to exit ...",
-#        input()
+        try:
+            if verbose: print("Saving RMSF and dirty FDF plot:")
+            outFilePlot = prefixOut + "_RMSF-dirtyFDF-plots.pdf"
+            if verbose: print("> " + outFilePlot)
+            fdfFig.savefig(outFilePlot, bbox_inches = 'tight')
+            #        #if verbose: print "Press <RETURN> to exit ...",
+    #        input()
+        except Exception as e:
+            print(f"Caught exception: {e}")
 
     return mDict, aDict
 
