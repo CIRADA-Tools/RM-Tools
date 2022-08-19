@@ -21,7 +21,7 @@ import argparse
 import astropy.io.fits as pf
 import os.path as path
 from math import ceil, floor, log10
-from tqdm.auto import tqdm, trange
+from tqdm.auto import trange
 
 def main():
     """This function will divide a large FITS file or cube into smaller chunks.
