@@ -91,8 +91,11 @@ def _rmsynth(FDFcube, phiArr_radm2, nPhi, KArr, pCube, a, progress):
     """JIT compiled version of the RM-synthesis loop.
     """
     for i in nb.prange(nPhi):
-        arg = np.expand_dims(np.expand_dims(np.exp(-2.0j * phiArr_radm2[i] * a), axis=-1), axis=-1)
-        FDFcube[i,:,:] =  KArr * np.sum(pCube * arg, axis=0)
+        arg_vec = np.exp(-2.0j * phiArr_radm2[i] * a)
+        # Make arg_vec the same shape as pCube
+        # Use repeat and reshape to avoid broadcasting and keep Numba happy
+        arg_mat = arg_vec.repeat(pCube.shape[1]).repeat(pCube.shape[2]).reshape(pCube.shape)
+        FDFcube[i,:,:] =  KArr * np.sum(pCube * arg_mat, axis=0)
         progress.update(1)
     return FDFcube
 
