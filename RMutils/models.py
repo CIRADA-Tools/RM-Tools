@@ -246,6 +246,35 @@ def get_model(name):
 
         return model
         
+    if (name == 'cable_delay_new'):
+
+        def model(pDict, lamSqArr_m2, IModArr):
+            """Simple Faraday thin source + cable delay + I->V leakage"""
+
+            freqArr=C/np.sqrt(lamSqArr_m2)
+
+            # Calculate the complex fractional q and u spectra
+            pArr = pDict["fracPol"] * IModArr
+            # model Faraday rotation
+            QUArr = pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
+                                         pDict["RM_radm2"] * lamSqArr_m2) )
+            
+            # create model v spectrum
+            VModArr = np.zeros_like(lamSqArr_m2)
+
+            QArr = QUArr.real
+            UArr = QUArr.imag
+
+            # model cable delay leakage
+            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
+            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
+            UArr=U_leak
+            VArr=V_leak
+           
+            return quArr, vArr
+
+        return model
+        
     if (name == 'test_fit'):
         def model(pDict, lamSqArr_m2,  IModArr):
             """Simple Faraday thin source + cable delay + power law fractional polarization"""
@@ -520,6 +549,46 @@ def get_params(name):
                  "wrap":      0}    
             
             ]
+            
+        if (name == 'cable_delay_new'):
+
+            inParms = [
+                {"parname":   "fracPol",
+                 "label":     "$p$",
+                 "value":     0.1,
+                 "bounds":    [0.001, 1.0],
+                 "priortype": "uniform",
+                 "wrap":      0},
+
+                {"parname":   "psi0_deg",
+                 "label":     "$\psi_0$ (deg)",
+                 "value":     0.0,
+                 "bounds":    [0.0, 180.0],
+                 "priortype": "uniform",
+                 "wrap":      1},
+    
+                {"parname":   "RM_radm2",
+                 "label":     "RM (rad m$^{-2}$)",
+                 "value":     0.0,
+                 "bounds":    [-1100.0, 1100.0],
+                 "priortype": "uniform",
+                 "wrap":      0},
+
+                {"parname":   "lag_s",
+                 "label":     "lag (sec)",
+                 "value":     0.0,
+                 "bounds":    [-1e-7, 1e-7],
+                 "priortype": "uniform",
+                 "wrap":      0},
+                 
+                {"parname":   "lag_phi",
+                 "label":     "lag_phi (deg.)",
+                 "value":     0.0,
+                 "bounds":    [0.0, 360.0],
+                 "priortype": "uniform",
+                 "wrap":      1}
+            ]
+
             
         if (name == 'test_fit'):
 
