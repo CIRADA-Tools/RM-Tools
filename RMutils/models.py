@@ -271,7 +271,7 @@ def get_model(name):
             UArr=U_leak
             VArr=V_leak
            
-            return quArr, vArr
+            return QUArr, VArr
 
         return model
         
