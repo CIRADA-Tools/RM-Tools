@@ -269,7 +269,7 @@ def get_model(name):
             U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
             V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
             UArr=U_leak
-            VArr=V_leak
+            VArr=-V_leak
            
             return QUArr, VArr
 
@@ -565,7 +565,7 @@ def get_params(name):
                  "value":     0.0,
                  "bounds":    [0.0, 180.0],
                  "priortype": "uniform",
-                 "wrap":      1},
+                 "wrap":      0},
     
                 {"parname":   "RM_radm2",
                  "label":     "RM (rad m$^{-2}$)",
@@ -586,7 +586,7 @@ def get_params(name):
                  "value":     0.0,
                  "bounds":    [0.0, 360.0],
                  "priortype": "uniform",
-                 "wrap":      1}
+                 "wrap":      0}
             ]
 
             
