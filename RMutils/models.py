@@ -27,7 +27,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 def get_model(name):
 
-     if (name == 'cable_delay'):
+    if (name == 'cable_delay'):
 
         def model(pDict, lamSqArr_m2, IModArr):
             """Simple Faraday thin source + differential phase between X,Y polarizations (i.e. U->V leakage)"""
@@ -63,15 +63,15 @@ def get_model(name):
 
         def model(pDict, lamSqArr_m2, IModArr):
             """Same as 'cable_delay' model + differential response between X,Y polarizations (i.e. I->Q leakage)"""
- 
+
             IModArr[IModArr<0] =  np.nan
             IArr = IModArr.copy()
-    
+
             freqArr=C/np.sqrt(lamSqArr_m2)
 
             # Calculate linear polarization w/ Stokes I model
             pArr = pDict["fracPol"] * IModArr
-    
+
             # Model differential X,Y response
             gain_X = 1
             gain_Y = gain_X * pDict['gain_diff']
@@ -82,7 +82,7 @@ def get_model(name):
 
             QArr = QUArr.real
             UArr = QUArr.imag
-    
+
             # model V spectrum (change this to non-zero array to model instrinsic stokes V)
             VArr = np.zeros_like(lamSqArr_m2)
 
@@ -99,14 +99,15 @@ def get_model(name):
             QArr = QArr_leak
             UArr = UArr*gain_X*gain_Y
             VArr = VArr*gain_X*gain_Y
-    
+
             QUArr = QArr + 1j*UArr
-   
+
             return QUArr, VArr
 
         return model
 
     if (name == 'full_fit'):
+        
         def model(pDict, lamSqArr_m2,  IModArr):
             """Model incoporating params for systematics (e.g., differential phase & response bewteen X,Y) and non-zero/frequency dependent linear & circular polarization fraction"""
             
@@ -153,161 +154,161 @@ def get_model(name):
 
 def get_params(name):
         
-        if (name == 'cable_delay'):
+    if (name == 'cable_delay'):
 
-            inParms = [
-                {"parname":   "fracPol",
-                 "label":     "$p$",
-                 "value":     0.1,
-                 "bounds":    [0.001, 1.1],
-                 "priortype": "uniform",
-                 "wrap":      0},
+        inParms = [
+            {"parname":   "fracPol",
+             "label":     "$p$",
+             "value":     0.1,
+             "bounds":    [0.001, 1.1],
+             "priortype": "uniform",
+             "wrap":      0},
 
-                {"parname":   "psi0_deg",
-                 "label":     "$\psi_0$ (deg)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 180.0],
-                 "priortype": "uniform",
-                 "wrap":      1},
-    
-                {"parname":   "RM_radm2",
-                 "label":     "RM (rad m$^{-2}$)",
-                 "value":     0.0,
-                 "bounds":    [-5000.0, 5000.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+            {"parname":   "psi0_deg",
+             "label":     "$\psi_0$ (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
 
-                {"parname":   "lag_s",
-                 "label":     "lag (sec)",
-                 "value":     0.0,
-                 "bounds":    [-1e-8, 1e-8],
-                 "priortype": "uniform",
-                 "wrap":      0},
-                 
-                {"parname":   "lag_phi",
-                 "label":     "lag_phi (deg.)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 360.0],
-                 "priortype": "uniform",
-                 "wrap":      1}
-            ]
+            {"parname":   "RM_radm2",
+             "label":     "RM (rad m$^{-2}$)",
+             "value":     0.0,
+             "bounds":    [-5000.0, 5000.0],
+             "priortype": "uniform",
+             "wrap":      0},
 
-        if (name == 'cable_delay+response'):
+            {"parname":   "lag_s",
+             "label":     "lag (sec)",
+             "value":     0.0,
+             "bounds":    [-1e-8, 1e-8],
+             "priortype": "uniform",
+             "wrap":      0},
+             
+            {"parname":   "lag_phi",
+             "label":     "lag_phi (deg.)",
+             "value":     0.0,
+             "bounds":    [0.0, 360.0],
+             "priortype": "uniform",
+             "wrap":      1}
+        ]
 
-            inParms = [
-                {"parname":   "fracPol",
-                 "label":     "$p$",
-                 "value":     0.1,
-                 "bounds":    [0.001, 1.1],
-                 "priortype": "uniform",
-                 "wrap":      0},
-    
-                {"parname":   "psi0_deg",
-                 "label":     "$\psi_0$ (deg)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 180.0],
-                 "priortype": "uniform",
-                 "wrap":      1},
-    
-                {"parname":   "RM_radm2",
-                 "label":     "RM (rad m$^{-2}$)",
-                 "value":     0.0,
-                 "bounds":    [-5000.0, 5000.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+    if (name == 'cable_delay+response'):
 
-                {"parname":   "lag_s",
-                 "label":     "lag (sec)",
-                 "value":     0.0,
-                 "bounds":    [-1e-8, 1e-8],
-                 "priortype": "uniform",
-                 "wrap":      0},
-                 
-                {"parname":   "lag_phi",
-                 "label":     "lag_phi (deg.)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 360.0],
-                 "priortype": "uniform",
-                 "wrap":      1},
-    
-                {"parname":   "gain_diff",
-                 "label":     "gain diff",
-                 "value":     1.0,
-                 "bounds":    [0.1, 10.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+        inParms = [
+            {"parname":   "fracPol",
+             "label":     "$p$",
+             "value":     0.1,
+             "bounds":    [0.001, 1.1],
+             "priortype": "uniform",
+             "wrap":      0},
 
-            ]
+            {"parname":   "psi0_deg",
+             "label":     "$\psi_0$ (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
 
-        if (name == 'full_fit'):
+            {"parname":   "RM_radm2",
+             "label":     "RM (rad m$^{-2}$)",
+             "value":     0.0,
+             "bounds":    [-5000.0, 5000.0],
+             "priortype": "uniform",
+             "wrap":      0},
 
-            inParms = [
-                {"parname":   "fracPol",
-                 "label":     "$p$",
-                 "value":     0.1,
-                 "bounds":    [0.001, 1.1],
-                 "priortype": "uniform",
-                 "wrap":      0},
+            {"parname":   "lag_s",
+             "label":     "lag (sec)",
+             "value":     0.0,
+             "bounds":    [-1e-8, 1e-8],
+             "priortype": "uniform",
+             "wrap":      0},
+             
+            {"parname":   "lag_phi",
+             "label":     "lag_phi (deg.)",
+             "value":     0.0,
+             "bounds":    [0.0, 360.0],
+             "priortype": "uniform",
+             "wrap":      1},
 
-                {"parname":   "psi0_deg",
-                 "label":     "$\psi_0$ (deg)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 180.0],
-                 "priortype": "uniform",
-                 "wrap":      1},
-    
-                {"parname":   "RM_radm2",
-                 "label":     "RM (rad m$^{-2}$)",
-                 "value":     0.0,
-                 "bounds":    [-5000.0, 5000.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+            {"parname":   "gain_diff",
+             "label":     "gain diff",
+             "value":     1.0,
+             "bounds":    [0.1, 10.0],
+             "priortype": "uniform",
+             "wrap":      0},
 
-                {"parname":   "lag_s",
-                 "label":     "lag (sec)",
-                 "value":     0.0,
-                 "bounds":    [-1e-8, 1e-8],
-                 "priortype": "uniform",
-                 "wrap":      0},
-                 
-                {"parname":   "lag_phi",
-                 "label":     "lag_phi (deg.)",
-                 "value":     0.0,
-                 "bounds":    [0.0, 360.0],
-                 "priortype": "uniform",
-                 "wrap":      1},
+        ]
 
-                {"parname":   "gamma",
-                 "label":     "$\gamma_L$",
-                 "value":     0.0,
-                 "bounds":    [-10.0, 10.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+    if (name == 'full_fit'):
 
-                {"parname":   "fracPol_V",
-                 "label":     "$p_V$",
-                 "value":     0.1,
-                 "bounds":    [-1.0, 1.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+        inParms = [
+            {"parname":   "fracPol",
+             "label":     "$p$",
+             "value":     0.1,
+             "bounds":    [0.001, 1.1],
+             "priortype": "uniform",
+             "wrap":      0},
 
-                {"parname":   "gamma_V",
-                 "label":     "$\gamma_V$",
-                 "value":     0.0,
-                 "bounds":    [-10.0, 10.0],
-                 "priortype": "uniform",
-                 "wrap":      0},
+            {"parname":   "psi0_deg",
+             "label":     "$\psi_0$ (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
 
-                {"parname":   "gain_diff",
-                 "label":     "gain diff",
-                 "value":     1.0,
-                 "bounds":    [0.1, 10.0],
-                 "priortype": "uniform",
-                 "wrap":      0}
-            
-            ]
+            {"parname":   "RM_radm2",
+             "label":     "RM (rad m$^{-2}$)",
+             "value":     0.0,
+             "bounds":    [-5000.0, 5000.0],
+             "priortype": "uniform",
+             "wrap":      0},
 
-        return inParms
+            {"parname":   "lag_s",
+             "label":     "lag (sec)",
+             "value":     0.0,
+             "bounds":    [-1e-8, 1e-8],
+             "priortype": "uniform",
+             "wrap":      0},
+             
+            {"parname":   "lag_phi",
+             "label":     "lag_phi (deg.)",
+             "value":     0.0,
+             "bounds":    [0.0, 360.0],
+             "priortype": "uniform",
+             "wrap":      1},
+
+            {"parname":   "gamma",
+             "label":     "$\gamma_L$",
+             "value":     0.0,
+             "bounds":    [-10.0, 10.0],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "fracPol_V",
+             "label":     "$p_V$",
+             "value":     0.1,
+             "bounds":    [-1.0, 1.0],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "gamma_V",
+             "label":     "$\gamma_V$",
+             "value":     0.0,
+             "bounds":    [-10.0, 10.0],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "gain_diff",
+             "label":     "gain diff",
+             "value":     1.0,
+             "bounds":    [0.1, 10.0],
+             "priortype": "uniform",
+             "wrap":      0}
+
+        ]
+
+    return inParms
 
 
 #-----------------------------------------------------------------------------#
