@@ -251,6 +251,7 @@ def get_model(name):
         def model(pDict, lamSqArr_m2, IModArr):
             """Simple Faraday thin source + cable delay + I->V leakage"""
 
+            IModArr[IModArr<0] =  np.nan
             freqArr=C/np.sqrt(lamSqArr_m2)
 
             # Calculate the complex fractional q and u spectra
@@ -269,8 +270,10 @@ def get_model(name):
             U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
             V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
             UArr=U_leak
-            VArr=V_leak
-           
+            VArr=-V_leak
+            
+            QUArr = QArr + 1j*UArr
+
             return QUArr, VArr
 
         return model
@@ -278,7 +281,8 @@ def get_model(name):
     if (name == 'test_fit'):
         def model(pDict, lamSqArr_m2,  IModArr):
             """Simple Faraday thin source + cable delay + power law fractional polarization"""
-
+            
+            IModArr[IModArr<0] =  np.nan
             IArr = IModArr.copy()
 
             freqArr=C/np.sqrt(lamSqArr_m2)
