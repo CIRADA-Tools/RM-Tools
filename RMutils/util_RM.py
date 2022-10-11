@@ -483,12 +483,14 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
         for pix in tqdm(inputs, desc="RM-CLEANing", disable=not verbose):
             output.append(rmc.cleanloop(pix))
     else:
-        if verbose:
-            log('(Progress bar is not supported for parallel mode. Please wait for the code to finish.')
-        if chunksize is not None:
-            output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
-        else:
-            output = list(pool.map(rmc.cleanloop, inputs))
+        output = list(
+            tqdm(
+                pool.imap(rmc.cleanloop, inputs, chunksize=chunksize if chunksize is not None else 1),
+                desc="RM-CLEANing",
+                disable=not verbose,
+                total=len(inputs),
+            )
+        )
         pool.close()
     # Put data back in correct shape
 #    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
