@@ -11,7 +11,7 @@
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
-#Copyright (c) 2020 Canadian Initiative for Radio Astronomy Data Analysis     #                                                                             #
+# Copyright (c) 2020 Canadian Initiative for Radio Astronomy Data Analysis    #                                                                             #
 # Permission is hereby granted, free of charge, to any person obtaining a     #
 # copy of this software and associated documentation files (the "Software"),  #
 # to deal in the Software without restriction, including without limitation   #
@@ -46,7 +46,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 
 #-----------------------------------------------------------------------------#
-def compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=None):
+def bwdepol_compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=None):
     """Computes theoretical sensitivity and noise curves for given
     channelization.
 
@@ -158,7 +158,7 @@ def main():
         print('Unable to read file. Please ensure file is readable and contains 1 or 2 columns.')
         exit
 
-    adjoint_info=compute_predictions( freqArr_Hz = freqArr_Hz,
+    adjoint_info=bwdepol_compute_predictions( freqArr_Hz = freqArr_Hz,
                                        widths_Hz = widths_Hz,
                                     phiMax_radm2 = args.phiMax_radm2,
                                       dPhi_radm2 = args.dPhi_radm2,
