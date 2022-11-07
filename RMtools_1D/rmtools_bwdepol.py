@@ -222,9 +222,9 @@ def plot_adjoint_info(mylist, units='Jy/beam'):
 #-----------------------------------------------------------------------------#
 
 
-def anal_channel_pol(f, ban, phi, xi_knot=0, p=1):
+def analytical_chan_pol(f, ban, phi, xi_knot=0, p=1):
     '''Calculates the average analytic solution to the channel polarization
-    integral for 1 channel
+    integral per channel
 
     Based on equation 13 of Schnitzeler & Lee (2015)
 
@@ -264,8 +264,8 @@ def anal_channel_pol(f, ban, phi, xi_knot=0, p=1):
     return avg_p_tilda
 
 
-def simulation(peak_rm, freqArr_Hz,widths_Hz):
-    '''simulated source of the same RM as the measured source,
+def bwdepol_simulation(peak_rm, freqArr_Hz,widths_Hz):
+    '''Farday thin simulated source of the same RM as the measured source,
     with unit intensity
 
     Parameters
@@ -289,7 +289,7 @@ def simulation(peak_rm, freqArr_Hz,widths_Hz):
     if widths_Hz == None:
         widths_Hz = estimate_channel_bandwidth(freqArr_Hz)
 
-    p_tilda = anal_channel_pol(freqArr_Hz, widths_Hz, peak_rm)
+    p_tilda = analytical_chan_pol(freqArr_Hz, widths_Hz, peak_rm)
     size_f = len(freqArr_Hz)
     dq = np.ones(size_f)
     du = np.ones(size_f)
@@ -300,11 +300,9 @@ def simulation(peak_rm, freqArr_Hz,widths_Hz):
 
 
 #-----------------------------------------------------------------------------#
-# modified plotting for the RMSF
-def tweakAxFormat(ax, pad=10, loc='upper right', linewidth=1, ncol=1,
+def bwdepol_tweakAxFormat(ax, pad=10, loc='upper right', linewidth=1, ncol=1,
                    bbox_to_anchor=(1.00, 1.00), showLeg=True):
     ''' Tweaks some default plotting parameters for the RMSF, returns ax'''
-
     # Axis/tic formatting
     ax.tick_params(pad=pad)
     for line in ax.get_xticklines() + ax.get_yticklines():
@@ -321,7 +319,6 @@ def tweakAxFormat(ax, pad=10, loc='upper right', linewidth=1, ncol=1,
         leg.get_frame().set_alpha(0.5)
 
     return ax
-
 
 def gauss(p, peak_rm):
     """Return a fucntion to evaluate a Gaussian with parameters
@@ -353,8 +350,8 @@ def gauss(p, peak_rm):
     return rfunc
 
 
-def plot_RMSF_ax(ax, phiArr, RMSFArr, peak_rm,fwhmRMSF=None, axisYright=False,
-                 axisXtop=False, doTitle=False):
+def bwdepol_plot_RMSF_ax(ax, phiArr, RMSFArr, peak_rm,fwhmRMSF=None,
+                        axisYright=False,axisXtop=False, doTitle=False):
     '''Plots each ax for the RMSF plotting'''
 
     # Set the axis positions
@@ -393,13 +390,13 @@ def plot_RMSF_ax(ax, phiArr, RMSFArr, peak_rm,fwhmRMSF=None, axisYright=False,
     ax.axhline(0, color='grey')
 
     # Format tweaks
-    ax = tweakAxFormat(ax)
+    ax = bwdepol_tweakAxFormat(ax)
     ax.autoscale_view(True,True,True)
 
 
 
-def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,fwhmRMSF=None,
-                      gaussParm=[], vLine=None, fig=None,units='flux units'):
+def bwdepol_plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,
+           fwhmRMSF=None,gaussParm=[], vLine=None, fig=None,units='flux units'):
     '''Plot the RMSF and FDF on a single figure'''
 
 
@@ -408,7 +405,7 @@ def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,fwhmRMSF=None,
         fig = plt.figure(figsize=(12.0, 8))
     # Plot the RMSF
     ax1 = fig.add_subplot(211)
-    plot_RMSF_ax(ax=ax1,
+    bwdepol_plot_RMSF_ax(ax=ax1,
                  phiArr   = phi2Arr,
                  RMSFArr  = RMSFArr,
                  peak_rm  = peak_rm,
@@ -431,9 +428,9 @@ def plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,fwhmRMSF=None,
 
 #-----------------------------------------------------------------------------#
 # modified for adjoint
-def get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm, weightArr=None,
-                    mskArr=None,lam0Sq_m2= None, double=True, fitRMSF=False,
-                    fitRMSFreal=False, nBits=64, verbose=False,
+def bwdepol_get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm,
+                    weightArr=None,mskArr=None,lam0Sq_m2= None, double=True,
+                    fitRMSF=False,fitRMSFreal=False, nBits=64, verbose=False,
                     log=print):
     """Calculate the Rotation Measure Spread Function from inputs. This version
     returns a cube (1, 2 or 3D) of RMSF spectra based on the shape of a
@@ -444,6 +441,8 @@ def get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm, weightArr=None,
     is calculated by looping through each wavelength plane, which can take some
     time. By default the routine returns the analytical width of the RMSF main
     lobe but can also use MPFIT to fit a Gaussian.
+
+    This has been modified from the convientual RMtools_1D version for bwdepol
 
 
     Parameters
@@ -562,8 +561,8 @@ def get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm, weightArr=None,
 
 
     #Create simulated data set with simRM = peakRM
-    RMSF_data =  simulation(peak_rm, freqArr_Hz, widths_Hz)
-    #RMSFArr = fdf from simulation
+    RMSF_data =  bwdepol_simulation(peak_rm, freqArr_Hz, widths_Hz)
+    #RMSFArr = fdf from bwdepol_simulation
     RMSFArr, _, _= do_adjoint_rmsynth_planes(freqArr_Hz, RMSF_data[1],
                       RMSF_data[2], phiArr_radm2, widths_Hz=widths_Hz,
                       weightArr=weightArr, lam0Sq_m2=lam0Sq_m2,
@@ -600,8 +599,7 @@ def get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm, weightArr=None,
 
 
 #-----------------------------------------------------------------------------#
-# modifed measure_FDF_parms for adjoint
-def measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise,
+def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise,
                       dFDF=None, lamSqArr_m2=None,
                       lam0Sq=None, snrDoBiasCorrect=5.0):
     """
@@ -609,6 +607,8 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise,
     Currently this function assumes that the noise levels in the Stokes Q
     and U spectra are the same.
     Returns a dictionary containing measured parameters.
+
+    This has been modified from the convientual RMtools_1D version for bwdepol
     """
 
     # Determine the peak channel in the FDF, its amplitude and index
@@ -765,6 +765,8 @@ def do_adjoint_rmsynth_planes(freqArr_Hz, dataQ, dataU, phiArr_radm2,
     but possible in single-dish cubes). Input data must be in standard python
     [z,y,x] order, where z is the frequency axis in ascending order.
 
+    This has been modified from the convientual RMtools_1D version for bwdepol
+
     Parameters
     ----------
     dataQ           ... 1, 2 or 3D Stokes Q data array
@@ -890,7 +892,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=64, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam'):
-    """Run RM synthesis on 1D data.
+    """Run bwdepol RM synthesis on 1D data.
 
     Args:
         data (list): Contains frequency and polarization data as either:
@@ -1003,8 +1005,6 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
                               units          = units)
 
 
-
-
         # DEBUG (plot the Q, U and average RMS spectrum)
         if debug:
             rmsFig = plt.figure(figsize=(12.0, 8))
@@ -1021,7 +1021,6 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
             ax.set_xlabel('$\\nu$ (GHz)')
             ax.set_ylabel('RMS '+units)
             ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
-
 
 
     # Calculate some wavelength parameters
@@ -1061,7 +1060,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     startTime = time.time()
 
-    # Perform RM-synthesis on the spectrum
+    # Perform adjoint RM-synthesis on the spectrum
     dirtyFDF, lam0Sq_m2, adjoint_vars= do_adjoint_rmsynth_planes(
                                             freqArr_Hz      = freqArr_Hz,
                                             widths_Hz        = widths_Hz,
@@ -1088,7 +1087,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the Rotation Measure Spread Function
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = \
-        get_rmsf_planes(freqArr_Hz      = freqArr_Hz,
+        bwdepol_get_rmsf_planes(freqArr_Hz      = freqArr_Hz,
                         widths_Hz       = widths_Hz,
                         phiArr_radm2    = phiArr_radm2,
                         weightArr       = weightArr,
@@ -1121,7 +1120,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     # Measure the parameters of the dirty FDF
     # Use the theoretical noise to calculate uncertainties
 
-    mDict = measure_FDF_parms(FDF         = dirtyFDF,
+    mDict = bwdepol_measure_FDF_parms(FDF         = dirtyFDF,
                               phiArr      = phiArr_radm2,
                               fwhmRMSF    = fwhmRMSF,
                               adjoint_sens = adjoint_sens,
@@ -1230,7 +1229,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     if showPlots:
         plot_adjoint_info(adjoint_info, units=units)
         fdfFig = plt.figure(figsize=(12.0, 8))
-        plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
+        bwdepol_plot_rmsf_fdf_fig(phiArr     = phiArr_radm2,
                           FDF        = (dirtyFDF / adjoint_sens),
                           phi2Arr    = phiArr_radm2,
                           RMSFArr    = RMSFArr,
@@ -1250,7 +1249,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
 def main():
 
     """
-    Start the function to perform RM-synthesis if called from the command line.
+    Start the function to perform bwdepol RM-synthesis if called from the command line.
     """
 
     # Help string to be shown using the -h option
