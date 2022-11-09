@@ -42,15 +42,15 @@ def get_fits_header(filename):
     hduList.close()
     return header
 
+
 def get_freq_array(filename):
     header = fits.getheader(filename)
     wcs = WCS(header)
     spec_wcs = wcs.spectral
     nchan = spec_wcs.array_shape[0]
-    freqs = spec_wcs.pixel_to_world(np.arange(nchan))
-
-
-    return freqs.value
+    freqs = spec_wcs.pixel_to_world_values(np.arange(nchan))
+    
+    return freqs
 
 
 
