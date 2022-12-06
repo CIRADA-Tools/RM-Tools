@@ -12,7 +12,16 @@ import bilby
 #  quArr       = Complex array containing the Re and Im spectra.              #
 #-----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
-    """Simple Faraday thin source."""
+    """
+    
+    Simple Faraday thin source
+    
+    Ref:
+    Sokoloff et al. (1998) Eq 2
+    O'Sullivan et al. (2012) Eq 8
+    Ma et al. (2019a) Eq 10
+    
+    """
 
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)

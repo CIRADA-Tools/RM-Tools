@@ -13,8 +13,19 @@ from bilby.core.prior import PriorDict, Constraint
 #  quArr       = Complex array containing the Re and Im spectra.              #
 #-----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
-    """Two separate Faraday components, averaged within same telescope beam
-    (i.e., unresolved), with a common Burn depolarisation term."""
+    """
+    
+    Two separate Faraday components with external Faraday dispersion
+    With a common depolarisation term
+    Averaged within the same telescope beam (i.e., unresolved)
+    
+    Ref (for individual source component):    
+    Burn (1966) Eq 21
+    Sokoloff et al. (1998) Eq B3
+    O'Sullivan et al. (2012) Eq 11
+    Ma et al. (2019a) Eq 13
+    
+    """
     
     # Calculate the complex fractional q and u spectra
     pArr1 = pDict["fracPol1"] * np.ones_like(lamSqArr_m2)
