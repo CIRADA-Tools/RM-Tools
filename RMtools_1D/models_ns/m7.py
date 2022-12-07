@@ -26,11 +26,11 @@ def model(pDict, lamSqArr_m2):
     
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
-    para_S = 2. * lamSqArr_m2**2 * pDict["sigmaRM_radm2"]**2
-             - 2j * lamSqArr_m2 * pDict["deltaRM_radm2"]
+    para_S = (2. * lamSqArr_m2**2 * pDict["sigmaRM_radm2"]**2 - 
+             2j * lamSqArr_m2 * pDict["deltaRM_radm2"])
     quArr = (pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
-                                  pDict["RM_radm2"] * lamSqArr_m2))
-             * (1 - np.exp(-1.*para_S)) / para_S
+                                  pDict["RM_radm2"] * lamSqArr_m2)) * 
+            (1 - np.exp(-1.*para_S)) / para_S)
     
     return quArr
 
