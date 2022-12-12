@@ -495,6 +495,17 @@ def run_qufit(
         "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
         "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
     }
+
+    
+    for k, v in saveDict.items():
+        if isinstance(v, np.float_):
+            saveDict[k] = float(v)
+        elif isinstance(v, np.int_):
+            saveDict[k] = int(v)
+        elif isinstance(v, np.ndarray):
+            saveDict[k] = v.tolist()
+        elif isinstance(v, np.bool_):
+            saveDict[k] = bool(v)
     json.dump(saveDict, open(outFile, "w"))
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.dat"
     FH = open(outFile, "w")

@@ -560,6 +560,18 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
 
     if verbose:
         print("> %s" % outFile)
+        
+    for k, v in outdict.items():
+        if isinstance(v, np.float_):
+            outdict[k] = float(v)
+        elif isinstance(v, np.int_):
+            outdict[k] = int(v)
+        elif isinstance(v, np.ndarray):
+            outdict[k] = v.tolist()
+        elif isinstance(v, np.bool_):
+            outdict[k] = bool(v)
+
+        
     json.dump(dict(outdict), open(outFile, "w"))
 
 
