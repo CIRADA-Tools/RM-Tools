@@ -420,13 +420,13 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
     sys.stdout.flush()
     fitsFileOut =  dataPath + "/StokesI.fits"
     print("> %s" % fitsFileOut)
-    hduI.writeto(fitsFileOut, clobber=True)
+    hduI.writeto(fitsFileOut, overwrite=True)
     fitsFileOut =  dataPath + "/StokesQ.fits"
     print("> %s" % fitsFileOut)
-    hduQ.writeto(fitsFileOut, clobber=True)
+    hduQ.writeto(fitsFileOut, overwrite=True)
     fitsFileOut =  dataPath + "/StokesU.fits"
     print("> %s" % fitsFileOut)
-    hduU.writeto(fitsFileOut, clobber=True)
+    hduU.writeto(fitsFileOut, overwrite=True)
 
     # Save a vector of frequency values
     freqFileOut =  dataPath + "/freqs_Hz.dat"
