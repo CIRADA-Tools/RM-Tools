@@ -322,7 +322,7 @@ def bwdepol_tweakAxFormat(ax, pad=10, loc='upper right', linewidth=1, ncol=1,
 
 def gauss(p, peak_rm):
     """Return a fucntion to evaluate a Gaussian with parameters
-    off set my peak_rm
+    off set by peak_rm
 
     Parameters
     ----------
@@ -352,7 +352,7 @@ def gauss(p, peak_rm):
 
 def bwdepol_plot_RMSF_ax(ax, phiArr, RMSFArr, peak_rm,fwhmRMSF=None,
                         axisYright=False,axisXtop=False, doTitle=False):
-    '''Plots each ax for the RMSF plotting'''
+    '''Modified for bwdepol, Plots each ax for the RMSF plotting'''
 
     # Set the axis positions
     if axisYright:
@@ -397,7 +397,7 @@ def bwdepol_plot_RMSF_ax(ax, phiArr, RMSFArr, peak_rm,fwhmRMSF=None,
 
 def bwdepol_plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,
            fwhmRMSF=None,gaussParm=[], vLine=None, fig=None,units='flux units'):
-    '''Plot the RMSF and FDF on a single figure'''
+    '''Modified for bwdepol, Plot the RMSF and FDF on a single figure'''
 
 
     # Default to a pyplot figure
@@ -430,7 +430,7 @@ def bwdepol_plot_rmsf_fdf_fig(phiArr, FDF, phi2Arr, RMSFArr, peak_rm,
 # modified for adjoint
 def bwdepol_get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm,
                     weightArr=None,mskArr=None,lam0Sq_m2= None, double=True,
-                    fitRMSF=False,fitRMSFreal=False, nBits=64, verbose=False,
+                    fitRMSF=True,fitRMSFreal=False, nBits=64, verbose=False,
                     log=print):
     """Calculate the Rotation Measure Spread Function from inputs. This version
     returns a cube (1, 2 or 3D) of RMSF spectra based on the shape of a
@@ -574,7 +574,7 @@ def bwdepol_get_rmsf_planes(freqArr_Hz,widths_Hz, phiArr_radm2, peak_rm,
     if fitRMSF:
         if verbose:
             log("Fitting Gaussian to the main lobe.")
-        mp = fit_rmsf(phi2Arr, np.abs(RMSFArr))
+        mp = fit_rmsf(phi2Arr, np.abs(RMSFArr)/np.max(np.abs(RMSFArr)))
         if mp is None or mp.status<1:
              pass
              log("Err: failed to fit the RMSF.")
@@ -613,46 +613,56 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
 
     # Determine the peak channel in the FDF, its amplitude and index
     absFDF = np.abs(FDF)
-    rm_fdf = absFDF / adjoint_noise # used for finding peak in RM
-    amp_fdf = absFDF/ adjoint_sens # used for finding amp peak
+    rm_fdf = absFDF / adjoint_noise # RM spectrum in S:N units (normalized by RM-dependent noise)
+    amp_fdf = absFDF/ adjoint_sens # RM spectrum normalized by (RM-dependent) sensitivity
     indxPeakPIchan = np.nanargmax(rm_fdf[1:-1])+1  # Masks out the edge channels
     ampPeakPIchan = amp_fdf[indxPeakPIchan]  # since they can't be fit to.
 
-    # new dFDF correction for adjoint method
+    # new theoretical dFDF correction for adjoint method
+    #This is noise in the adjoint-spectrum.
     dFDF = adjoint_noise[indxPeakPIchan]
+    
+    #This is the error in the amplitude (accounting for re-normalization)
+    dampPeakPI = dFDF / adjoint_sens[indxPeakPIchan]
 
     # Measure the RMS noise in the spectrum after masking the peak
-    # changed all absFDF to amp_fdf
+    # changed all absFDF to rm_fdf
+    #Since this is normalized by theoretical noise, it's effectively testing
+    #the noise relative to the theoretical noise.
     dPhi = np.nanmin(np.diff(phiArr))
     fwhmRMSF_chan = np.ceil(fwhmRMSF/dPhi)
     iL = int(max(0, indxPeakPIchan-fwhmRMSF_chan*2))
     iR = int(min(len(absFDF), indxPeakPIchan+fwhmRMSF_chan*2))
-    absFDFmsked = amp_fdf.copy()
+    absFDFmsked = rm_fdf.copy()
     absFDFmsked[iL:iR] = np.nan
     absFDFmsked = absFDFmsked[np.where(absFDFmsked==absFDFmsked)]
     if float(len(absFDFmsked))/len(absFDF)<0.3:
-        dFDFcorMAD = MAD(amp_fdf)
-        dFDFrms = np.sqrt( np.mean(amp_fdf**2) )
+        dFDFcorMAD = MAD(rm_fdf)
+        dFDFrms = np.sqrt( np.mean(rm_fdf**2) )
     else:
         dFDFcorMAD = MAD(absFDFmsked)
         dFDFrms = np.sqrt( np.mean(absFDFmsked**2) )
 
+    #The noise is re-normalized by the predicted noise at the peak RM.
+    dFDFcorMAD = dFDFcorMAD * adjoint_noise[indxPeakPIchan]
+    dFDFrms  = dFDFrms  * adjoint_noise[indxPeakPIchan]
+
     # Measure the RM of the peak channel
     phiPeakPIchan = phiArr[indxPeakPIchan]
-    dPhiPeakPIchan = fwhmRMSF * dFDF / (2.0 * ampPeakPIchan)
-    snrPIchan = ampPeakPIchan / dFDF
+    snrPIchan = ampPeakPIchan * adjoint_sens[indxPeakPIchan] / dFDF
+    dPhiPeakPIchan = fwhmRMSF / (2.0 * snrPIchan)
 
     # Correct the peak for polarisation bias (POSSUM report 11)
     ampPeakPIchanEff = ampPeakPIchan
     if snrPIchan >= snrDoBiasCorrect:
-        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dFDF**2.0)
+        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dampPeakPI**2.0)
 
-    # Calculate the polarisation angle from the channel
-    peakFDFimagChan = FDF.imag[indxPeakPIchan]
-    peakFDFrealChan = FDF.real[indxPeakPIchan]
+    # Calculate the polarisation angle from the channel; normalize by sensitivity
+    peakFDFimagChan = FDF.imag[indxPeakPIchan] / adjoint_sens[indxPeakPIchan]
+    peakFDFrealChan = FDF.real[indxPeakPIchan] / adjoint_sens[indxPeakPIchan]
     polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
                                          peakFDFrealChan)) % 180
-    dPolAngleChan_deg = np.degrees(dFDF / (2.0 * ampPeakPIchan))
+    dPolAngleChan_deg = np.degrees(0.5 / snrPIchan)
 
     # Calculate the derotated polarisation angle and uncertainty
     polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
@@ -661,7 +671,7 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
     dPolAngle0Chan_rad = \
-        np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
+        np.sqrt( dampPeakPI**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
                  ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
     dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
 
@@ -690,17 +700,17 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
                                            phiArr[indxPeakPIchan+1],
                                            amp_fdf[indxPeakPIchan+1])
 
-        snrPIfit = ampPeakPIfit / dFDF
+        snrPIfit = ampPeakPIfit * adjoint_sens[indxPeakPIchan] / dFDF
 
         # Error on fitted Faraday depth (RM) is same as channel
         # but using fitted PI
-        dPhiPeakPIfit = fwhmRMSF * dFDF / (2.0 * ampPeakPIfit)
+        dPhiPeakPIfit = fwhmRMSF / (2.0 * snrPIfit)
 
 
         # Correct the peak for polarisation bias (POSSUM report 11)
         ampPeakPIfitEff = ampPeakPIfit
         if snrPIfit >= snrDoBiasCorrect:
-            ampPeakPIfitEff = np.sqrt(ampPeakPIfit**2.0 - 2.3 * dFDF**2.0)
+            ampPeakPIfitEff = np.sqrt(ampPeakPIfit**2.0 - 2.3 * dampPeakPI**2.0)
 
         # Calculate the polarisation angle from the fitted peak
         # Uncertainty from Eqn A.12 in Brentjens & De Bruyn 2005
@@ -710,14 +720,14 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
         peakFDFrealFit = np.interp(phiPeakPIfit, phiArr, FDF.real)
         polAngleFit_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagFit,
                                                   peakFDFrealFit)) % 180
-        dPolAngleFit_deg = np.degrees(dFDF / (2.0 * ampPeakPIfit))
+        dPolAngleFit_deg = np.degrees(1 / (2.0 * snrPIfit))
 
         # Calculate the derotated polarisation angle and uncertainty
         # Uncertainty from Eqn A.20 in Brentjens & De Bruyn 2005
         polAngle0Fit_deg = (np.degrees(np.radians(polAngleFit_deg) -
                                       phiPeakPIfit * lam0Sq)) % 180
         dPolAngle0Fit_rad = \
-            np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIfit**2.0) *
+            np.sqrt( nChansGood / (4.0*(nChansGood-2.0)*snrPIfit**2.0) *
                     ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
         dPolAngle0Fit_deg = np.degrees(dPolAngle0Fit_rad)
 
@@ -728,7 +738,7 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
              'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
              'ampPeakPIchan':    toscalar(ampPeakPIchan),
              'ampPeakPIchanEff': toscalar(ampPeakPIchanEff),
-             'dAmpPeakPIchan':   toscalar(dFDF),
+             'dAmpPeakPIchan':   toscalar(dampPeakPI),
              'snrPIchan':             toscalar(snrPIchan),
              'indxPeakPIchan':        toscalar(indxPeakPIchan),
              'peakFDFimagChan':       toscalar(peakFDFimagChan),
@@ -741,7 +751,7 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
              'dPhiPeakPIfit_rm2':     toscalar(dPhiPeakPIfit),
              'ampPeakPIfit':     toscalar(ampPeakPIfit),
              'ampPeakPIfitEff':  toscalar(ampPeakPIfitEff),
-             'dAmpPeakPIfit':    toscalar(dFDF),
+             'dAmpPeakPIfit':    toscalar(dampPeakPI),
              'snrPIfit':              toscalar(snrPIfit),
              'indxPeakPIfit':         toscalar(indxPeakPIfit),
              'peakFDFimagFit':        toscalar(peakFDFimagFit),
@@ -889,7 +899,7 @@ def do_adjoint_rmsynth_planes(freqArr_Hz, dataQ, dataU, phiArr_radm2,
 
 #-----------------------------------------------------------------------------#
 def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
-                nSamples=10.0, weightType="variance", fitRMSF=False,
+                nSamples=10.0, weightType="variance", fitRMSF=True,
                 noStokesI=False, phiNoise_radm2=1e6, nBits=64, showPlots=False,
                 debug=False, verbose=False, log=print,units='Jy/beam'):
     """Run bwdepol RM synthesis on 1D data.
@@ -1137,7 +1147,7 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
     mDict["dQU"] = toscalar(nanmedian(dQUArr))
-    mDict["dFDFth"] = toscalar(dFDFth)
+    #mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
 
     if fitDict["fitStatus"] >= 128:
@@ -1289,8 +1299,8 @@ def main():
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
                         help="ASCII file containing Stokes spectra & errors.")
-    parser.add_argument("-t", dest="fitRMSF", action="store_true",
-                        help="fit a Gaussian to the RMSF [False]")
+    parser.add_argument("-t", dest="fitRMSF", action="store_false",
+                        help="fit a Gaussian to the RMSF [True; set flag to disable]")
     parser.add_argument("-l", dest="phiMax_radm2", type=float, default=None,
                         help="absolute max Faraday depth sampled [Auto].")
     parser.add_argument("-d", dest="dPhi_radm2", type=float, default=None,
