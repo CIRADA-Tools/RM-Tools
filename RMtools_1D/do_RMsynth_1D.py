@@ -362,7 +362,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Measure the complexity of the q and u spectra
     # Use 'ampPeakPIfitEff' for bias correct PI
-    mDict["fracPol"] = mDict["ampPeakPIfitEff"]/(Ifreq0)
+    mDict["fracPol"] = toscalar(mDict["ampPeakPIfitEff"]/(Ifreq0))
     mD, pD = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
                                    qArr       = qArr,
                                    uArr       = uArr,

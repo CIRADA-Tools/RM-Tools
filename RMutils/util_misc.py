@@ -715,7 +715,7 @@ def toscalar(a):
     Returns a scalar version of a Numpy object.
     """
     try:
-        return np.asscalar(a)
+        return a.item()
     except Exception:
         return a
 

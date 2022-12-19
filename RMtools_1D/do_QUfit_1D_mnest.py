@@ -559,7 +559,7 @@ def run_qufit(
     # Save the figures
     outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
     specFig.set_canvas(specFig.canvas)
-    specFig.figure.savefig(outFile)
+    specFig.savefig(outFile)
     print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
     outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
     cornerFig.set_canvas(cornerFig.canvas)
@@ -568,7 +568,7 @@ def run_qufit(
 
     # Display the figures
     if showPlots:
-        specFig.figure.show()
+        specFig.show()
         cornerFig.show()
 
 
