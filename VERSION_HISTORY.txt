@@ -1,3 +1,11 @@
+bwdpol branch:
+Split off from main branch Nov 2021.
+Added Max's code.
+Modified code to be more consistent with naming convention of other tools.
+Modified code to be more streamlined.
+Modified code to accept channel width parameter.
+
+
 
 Github main branch:
 
