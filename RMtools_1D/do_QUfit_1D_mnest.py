@@ -469,7 +469,7 @@ def run_qufit(
 
     # Create a save dictionary and store final p in values
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.json"
-    IfitDict["p"] = toscalar(IfitDict["p"].tolist())
+    #IfitDict["p"] = toscalar(IfitDict["p"].tolist())
     saveDict = {
         "parNames": toscalar(parNames),
         "labels": toscalar(labels),
@@ -488,8 +488,8 @@ def run_qufit(
         "ln(EVIDENCE) ": toscalar(lnEvidence),
         "dLn(EVIDENCE)": toscalar(dLnEvidence),
         "nFree": toscalar(nFree),
-        "Imodel": toscalar(",".join([str(x) for x in IfitDict["p"]])),
-        "Imodel_errs": toscalar(",".join([str(x) for x in IfitDict["perror"]])),
+        "Imodel": ",".join([str(x.astype(np.float32)) for x in IfitDict["p"]]),
+        "Imodel_errs": ",".join([str(x.astype(np.float32)) for x in IfitDict["perror"]]),
         "IfitChiSq": toscalar(IfitDict["chiSq"]),
         "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
         "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),

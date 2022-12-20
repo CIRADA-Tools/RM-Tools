@@ -332,8 +332,8 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0"] = toscalar(Ifreq0)
-    mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
-    mDict["polyCoefferr"] = ",".join([str(x) for x in fitDict["perror"]])
+    mDict["polyCoeffs"] =  ",".join([str(x.astype(np.float32)) for x in fitDict["p"]])
+    mDict["polyCoefferr"] = ",".join([str(x.astype(np.float32)) for x in fitDict["perror"]])
     mDict["poly_reffreq"] = fitDict['reference_frequency_Hz']
     mDict['polyOrd'] = fitDict['polyOrd']
     mDict["IfitStat"] = fitDict["fitStatus"]

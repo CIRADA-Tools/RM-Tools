@@ -20,7 +20,7 @@ import numpy as np
 import subprocess
 import shutil
 from astropy.io import fits as pf
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 import unittest
 import json
 
@@ -235,12 +235,12 @@ class test_RMtools(unittest.TestCase):
             create_1D_data(self.freq_arr)
         if not os.path.exists('models_ns'):            
             shutil.copytree('../RMtools_1D/models_ns','models_ns')
-        returncode=subprocess.call('qufit simdata/1D/simsource.dat',shell=True)
+        returncode=subprocess.call('qufit simdata/1D/simsource.dat --sampler nestle',shell=True)
         self.assertEqual(returncode, 0, 'QU fitting failed to run.')
         shutil.rmtree('models_ns')
         
     def test_f2_QUfit_values(self):
-        mDict = json.load(open('simdata/1D/simsource_m1_dynesty.json', "r"))
+        mDict = json.load(open('simdata/1D/simsource_m1_nestle.json', "r"))
         #The QU-fitting code has internal randomness that I can't control. So every run
         #will produce slightly different results. I want to assert that these differences
         #are below 1%.
