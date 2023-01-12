@@ -254,8 +254,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
         log("Err: mask dimensions must be <= 3.")
         return None, None, None, None
     if not mskArr.shape[0] == lambdaSqArr_m2.shape[0]:
-        log("Err: mask depth does not match lambda^2 vector (%d vs %d).", end=' ')
-        (mskArr.shape[0], lambdaSqArr_m2.shape[-1])
+        log(f"Err: mask depth does not match lambda^2 vector ({mskArr.shape[0]} vs {lambdaSqArr_m2.shape[-1]}).", end=' ')
         log("     Check that the mask is in [z, y, x] order.")
         return None, None, None, None
 
