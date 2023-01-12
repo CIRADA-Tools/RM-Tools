@@ -56,7 +56,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = False,
-                log = print):
+                log = print, full_resolution=False):
 
     """Run RM-synthesis on 2/3D data.
 
@@ -160,7 +160,9 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                                            phiArr_radm2    = phiArr_radm2,
                                            weightArr       = weightArr,
                                            nBits           = 32,
-                                           verbose         = verbose)
+                                           verbose         = verbose,
+                                           lam0Sq_m2       = 0 if full_resolution else None,
+                                           )
     # Calculate the Rotation Measure Spread Function cube
     if not_rmsf is not True:
         RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr = \
@@ -171,7 +173,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                             lam0Sq_m2        = lam0Sq_m2,
                             double           = True,
                             fitRMSF          = fitRMSF,
-                            fitRMSFreal      = False,
+                            fitRMSFreal      = full_resolution,
                             nBits            = 32,
                             verbose          = verbose,
                             log              = log)
@@ -186,7 +188,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     # nearest two planes.
     with np.errstate(divide='ignore', invalid='ignore'):
         freq0_Hz = np.true_divide(C , m.sqrt(lam0Sq_m2))
-                                  
+
     if dataI is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx]<freq0_Hz:
@@ -399,7 +401,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
 
     #Generate peak maps:
-        
+
     maxPI,peakRM = create_peak_maps(FDFcube,phiArr_radm2,Ndim-freq_axis)
     # Save a maximum polarised intensity map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
@@ -435,7 +437,7 @@ def create_peak_maps(FDFcube,phiArr_radm2,phi_axis=0):
     Inputs:
         FDFcube: output cube from run_rmsynth
         phiArr_radm2: array of Faraday depth values, from run_rmsynth
-        phi_axis (int): number of the axis for Faraday depth (in python order, 
+        phi_axis (int): number of the axis for Faraday depth (in python order,
                          not FITS order). Defaults to zero (first axis).
     Returns:
         maxPI: array of same dimensions as FDFcube exceppt collapsed along
@@ -443,15 +445,15 @@ def create_peak_maps(FDFcube,phiArr_radm2,phi_axis=0):
                 intensity for each pixel
         peakRM: as maxPI, but with the Faraday depth location of the peak
     """
-    
+
     maxPI=np.max(np.abs(FDFcube), axis=phi_axis)
     peakRM_indices = np.argmax(np.abs(FDFcube), axis=phi_axis)
     peakRM=phiArr_radm2[peakRM_indices]
-    
+
     return maxPI, peakRM
 
-    
-    
+
+
 
 
 
@@ -502,7 +504,7 @@ def readFitsCube(file, verbose, log = print):
             print('NAXIS{} = {}'.format(i,head['NAXIS'+str(i)]),end='  ')
         print()
 
-    freq_axis=find_freq_axis(head) 
+    freq_axis=find_freq_axis(head)
     #If the frequency axis isn't the last one, rotate the array until it is.
     #Recall that pyfits reverses the axis ordering, so we want frequency on
     #axis 0 of the numpy array.
@@ -592,6 +594,9 @@ def main():
                         help="Verbose [False].")
     parser.add_argument("-R", dest="not_RMSF", action="store_true",
                         help="Skip calculation of RMSF? [False]")
+    parser.add_argument("-r", "--full-resolution", action="store_true",
+                        help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
+                        )
     args = parser.parse_args()
 
     # Sanity checks
@@ -625,7 +630,9 @@ def main():
                           fitRMSF      = args.fitRMSF,
                           nBits        = 32,
                           verbose      = verbose,
-                          not_rmsf = args.not_RMSF)
+                          not_rmsf = args.not_RMSF,
+                          full_resolution=args.full_resolution,
+                        )
 
     # Write to files
     writefits(dataArr,
