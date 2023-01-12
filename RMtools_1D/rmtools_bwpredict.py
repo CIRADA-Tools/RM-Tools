@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#=============================================================================#
+# =============================================================================#
 #                                                                             #
 # NAME:     rmtools_bwpredict.py                                              #
 #                                                                             #
 # PURPOSE: Algorithm for finding polarized sources while accounting for       #
 #          bandwidth depolarization.                                          #
 #                                                                             #
-#=============================================================================#
+# =============================================================================#
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
@@ -30,23 +30,31 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER         #
 # DEALINGS IN THE SOFTWARE.                                                   #
 #                                                                             #
-#=============================================================================#
+# =============================================================================#
 
-import sys
-import math as m
-import numpy as np
-import matplotlib.pyplot as plt
-from RMtools_1D.rmtools_bwdepol import estimate_channel_bandwidth, \
-        adjoint_theory, plot_adjoint_info
 import argparse
+import math as m
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from RMtools_1D.rmtools_bwdepol import (
+    adjoint_theory,
+    estimate_channel_bandwidth,
+    plot_adjoint_info,
+)
+
 if sys.version_info.major == 2:
-    print('RM-tools will no longer run with Python 2! Please use Python 3.')
+    print("RM-tools will no longer run with Python 2! Please use Python 3.")
     exit()
-C = 2.997924538e8 # Speed of light [m/s]
+C = 2.997924538e8  # Speed of light [m/s]
 
 
-#-----------------------------------------------------------------------------#
-def bwdepol_compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None, dPhi_radm2=None):
+# -----------------------------------------------------------------------------#
+def bwdepol_compute_predictions(
+    freqArr_Hz, widths_Hz=None, phiMax_radm2=None, dPhi_radm2=None
+):
     """Computes theoretical sensitivity and noise curves for given
     channelization.
 
@@ -73,10 +81,9 @@ def bwdepol_compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None,
 
     """
     # Calculate some wavelength parameters
-    lambdaSqArr_m2 = np.power(C/freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
     # dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
-    lambdaSqRange_m2 = ( np.nanmax(lambdaSqArr_m2) -
-                         np.nanmin(lambdaSqArr_m2) )
+    lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
     dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
     dLambdaSqMax_m2 = np.nanmax(np.abs(np.diff(lambdaSqArr_m2)))
 
@@ -85,29 +92,31 @@ def bwdepol_compute_predictions(freqArr_Hz, widths_Hz = None, phiMax_radm2=None,
     if dPhi_radm2 is None:
         dPhi_radm2 = fwhmRMSF_radm2
     if phiMax_radm2 is None:
-        phiMax_radm2 = 2*m.sqrt(3.0) / dLambdaSqMin_m2
+        phiMax_radm2 = 2 * m.sqrt(3.0) / dLambdaSqMin_m2
 
     # Faraday depth sampling.
-    phiArr_radm2 = np.arange(0, phiMax_radm2+1e-6, dPhi_radm2)
-    phiArr_radm2 = phiArr_radm2.astype('float64')
+    phiArr_radm2 = np.arange(0, phiMax_radm2 + 1e-6, dPhi_radm2)
+    phiArr_radm2 = phiArr_radm2.astype("float64")
 
-    print('Computing out to a Faraday depth of {:g} rad/m^2 in steps of {:g} rad/m^2'.format(phiMax_radm2,dPhi_radm2))
+    print(
+        "Computing out to a Faraday depth of {:g} rad/m^2 in steps of {:g} rad/m^2".format(
+            phiMax_radm2, dPhi_radm2
+        )
+    )
 
     # Uniform weights only for prediction purposes
-    weightArr = np.ones(freqArr_Hz.shape, dtype='float64')
+    weightArr = np.ones(freqArr_Hz.shape, dtype="float64")
 
-
-    #Get channel widths if not given by user.
+    # Get channel widths if not given by user.
     K = 1.0 / np.sum(weightArr)
     if widths_Hz is None:
-        widths_Hz  = estimate_channel_bandwidth(freqArr_Hz)
+        widths_Hz = estimate_channel_bandwidth(freqArr_Hz)
 
-
-    adjoint_varbs = [widths_Hz , freqArr_Hz, phiArr_radm2, K, weightArr]
+    adjoint_varbs = [widths_Hz, freqArr_Hz, phiArr_radm2, K, weightArr]
     adjoint_info = adjoint_theory(adjoint_varbs, weightArr, show_progress=False)
     phiArr_radm2, adjoint_sens, adjoint_noise = adjoint_info
 
-    adjoint_info[2]=adjoint_noise/np.max(adjoint_noise) #Renormalize to unity.
+    adjoint_info[2] = adjoint_noise / np.max(adjoint_noise)  # Renormalize to unity.
 
     return adjoint_info
 
@@ -130,45 +139,67 @@ def main():
     accurate, and over what RM range they may want to use the modified method.
     """
 
-
     # Parse the command line options
-    parser = argparse.ArgumentParser(description=descStr,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
-                        help="ASCII file containing channel frequencies.")
-    parser.add_argument("-l", dest="phiMax_radm2", type=float, default=None,
-                        help="absolute max Faraday depth sampled [Auto].")
-    parser.add_argument("-d", dest="dPhi_radm2", type=float, default=None,
-                        help="width of Faraday depth channel [Auto].\n(overrides -s NSAMPLES flag)")
-    parser.add_argument("-s", dest="nSamples", type=float, default=10,
-                        help="number of samples across the RMSF lobe [10].")
+    parser = argparse.ArgumentParser(
+        description=descStr, formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "dataFile",
+        metavar="dataFile.dat",
+        nargs=1,
+        help="ASCII file containing channel frequencies.",
+    )
+    parser.add_argument(
+        "-l",
+        dest="phiMax_radm2",
+        type=float,
+        default=None,
+        help="absolute max Faraday depth sampled [Auto].",
+    )
+    parser.add_argument(
+        "-d",
+        dest="dPhi_radm2",
+        type=float,
+        default=None,
+        help="width of Faraday depth channel [Auto].\n(overrides -s NSAMPLES flag)",
+    )
+    parser.add_argument(
+        "-s",
+        dest="nSamples",
+        type=float,
+        default=10,
+        help="number of samples across the RMSF lobe [10].",
+    )
 
     args = parser.parse_args()
 
-    #Get data:
+    # Get data:
     try:
-        data=np.loadtxt(args.dataFile[0], unpack=True, dtype='float64')
-        if data.ndim == 1: #If single column file, data is only channel freqs
-            freqArr_Hz=data
-            widths_Hz=None
-        else: #file has multiple columns
-            freqArr_Hz=data[0] #assume the first column is channel freqs
-            widths_Hz = data[1] #Assume widths are 2nd column if present.
+        data = np.loadtxt(args.dataFile[0], unpack=True, dtype="float64")
+        if data.ndim == 1:  # If single column file, data is only channel freqs
+            freqArr_Hz = data
+            widths_Hz = None
+        else:  # file has multiple columns
+            freqArr_Hz = data[0]  # assume the first column is channel freqs
+            widths_Hz = data[1]  # Assume widths are 2nd column if present.
     except:
-        print('Unable to read file. Please ensure file is readable and contains 1 or 2 columns.')
+        print(
+            "Unable to read file. Please ensure file is readable and contains 1 or 2 columns."
+        )
         exit
 
-    adjoint_info=bwdepol_compute_predictions( freqArr_Hz = freqArr_Hz,
-                                       widths_Hz = widths_Hz,
-                                    phiMax_radm2 = args.phiMax_radm2,
-                                      dPhi_radm2 = args.dPhi_radm2,
-                                             )
+    adjoint_info = bwdepol_compute_predictions(
+        freqArr_Hz=freqArr_Hz,
+        widths_Hz=widths_Hz,
+        phiMax_radm2=args.phiMax_radm2,
+        dPhi_radm2=args.dPhi_radm2,
+    )
 
     # plot adjoint info
-    plot_adjoint_info(adjoint_info,units='arb. units')
+    plot_adjoint_info(adjoint_info, units="arb. units")
     plt.show()
 
 
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()

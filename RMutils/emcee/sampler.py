@@ -5,8 +5,7 @@ The base sampler class implementing various helpful functions.
 
 """
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ["Sampler"]
 
@@ -34,6 +33,7 @@ class Sampler(object):
         will be called with the sequence ``lnpostfn(p, *args, **kwargs)``.
 
     """
+
     def __init__(self, dim, lnprobfn, args=[], kwargs={}):
         self.dim = dim
         self.lnprobfn = lnprobfn
@@ -108,8 +108,9 @@ class Sampler(object):
         return self.get_autocorr_time()
 
     def get_autocorr_time(self, window=50):
-        raise NotImplementedError("The acor method must be implemented "
-                                  "by subclasses")
+        raise NotImplementedError(
+            "The acor method must be implemented " "by subclasses"
+        )
 
     def get_lnprob(self, p):
         """Return the log-probability at the given position."""
@@ -129,8 +130,9 @@ class Sampler(object):
         return self.reset()
 
     def sample(self, *args, **kwargs):
-        raise NotImplementedError("The sampling routine must be implemented "
-                                  "by subclasses")
+        raise NotImplementedError(
+            "The sampling routine must be implemented " "by subclasses"
+        )
 
     def run_mcmc(self, pos0, N, rstate0=None, lnprob0=None, **kwargs):
         """
@@ -160,16 +162,16 @@ class Sampler(object):
         """
         if pos0 is None:
             if self._last_run_mcmc_result is None:
-                raise ValueError("Cannot have pos0=None if run_mcmc has never "
-                                 "been called.")
+                raise ValueError(
+                    "Cannot have pos0=None if run_mcmc has never " "been called."
+                )
             pos0 = self._last_run_mcmc_result[0]
             if lnprob0 is None:
                 rstate0 = self._last_run_mcmc_result[1]
             if rstate0 is None:
                 rstate0 = self._last_run_mcmc_result[2]
 
-        for results in self.sample(pos0, lnprob0, rstate0, iterations=N,
-                                   **kwargs):
+        for results in self.sample(pos0, lnprob0, rstate0, iterations=N, **kwargs):
             pass
 
         # store so that the ``pos0=None`` case will work.  We throw out the blob

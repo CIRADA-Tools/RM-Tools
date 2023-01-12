@@ -46,27 +46,25 @@
 #                                                                             #
 # =============================================================================#
 
-from shutil import Error
-import sys
-import os
-import shutil
+import argparse
 import copy
-import time
 import importlib
 import json
-import argparse
+import os
+import shutil
+import sys
+import time
 import traceback
-import numpy as np
-import matplotlib.pyplot as plt
+from shutil import Error
+
 import bilby
+import matplotlib.pyplot as plt
+import numpy as np
 
 from RMtools_1D.do_RMsynth_1D import readFile
-from RMutils.util_misc import create_frac_spectra
-from RMutils.util_misc import calculate_StokesI_model
-from RMutils.util_misc import toscalar
-from RMutils.util_plotTk import plot_Ipqu_spectra_fig
-from RMutils.util_plotTk import CustomNavbar
 from RMutils import corner
+from RMutils.util_misc import calculate_StokesI_model, create_frac_spectra, toscalar
+from RMutils.util_plotTk import CustomNavbar, plot_Ipqu_spectra_fig
 
 C = 2.997924538e8  # Speed of light [m/s]
 
@@ -184,12 +182,7 @@ def main():
         sys.exit()
 
     prefixOut, ext = os.path.splitext(args.dataFile[0])
-    data = readFile(
-        args.dataFile[0],
-        32,
-        verbose=args.verbose,
-        debug=args.debug
-    )
+    data = readFile(args.dataFile[0], 32, verbose=args.verbose, debug=args.debug)
 
     # Run the QU-fitting procedure
     run_qufit(
@@ -256,39 +249,39 @@ def run_qufit(
     prefixOut="prefixOut",
 ):
     """Carry out QU-fitting using the supplied parameters:
-        data (list): Contains frequency and polarization data as either:
-            [freq_Hz, I, Q, U, dI, dQ, dU]
-                freq_Hz (array_like): Frequency of each channel in Hz.
-                I (array_like): Stokes I intensity in each channel.
-                Q (array_like): Stokes Q intensity in each channel.
-                U (array_like): Stokes U intensity in each channel.
-                dI (array_like): Error in Stokes I intensity in each channel.
-                dQ (array_like): Error in Stokes Q intensity in each channel.
-                dU (array_like): Error in Stokes U intensity in each channel.
-            or
-            [freq_Hz, q, u,  dq, du]
-                freq_Hz (array_like): Frequency of each channel in Hz.
-                q (array_like): Fractional Stokes Q intensity (Q/I) in each channel.
-                u (array_like): Fractional Stokes U intensity (U/I) in each channel.
-                dq (array_like): Error in fractional Stokes Q intensity in each channel.
-                du (array_like): Error in fractional Stokes U intensity in each channel.
-        modelNum (int, required): number of model to be fit to data. Models and
-             priors are specified as Python code in files called 'mX.py' within
-            the 'models_ns' directory.
-        outDir (str): relative or absolute path to save outputs to. Defaults to
-            working directory.
-        polyOrd (int): Order of polynomial to fit to Stokes I spectrum (used to
-            normalize Q and U values). Defaults to 3 (cubic).
-        nBits (int): number of bits to use in internal calculations.
-        noStokesI (bool): set True if the Stokes I spectrum should be ignored.
-        showPlots (bool): Set true if the spectrum and parameter space plots
-            should be displayed.
-        sigma_clip (float): How many standard deviations to clip around the
-            mean of each mode in the parameter postierors.
-        debug (bool): Display debug messages.
-        verbose (bool): Print verbose messages/results to terminal.
+    data (list): Contains frequency and polarization data as either:
+        [freq_Hz, I, Q, U, dI, dQ, dU]
+            freq_Hz (array_like): Frequency of each channel in Hz.
+            I (array_like): Stokes I intensity in each channel.
+            Q (array_like): Stokes Q intensity in each channel.
+            U (array_like): Stokes U intensity in each channel.
+            dI (array_like): Error in Stokes I intensity in each channel.
+            dQ (array_like): Error in Stokes Q intensity in each channel.
+            dU (array_like): Error in Stokes U intensity in each channel.
+        or
+        [freq_Hz, q, u,  dq, du]
+            freq_Hz (array_like): Frequency of each channel in Hz.
+            q (array_like): Fractional Stokes Q intensity (Q/I) in each channel.
+            u (array_like): Fractional Stokes U intensity (U/I) in each channel.
+            dq (array_like): Error in fractional Stokes Q intensity in each channel.
+            du (array_like): Error in fractional Stokes U intensity in each channel.
+    modelNum (int, required): number of model to be fit to data. Models and
+         priors are specified as Python code in files called 'mX.py' within
+        the 'models_ns' directory.
+    outDir (str): relative or absolute path to save outputs to. Defaults to
+        working directory.
+    polyOrd (int): Order of polynomial to fit to Stokes I spectrum (used to
+        normalize Q and U values). Defaults to 3 (cubic).
+    nBits (int): number of bits to use in internal calculations.
+    noStokesI (bool): set True if the Stokes I spectrum should be ignored.
+    showPlots (bool): Set true if the spectrum and parameter space plots
+        should be displayed.
+    sigma_clip (float): How many standard deviations to clip around the
+        mean of each mode in the parameter postierors.
+    debug (bool): Display debug messages.
+    verbose (bool): Print verbose messages/results to terminal.
 
-        Returns: nothing. Results saved to files and/or printed to terminal."""
+    Returns: nothing. Results saved to files and/or printed to terminal."""
 
     # Output prefix is derived from the input file name
     nestOut = f"{prefixOut}_m{modelNum}_{sampler}/"
@@ -309,8 +302,6 @@ def run_qufit(
             if debug:
                 print(traceback.format_exc())
             return
-
-
 
     # If no Stokes I present, create a dummy spectrum = unity
     if noStokesI:
@@ -461,15 +452,13 @@ def run_qufit(
     print("-" * 80)
     print("RESULTS:\n")
     for i in range(len(p)):
-        print(
-            "%s = %.4g (+%3g, -%3g)" % (parNames[i], p[i], errPlus[i], errMinus[i])
-        )
+        print("%s = %.4g (+%3g, -%3g)" % (parNames[i], p[i], errPlus[i], errMinus[i]))
     print("-" * 80)
     print("")
 
     # Create a save dictionary and store final p in values
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.json"
-    #IfitDict["p"] = toscalar(IfitDict["p"].tolist())
+    # IfitDict["p"] = toscalar(IfitDict["p"].tolist())
     saveDict = {
         "parNames": toscalar(parNames),
         "labels": toscalar(labels),
@@ -489,14 +478,15 @@ def run_qufit(
         "dLn(EVIDENCE)": toscalar(dLnEvidence),
         "nFree": toscalar(nFree),
         "Imodel": ",".join([str(x.astype(np.float32)) for x in IfitDict["p"]]),
-        "Imodel_errs": ",".join([str(x.astype(np.float32)) for x in IfitDict["perror"]]),
+        "Imodel_errs": ",".join(
+            [str(x.astype(np.float32)) for x in IfitDict["perror"]]
+        ),
         "IfitChiSq": toscalar(IfitDict["chiSq"]),
         "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
         "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
         "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
     }
 
-    
     for k, v in saveDict.items():
         if isinstance(v, np.float_):
             saveDict[k] = float(v)
@@ -574,7 +564,7 @@ def run_qufit(
 
 # -----------------------------------------------------------------------------#
 class lnlike_call(bilby.Likelihood):
-    """ Returns a function to evaluate the log-likelihood """
+    """Returns a function to evaluate the log-likelihood"""
 
     def __init__(self, parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr, modelNum):
 

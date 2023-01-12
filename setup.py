@@ -28,7 +28,7 @@ REQUIRED = [
 extras_require = {
     "QUfitting": ["bilby>=1.1.5"],
     "parallel": ["schwimmbad"],
-    "dev": ["isort", "black", "pytest"]
+    "dev": ["isort", "black", "pytest"],
 }
 
 here = os.path.abspath(os.path.dirname(__file__))
