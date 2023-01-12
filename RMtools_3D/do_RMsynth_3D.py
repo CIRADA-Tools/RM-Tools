@@ -172,7 +172,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                             mskArr           = ~np.isfinite(dataQ),
                             lam0Sq_m2        = lam0Sq_m2,
                             double           = True,
-                            fitRMSF          = fitRMSF,
+                            fitRMSF          = fitRMSF or full_resolution,
                             fitRMSFreal      = full_resolution,
                             nBits            = 32,
                             verbose          = verbose,
@@ -187,7 +187,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     # i.e., no NaNs as the amplitude at freq0_Hz is interpolated from the
     # nearest two planes.
     with np.errstate(divide='ignore', invalid='ignore'):
-        freq0_Hz = np.true_divide(C , m.sqrt(lam0Sq_m2))
+        freq0_Hz = np.true_divide(C , m.sqrt(lam0Sq_m2)) if lam0Sq_m2 > 0 else np.nanmean(freqArr_Hz)
 
     if dataI is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()

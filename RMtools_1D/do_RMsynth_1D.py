@@ -288,7 +288,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                         mskArr          = ~np.isfinite(qArr),
                         lam0Sq_m2       = lam0Sq_m2,
                         double          = True,
-                        fitRMSF         = fitRMSF,
+                        fitRMSF         = fitRMSF or full_resolution,
                         fitRMSFreal     = full_resolution,
                         nBits           = nBits,
                         verbose         = verbose,
@@ -308,8 +308,9 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
 
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
+    # This will break if lam0Sq_m2==0. Using the mean frequency in this case.
     # Multiply the dirty FDF by Ifreq0 to recover the PI
-    freq0_Hz = C / m.sqrt(lam0Sq_m2)
+    freq0_Hz = C / m.sqrt(lam0Sq_m2) if lam0Sq_m2 > 0 else np.nanmean(freqArr_Hz)
     if modStokesI is None:
         Ifreq0 = calculate_StokesI_model(fitDict,freq0_Hz)
     elif modStokesI is not None:
