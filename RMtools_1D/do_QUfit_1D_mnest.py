@@ -469,7 +469,7 @@ def run_qufit(
 
     # Create a save dictionary and store final p in values
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.json"
-    IfitDict["p"] = toscalar(IfitDict["p"].tolist())
+    #IfitDict["p"] = toscalar(IfitDict["p"].tolist())
     saveDict = {
         "parNames": toscalar(parNames),
         "labels": toscalar(labels),
@@ -488,13 +488,24 @@ def run_qufit(
         "ln(EVIDENCE) ": toscalar(lnEvidence),
         "dLn(EVIDENCE)": toscalar(dLnEvidence),
         "nFree": toscalar(nFree),
-        "Imodel": toscalar(",".join([str(x) for x in IfitDict["p"]])),
-        "Imodel_errs": toscalar(",".join([str(x) for x in IfitDict["perror"]])),
+        "Imodel": ",".join([str(x.astype(np.float32)) for x in IfitDict["p"]]),
+        "Imodel_errs": ",".join([str(x.astype(np.float32)) for x in IfitDict["perror"]]),
         "IfitChiSq": toscalar(IfitDict["chiSq"]),
         "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
         "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
         "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
     }
+
+    
+    for k, v in saveDict.items():
+        if isinstance(v, np.float_):
+            saveDict[k] = float(v)
+        elif isinstance(v, np.int_):
+            saveDict[k] = int(v)
+        elif isinstance(v, np.ndarray):
+            saveDict[k] = v.tolist()
+        elif isinstance(v, np.bool_):
+            saveDict[k] = bool(v)
     json.dump(saveDict, open(outFile, "w"))
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.dat"
     FH = open(outFile, "w")
@@ -548,7 +559,7 @@ def run_qufit(
     # Save the figures
     outFile = prefixOut + "fig_m%d_specfit.pdf" % modelNum
     specFig.set_canvas(specFig.canvas)
-    specFig.figure.savefig(outFile)
+    specFig.savefig(outFile)
     print("Plot of best-fitting model saved to:\n '%s'\n" % outFile)
     outFile = prefixOut + "fig_m%d_corner.pdf" % modelNum
     cornerFig.set_canvas(cornerFig.canvas)
@@ -557,7 +568,7 @@ def run_qufit(
 
     # Display the figures
     if showPlots:
-        specFig.figure.show()
+        specFig.show()
         cornerFig.show()
 
 

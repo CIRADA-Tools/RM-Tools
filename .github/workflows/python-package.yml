@@ -5,7 +5,7 @@ name: Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, fix_workflow ]
   pull_request:
     branches: [ master ]
 
@@ -30,6 +30,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install -c conda-forge pymultinest
+        pip install nestle
         conda install pip pytest
         pip install .[QUfitting,parallel] --upgrade
     - name: Test with pytest

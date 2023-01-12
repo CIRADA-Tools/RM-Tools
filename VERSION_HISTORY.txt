@@ -1,6 +1,17 @@
 
+
 Github main branch:
 
+1.3.0:
+-merged in bwdepol branch. This does not change any core functionality in the
+  existing RM-Tools programs, but adds two new command-line tools: rmtools_bwpredict
+  and rmtools_bwdepol, which predict and correct for bandwidth depolarization 
+  respectively.
+-fixed a bug with JSON outputs not handling numpy variables. This was partially
+  due to a problem with asscalar() in the utils using a depcreciated numpy function, 
+  but partially from other causes.
+-an improved version of the Stokes I cube fitting routine has been developed
+  by Lerato Sebokolody, which includes parallelization.
 
 1.2.0:
 -changed Stokes I fitting to always use 64 bit values (even if data is 32 bit).

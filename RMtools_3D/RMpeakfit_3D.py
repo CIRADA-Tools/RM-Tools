@@ -205,8 +205,12 @@ def save_maps(map_dict, prefix_path,FDFheader):
     
     #per product, customize FITS header as needed and save file
     for product in map_dict.keys():
+        if map_dict[product].dtype == np.float_:
+            data = map_dict[product].astype(np.float32)
+        else:
+            data = map_dict[product]
         product_header['BUNIT']=unit_dict[product]
-        pf.writeto(prefix_path+product+'.fits',map_dict[product],
+        pf.writeto(prefix_path+product+'.fits',data,
                    product_header,overwrite=True)
 
 def find_axes(header):
