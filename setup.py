@@ -24,7 +24,6 @@ REQUIRED = [
     "astropy",
 ]
 
-# Using AT's fork for now - includes tiny bug fix for bilby
 extras_require = {
     "QUfitting": ["bilby>=1.1.5"],
     "parallel": ["schwimmbad"],
