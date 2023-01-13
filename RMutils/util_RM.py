@@ -574,7 +574,7 @@ class RMcleaner:
         nPhiPad = int((len(self.phi2Arr_radm2)-len(self.phiArr_radm2))/2)
 
         iterCount = 0
-        while (np.max(np.abs(residFDF)) >= self.cutoff and iterCount <= self.maxIter):
+        while (np.max(np.abs(residFDF)) >= self.cutoff and iterCount < self.maxIter):
             # Get the absolute peak channel, values and Faraday depth
             indxPeakFDF = np.argmax(np.abs(residFDF))
             peakFDFval = residFDF[indxPeakFDF]
@@ -610,7 +610,7 @@ class RMcleaner:
             mask[start:end] = True
         residFDF_mask = np.ma.array(residFDF, mask=~mask)
         # Clean again within mask
-        while (np.ma.max(np.ma.abs(residFDF_mask)) >= self.window and iterCount <= self.maxIter):
+        while (np.ma.max(np.ma.abs(residFDF_mask)) >= self.window and iterCount < self.maxIter):
             if residFDF_mask.mask.all():
                 break
             # Get the absolute peak channel, values and Faraday depth
