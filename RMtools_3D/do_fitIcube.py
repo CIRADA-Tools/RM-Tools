@@ -5,7 +5,8 @@
 #                                                                             #
 # PURPOSE:  Make a model Stokes I cube and a noise vector.                    #
 #                                                                             #
-# MODIFIED: 26-Feb-2017 by C. Purcell                                         #
+# MODIFIED: 26-Feb-2017 by C. Purcell 
+# MODIFIED: 18 January 2023 by Lerato Baidoo  (re-structured and optimized)   #
 #                                                                             #
 #=============================================================================#
 #                                                                             #
@@ -88,6 +89,12 @@ def main():
                         help="Number of cores to use for multiprocessing. Default is 10.")
     parser.add_argument("-m", dest="apply_mask", action='store_true',
                         help="Apply masking before spectral fitting. Default is False.")
+    parser.add_argument("-svm", dest="save_mask", action='store_true',
+                        help="Save masked fits image. Default is False.")
+    parser.add_argument("-svc", dest="save_coeff", action='store_true',
+                        help="Save coeffiecients fits images. Default is False.")
+    parser.add_argument("-svmodI", dest="save_model_Icube", action='store_true',
+                        help="Save model I cube image. Default is False.")                        
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to prepend to output files [None].")
     parser.add_argument("-v", dest="verbose", action="store_true",
@@ -119,7 +126,10 @@ def main():
                  apply_mask   = args.apply_mask,
                  num_cores    = args.num_cores,
                  verbose        = args.verbose,
-                 fit_function = args.fit_function)
+                 fit_function = args.fit_function, 
+                 save_mask    = args.save_mask, 
+                 save_coefficients = args.save_coeff,
+                 save_modelIcube = args.save_model_Icube)
 
 
 #-----------------------------------------------------------------------------#
@@ -284,7 +294,7 @@ def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
     del headcoeff["BUNIT"]
     
     for i in range(np.abs(polyOrd)+1):
-        outname = outDir + "/"  + prefixOut + 'Icoeff'+str(i) + '.fits'
+        outname = outDir + "/"  + prefixOut + 'coeff'+str(i) + '.fits'
         pf.writeto(outname, data[i], headcoeff, overwrite=True)
         
         outname = outDir + "/"  + prefixOut + 'Icoeff'+str(i) + '_err.fits'
@@ -310,7 +320,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
     while len(headModelCube) < (36 * 4 - 1):
         headModelCube.append()
         
-    fitsModelFile = outDir + "/"  + prefixOut + "Imodel.fits"
+    fitsModelFile = outDir + "/"  + prefixOut + "model.i.fits"
     headModelCube.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
         f.seek(len(headModelCube.tostring()) + (nVoxels*int(nBits/8)) - 1)
@@ -350,7 +360,8 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
 
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2, cutoff=-1,  
                  nBits=32, threshold=3, num_cores = 10,verbose=True, fit_function='log', 
-                 apply_mask=False, outDir=None, prefixOut=None):  
+                 apply_mask=False, outDir=None, prefixOut=None, save_mask=True, 
+                 save_coefficients=True, save_modelIcube=True):  
                 
                  
     """
@@ -422,7 +433,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2, cutoff=-1,
     cputime = (endTime - startTime)
     print("Fitting completed in %.2f seconds." % cputime)
     
-    print('Saving results ...')
+    
     for _, an in enumerate(xy):
         i, x, y =  an
         
@@ -433,15 +444,18 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2, cutoff=-1,
             coeffs[5-k,x,y] = j     
             coeffs_error[5-k,x,y] = l         
 
-    #if apply_mask:
-    print('Saving mask image.')
-    savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
-    print("Saving model I coefficients.")
-    savefits_Coeffs(data=coeffs, dataerr=coeffs_error, header=header,
-         polyOrd=polyOrd, outDir=outDir, prefixOut=prefixOut)
-    print("Saving model I cube image. ")
-    savefits_model_I(data=modelIcube, header=header, 
-         outDir=outDir, prefixOut=prefixOut)
+    if save_mask:
+        print('Saving mask image.')
+        savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
+    if save_coefficients:
+        print("Saving model I coefficients.")
+        savefits_Coeffs(data=coeffs, dataerr=coeffs_error, header=header,
+             polyOrd=polyOrd, outDir=outDir, prefixOut=prefixOut)
+        
+    if save_modelIcube:
+        print("Saving model I cube image. ")
+        savefits_model_I(data=modelIcube, header=header, 
+             outDir=outDir, prefixOut=prefixOut)
         
     return modelIcube
     

@@ -251,9 +251,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     else:
         FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2 = dataArr
 
-    # Default data types
+    # Default data typess
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
+    
 
     if(verbose): log("Saving the dirty FDF, RMSF and ancillary FITS files.")
     # Make a copy of the Q header and alter frequency-axis as Faraday depth
@@ -314,7 +315,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         if(verbose): log("> %s" % fitsFileOut)
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_im_dirty.fits"
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_imag_dirty.fits"
         if(verbose): log("> %s" % fitsFileOut)
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
@@ -361,13 +362,13 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_imag.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
-            if(verbose): log("> %s" % fitsFileOut)
-            hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            #fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
+            #if(verbose): log("> %s" % fitsFileOut)
+            #hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if(verbose): log("> %s" % fitsFileOut)

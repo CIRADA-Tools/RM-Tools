@@ -205,8 +205,12 @@ def save_maps(map_dict, prefix_path,FDFheader):
     
     #per product, customize FITS header as needed and save file
     for product in map_dict.keys():
+        if map_dict[product].dtype == np.float_:
+            data = map_dict[product].astype(np.float32)
+        else:
+            data = map_dict[product]
         product_header['BUNIT']=unit_dict[product]
-        pf.writeto(prefix_path+product+'.fits',map_dict[product],
+        pf.writeto(prefix_path+product+'.fits',data,
                    product_header,overwrite=True)
 
 def find_axes(header):
@@ -231,11 +235,11 @@ def read_files(FDF_filename,freq_filename):
     outputs of RMsynth3D (and, optionally, RMclean3D). also, freq file.
     """
     
-    HDUreal = pf.open(FDF_filename.replace('_tot','_real').replace('_im','_real'), "readonly", memmap=True)
+    HDUreal = pf.open(FDF_filename.replace('_tot','_real').replace('_imag','_real'), "readonly", memmap=True)
     head = HDUreal[0].header.copy()
     FDFreal = HDUreal[0].data
 
-    HDUimag = pf.open(FDF_filename.replace('_tot','_im').replace('_real','_im'), "readonly", memmap=True)
+    HDUimag = pf.open(FDF_filename.replace('_tot','_imag').replace('_real','_imag'), "readonly", memmap=True)
     FDFimag = HDUimag[0].data
     complex_cube = FDFreal + 1j * FDFimag
 
@@ -258,9 +262,9 @@ def read_files(FDF_filename,freq_filename):
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis-1)
     
     HDUfwhm = pf.open(FDF_filename.replace('FDF_tot_dirty','RMSF_FWHM').replace(
-        'FDF_real_dirty','RMSF_FWHM').replace('FDF_im_dirty','RMSF_FWHM').replace(
+        'FDF_real_dirty','RMSF_FWHM').replace('FDF_imag_dirty','RMSF_FWHM').replace(
             'FDF_clean_tot','RMSF_FWHM').replace('FDF_clean_real','RMSF_FWHM').replace(
-                'FDF_clean_im','RMSF_FWHM'),
+                'FDF_clean_imag','RMSF_FWHM'),
         "readonly", memmap=True)
     fwhmRMSF = HDUfwhm[0].data.squeeze()
 
