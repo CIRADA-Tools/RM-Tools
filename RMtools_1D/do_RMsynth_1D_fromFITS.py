@@ -119,7 +119,7 @@ def main():
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default=None,
                         help="Intensity units of the data. [from FITS header]")
-    parser.add_argument("-r", "--full-resolution", action="store_true",
+    parser.add_argument("-r", "--super-resolution", action="store_true",
                         help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
                         )
     args = parser.parse_args()
@@ -184,7 +184,7 @@ def main():
                 verbose        = verbose,
                 units          = args.units,
                 saveFigures    = args.saveOutput,
-                full_resolution=args.full_resolution,
+                super_resolution=args.super_resolution,
             )
     if args.saveOutput:
         saveOutput(mDict, aDict, prefixOut, verbose)

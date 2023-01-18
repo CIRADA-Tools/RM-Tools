@@ -73,7 +73,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                 noStokesI=False, modStokesI=None, phiNoise_radm2=1e6, nBits=32,
                 showPlots=False, debug=False, verbose=False, log=print,
                 units='Jy/beam', prefixOut="prefixOut", saveFigures=None,
-                fit_function='log', full_resolution=False):
+                fit_function='log', super_resolution=False):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -277,7 +277,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                                             nBits           = nBits,
                                             verbose         = verbose,
                                             log             = log,
-                                            lam0Sq_m2       = 0 if full_resolution else None,
+                                            lam0Sq_m2       = 0 if super_resolution else None,
                                             )
 
     # Calculate the Rotation Measure Spread Function
@@ -288,8 +288,8 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                         mskArr          = ~np.isfinite(qArr),
                         lam0Sq_m2       = lam0Sq_m2,
                         double          = True,
-                        fitRMSF         = fitRMSF or full_resolution,
-                        fitRMSFreal     = full_resolution,
+                        fitRMSF         = fitRMSF or super_resolution,
+                        fitRMSFreal     = super_resolution,
                         nBits           = nBits,
                         verbose         = verbose,
                         log             = log)
@@ -644,7 +644,7 @@ def main():
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
                         help="Intensity units of the data. [Jy/beam]")
-    parser.add_argument("-r", "--full-resolution", action="store_true",
+    parser.add_argument("-r", "--super-resolution", action="store_true",
                         help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
                         )
     args = parser.parse_args()
@@ -680,7 +680,7 @@ def main():
                 prefixOut      = prefixOut,
                 saveFigures    = args.saveOutput,
                 fit_function   = args.fit_function,
-                full_resolution=args.full_resolution,
+                super_resolution=args.super_resolution,
     )
 
     if args.saveOutput:

@@ -56,7 +56,7 @@ C = 2.997924538e8 # Speed of light [m/s]
 def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = False,
-                log = print, full_resolution=False):
+                log = print, super_resolution=False):
 
     """Run RM-synthesis on 2/3D data.
 
@@ -161,7 +161,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                                            weightArr       = weightArr,
                                            nBits           = 32,
                                            verbose         = verbose,
-                                           lam0Sq_m2       = 0 if full_resolution else None,
+                                           lam0Sq_m2       = 0 if super_resolution else None,
                                            )
     # Calculate the Rotation Measure Spread Function cube
     if not_rmsf is not True:
@@ -172,8 +172,8 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                             mskArr           = ~np.isfinite(dataQ),
                             lam0Sq_m2        = lam0Sq_m2,
                             double           = True,
-                            fitRMSF          = fitRMSF or full_resolution,
-                            fitRMSFreal      = full_resolution,
+                            fitRMSF          = fitRMSF or super_resolution,
+                            fitRMSFreal      = super_resolution,
                             nBits            = 32,
                             verbose          = verbose,
                             log              = log)
@@ -594,7 +594,7 @@ def main():
                         help="Verbose [False].")
     parser.add_argument("-R", dest="not_RMSF", action="store_true",
                         help="Skip calculation of RMSF? [False]")
-    parser.add_argument("-r", "--full-resolution", action="store_true",
+    parser.add_argument("-r", "--super-resolution", action="store_true",
                         help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
                         )
     args = parser.parse_args()
@@ -631,7 +631,7 @@ def main():
                           nBits        = 32,
                           verbose      = verbose,
                           not_rmsf = args.not_RMSF,
-                          full_resolution=args.full_resolution,
+                          super_resolution=args.super_resolution,
                         )
 
     # Write to files

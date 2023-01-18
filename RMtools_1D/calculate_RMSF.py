@@ -55,7 +55,7 @@ def main():
                         help="Filename to save plot to. [do not save]")
     parser.add_argument("-n", dest="plotname", default=None,
                         help="Name of plot [\"Simulated RMSF\"]")
-    parser.add_argument("-r", "--full-resolution", action="store_true",
+    parser.add_argument("-r", "--super-resolution", action="store_true",
                         help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
                         )
     args = parser.parse_args()
@@ -92,9 +92,9 @@ def main():
             raise Exception('Weights file does not have same number of channels as frequency source')
 
 
-    determine_RMSF_parameters(freq_array,weights_array,args.phiMax_radm2,args.dphi_radm2,args.plotfile,args.plotname, args.full_resolution)
+    determine_RMSF_parameters(freq_array,weights_array,args.phiMax_radm2,args.dphi_radm2,args.plotfile,args.plotname, args.super_resolution)
 
-def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None, full_resolution=False):
+def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None, super_resolution=False):
     """
     Characterizes an RMSF given the supplied frequency and weight arrays.
     Prints the results to terminal and produces a plot.
@@ -123,8 +123,8 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
         phi_array,
         weightArr=weights_array,
         fitRMSF=True,
-        fitRMSFreal=full_resolution,
-        lam0Sq_m2=0 if full_resolution else None,
+        fitRMSFreal=super_resolution,
+        lam0Sq_m2=0 if super_resolution else None,
     )
 
 
