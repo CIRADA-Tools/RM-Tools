@@ -400,7 +400,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     RMSF1D_column    = at.Column(data=RMSF1D_spectra, name='RMSFArr',
                          description='RMSF',unit='')
                          
-    RMSF_table = at.Table([ phi_range_column, RMSF1D_column])s
+    RMSF_table = at.Table([ phi_range_column, RMSF1D_column])
     
     RMSF1D_filename = outDir + "/" + prefixOut + "RMSF1D.fits"
     RMSF_table.write(RMSF1D_filename, format='fits', overwrite=True)
