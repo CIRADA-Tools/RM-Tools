@@ -322,7 +322,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         if(verbose): log("> %s" % fitsFileOut)
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_imag_dirty.fits"
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_im_dirty.fits"
         if(verbose): log("> %s" % fitsFileOut)
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
@@ -369,7 +369,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF_imag.fits"
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
