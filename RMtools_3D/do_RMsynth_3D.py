@@ -43,7 +43,7 @@ import astropy.io.fits as pf
 import astropy.table as at
 
 from RMutils.util_RM import do_rmsynth_planes
-from RMutils.util_RM import get_rmsf_planes, get_RMSF
+from RMutils.util_RM import get_rmsf_planes
 from RMutils.util_misc import interp_images
 
 
@@ -54,6 +54,7 @@ if sys.version_info.major == 2:
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
+
 def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = False,
@@ -200,15 +201,11 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         # Multiply the dirty FDF by Ifreq0 to recover the PI
         FDFcube *= Ifreq0Arr
 
-    RMSF1D_spectra, RMSF1D_phiArr, RMSF_fwhm = get_RMSF(lamSqArr=lambdaSqArr_m2, phiArr=phiArr_radm2, 
-        weightArr=None, lam0Sq_m2=None, double=True, fitRMSFreal=False, dtype="float32")
-
     if not_rmsf:
         dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
 
     else:
-        dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2,\
-                    RMSF1D_spectra, RMSF1D_phiArr]
+        dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
 
     return dataArr
     
@@ -236,8 +233,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         if not_rmsf:
             dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
         else:
-            dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2, 
-                   RMSF1D_spectra, RMSF1D_phiArr]
+            dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
 
         headtemplate: FITS header template
 
@@ -255,8 +251,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2 = dataArr
 
     else:
-        FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2, \
-        RMSF1D_spectra, RMSF1D_phiArr = dataArr
+        FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2 = dataArr
 
     # Default data typess
     dtFloat = "float" + str(nBits)
@@ -373,9 +368,9 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             if(verbose): log("> %s" % fitsFileOut)
             hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
-            #fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
-            #if(verbose): log("> %s" % fitsFileOut)
-            #hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
+            if(verbose): log("> %s" % fitsFileOut)
+            hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if(verbose): log("> %s" % fitsFileOut)
@@ -391,19 +386,6 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             if(verbose): log("> %s" % fitsFileOut)
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             hduLst.close()
-
-
-    # save the 1D RMSF spectra for the full-band.
-    
-    phi_range_column = at.Column(data=RMSF1D_phiArr, name='RMSF_phi2Arr',
-                         description='Declination (ICRS)', unit='rad/m^2')
-    RMSF1D_column    = at.Column(data=RMSF1D_spectra, name='RMSFArr',
-                         description='RMSF',unit='')
-                         
-    RMSF_table = at.Table([ phi_range_column, RMSF1D_column])
-    
-    RMSF1D_filename = outDir + "/" + prefixOut + "RMSF1D.fits"
-    RMSF_table.write(RMSF1D_filename, format='fits', overwrite=True)
 
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
