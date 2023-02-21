@@ -64,8 +64,8 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Create a model Stokes I dataset by fitting a polynomial to emitting regions
-    above a cutoff in the Stokes I cube. Also outputs a noise spectrum with the
-    Stokes I noise per channel.
+    above a cutoff threshold in the Stokes I cube. Also outputs a noise spectrum 
+    with the Stokes I noise per channel.
 
     NOTE: Each pixel is fit independently, so there are no protections in place
     to ensure smoothness across the image-plane. Noise levels are estimated
@@ -77,26 +77,28 @@ def main():
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("fitsI", metavar="StokesI.fits", nargs=1,
                         help="FITS cube containing Stokes I data.")
+    parser.add_argument("-freq", dest="freq_file", default="",type=str,
+                       help="Path + ASCII file containing the frequency vector. If not provided,\nfrequencies are derived from fits header.")
     parser.add_argument("-f", dest="fit_function", type=str, default="log",
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
-    parser.add_argument("-p", dest="polyOrd", type=int, default=2,
+    parser.add_argument("-pOrd", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
-    parser.add_argument("-c", dest="cutoff", type=float, default=-5,
-                        help="emission cutoff (+ve = abs, -ve = sigma) [-5].")
-    parser.add_argument("-t", dest="threshold", type=float, default=3,
-                        help="threshold in factors of sigma used to estimate rms noise. Default is 3.")
-    parser.add_argument("-n", dest="num_cores", type=int, default=10,
+    parser.add_argument("-thresh", dest="threshold", type=float, default=-5,
+                        help="Noise cutoff threshold (+ve = abs, -ve = sigma) [-5].")
+    parser.add_argument("-ncores", dest="num_cores", type=int, default=10,
                         help="Number of cores to use for multiprocessing. Default is 10.")
-    parser.add_argument("-m", dest="apply_mask", action='store_true',
+    parser.add_argument("-apmask", dest="apply_mask", action='store_true',
                         help="Apply masking before spectral fitting. Default is False.")
-    parser.add_argument("-svm", dest="save_mask", action='store_true',
+    parser.add_argument("-svmask", dest="save_mask", action='store_true',
                         help="Save masked fits image. Default is False.")
-    parser.add_argument("-svc", dest="save_coeff", action='store_true',
+    parser.add_argument("-svcoef", dest="save_coeff", action='store_true',
                         help="Save coeffiecients fits images. Default is False.")
-    parser.add_argument("-svmodI", dest="save_model_Icube", action='store_true',
+    parser.add_argument("-svmod", dest="save_model_Icube", action='store_true',
                         help="Save model I cube image. Default is False.")                        
-    parser.add_argument("-o", dest="prefixOut", default="",
-                        help="Prefix to prepend to output files [None].")
+    parser.add_argument("-pref", dest="prefixOut", default="",
+                        help="Prefix to use for to output file names.")
+    parser.add_argument("-odir", dest="outDir", default="",
+                        help="Output directory to save output files. If none, save inside input directory")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="turn on verbose messages [False].")
     args = parser.parse_args()
@@ -106,21 +108,27 @@ def main():
         if not os.path.exists(f):
             print("File does not exist: '%s'." % f)
             sys.exit()
-    dataDir, dummy = os.path.split(args.fitsI[0])
+    out_directory = args. outDir
+    if not out_directory:
+        out_directory, dummy = os.path.split(args.fitsI[0])
     
     I_filename = args.fitsI[0]
-    
     datacube, headI = open_datacube(fitsI=I_filename, verbose=args.verbose)
-    freqArr_Hz = get_freq_array (I_filename) 
+    
+    #if frequency file is not provided, extract frequency information from the input fits header.
+    if args.freq_file:
+        freqArr_Hz = get_frequencies(datacube=datacube, header=headI, freqFile=args.freq_file) 
+    else:   
+        print("Frequency file not provided. Deriving frequencies from the fits header.")
+        freqArr_Hz = get_freq_array (I_filename) 
        
     # Run polynomial fitting on the spectra
     make_model_I(datacube     = datacube, 
                  header       = headI, 
                  freqArr_Hz   = freqArr_Hz,
                  polyOrd      = args.polyOrd,
-                 cutoff       = args.cutoff,
                  prefixOut    = args.prefixOut,
-                 outDir       = dataDir,
+                 outDir       = out_directory,
                  nBits        = 32,
                  threshold    = args.threshold,
                  apply_mask   = args.apply_mask,
@@ -137,6 +145,17 @@ def main():
 
 def open_datacube(fitsI, verbose=True):
 
+    """ Reads the image fits
+    
+    Parameters: 
+    fitsI : Input Stokes I cube fits image
+    verbose: If true, write logs
+    
+    Returns:
+    datacube: Image data
+    header: Fits header  
+    """
+
     # Default data type
     
     # Sanity check on header dimensions
@@ -145,10 +164,10 @@ def open_datacube(fitsI, verbose=True):
     
     nDim = datacube.ndim
     if nDim < 3 or nDim > 4:
-        print("Err: only 3 or 4 dimensions supported: D = %d." % headI["NAXIS"])
+        print("Err: only 3 or 4 dimensions supported: D = %d." % header["NAXIS"])
         sys.exit()
 
-    # freq_axis=find_freq_axis(headI) 
+    # freq_axis=find_freq_axis(header) 
     # #If the frequency axis isn't the last one, rotate the array until it is.
     # #Recall that pyfits reverses the axis ordering, so we want frequency on
     # #axis 0 of the numpy array.
@@ -158,9 +177,20 @@ def open_datacube(fitsI, verbose=True):
     return datacube, header
     
     
-def get_frequencies(datacube, headI, freqFile):
+def get_frequencies(datacube, header, freqFile):
 
-    nBits = np.abs(headI['BITPIX'])    
+    """ Reads a frequency file
+    
+    Parameters:
+    datacube: Image cube data
+    header: A header of the input datacube 
+    freqFile: A frequency file in text format
+    
+    Returns:
+    freqArr_Hz: frequency array
+    """
+
+    nBits = np.abs(header['BITPIX'])    
     dtFloat = "float" + str(nBits)
 
     nChan = datacube.shape[0] # for now, assumes frequency is the first axis
@@ -175,18 +205,25 @@ def get_frequencies(datacube, headI, freqFile):
     return freqArr_Hz
    
    
-def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
+def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
 
 
-    """
-    Estimate channel noise of a cube data. Returns rms values and a mask 2D data.
+    """Estimates noise of each channel in an image cube.
      
-    datacube: input cube data.
-    header : header of a cube image
-    frequency: frequency values of a cube image in Hz.
-    cutoff : cut off to use for creating the final mask. +ve cutoff means absolute, -ve sigma. 
-    threshold : Sigma cut off to use to remove emission pixels before calculating rms_noise.  
-     
+    Parameters:
+    datacube: Input cube data
+    header : Header of a cube image
+    frequency: Frequency values of a cube image in Hz
+    threshold: Threshold to use for masking off pixels. 
+            If the value is +ve, then it is taken as absolute value, and
+            -ve as sigma. E.g. threshold=-5, means consider pixels
+            with emission > noise_median - 5 * rms_noise.
+            Where the noise_median and rms_noise are obtained by computing
+            the median and MAD of the pixel emission > image median + 3 * image MAD.
+    
+    Returns:
+    rms_Arr: An array containing rms values of each channel
+    mskSrc:  A 2D image data containing masking values (0s and 1s)
     """
     nBits=np.abs(header['BITPIX'])    
     dtFloat = "float" + str(nBits)    
@@ -198,7 +235,7 @@ def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
         sys.exit()
         
     # Measure the RMS spectrum using 2 passes of MAD on each plane
-    # Determine which pixels have emission above the cutoff
+    # Determine which pixels have emission above the threshold
     print("Measuring the RMS noise and creating an emission mask")
     rmsArr = np.zeros_like(freqArr_Hz)
     medSky = np.zeros_like(freqArr_Hz)
@@ -207,8 +244,8 @@ def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
     start = time.time()
     for i in range(nChan):
         dataPlane = datacube[i]
-        if cutoff>0:
-            idxSky = np.where(dataPlane<cutoff)
+        if threshold >0:
+            idxSky = np.where(dataPlane<threshold) #replaced cutoff with threshold
         else:
             idxSky = np.where(dataPlane)
         
@@ -217,63 +254,34 @@ def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
         medTmp = np.nanmedian(dataPlane[idxSky])
         
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
-        
-        idxSky = np.where(dataPlane < medTmp + rmsTmp * threshold)
+        idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
         medSky[i] = np.nanmedian(dataPlane[idxSky])
         rmsArr[i] = MAD(dataPlane[idxSky])
 
         
-        # When building final emission mask treat +ve cutoffs as absolute
-        # values and negative cutoffs as sigma values
-        if cutoff > 0:
-            idxSrc = np.where(dataPlane > cutoff)
+        # When building final emission mask treat +ve threshold as absolute
+        # values and negative threshold as sigma values
+        if threshold > 0:
+            idxSrc = np.where(dataPlane > threshold)
         else:
-            idxSrc = np.where(dataPlane > medSky[i] -1 * rmsArr[i] * cutoff)
+            idxSrc = np.where(dataPlane > medSky[i] -1 * rmsArr[i] * threshold)
 
         mskSrc[idxSrc] +=1
 
     end = time.time()
     print(' For loop masking takes %.3fs'%(end-start))
     return rmsArr, mskSrc
-
-    
-    
-def channel_noise(chan, datacube, header, cutoff, threshold, nBits):
-    
-    dtFloat = "float" + str(nBits)    
- 
-    mask_channel = np.zeros((header["NAXIS2"], header["NAXIS1"]), dtype=dtFloat)
-    
-    dataPlane = datacube[chan]
-    if cutoff > 0:
-        idxSky = np.where(dataPlane < cutoff)
-    else:
-        idxSky = np.where(dataPlane)
-        
-    # Pass 1
-    rmsTmp = MAD(dataPlane[idxSky])
-    medTmp = np.nanmedian(dataPlane[idxSky])
-    idxSky = np.where(dataPlane < medTmp + rmsTmp * threshold)
-    
-    rms_noise    = MAD(dataPlane[idxSky])
-    median_noise =  np.nanmedian(dataPlane[idxSky])
-    
-    if cutoff > 0:
-        idxSrc = np.where(dataPlane > cutoff)
-    else:
-        idxSrc = np.where(dataPlane > median_noise -1 * rms_noise * cutoff)
-    mask_channel[idxSrc] = 1
-    
-    outs_noise = dict()
-    outs_noise['rms_noise']    = rms_noise
-    outs_noise['mask_data']    = mask_channel
-    
-    return outs_noise 
-    
-    
+  
     
 def savefits_mask(data, header, outDir, prefixOut):
     
+    """ Save the derived mask to a fits file
+    
+    data:  2D data defining the mask.
+    header: header to describe the mask
+    outDir: directory to save the mask fits data
+    prefixOut: prefix to use on the output name 
+    """
        
     headMask = strip_fits_dims(header=header, minDim=2)
     headMask["DATAMAX"] = 1
@@ -281,7 +289,7 @@ def savefits_mask(data, header, outDir, prefixOut):
     del headMask["BUNIT"]
     
     mskArr = np.where(data > 0, 1.0, np.nan)
-    MaskfitsFile = outDir + "/"  + prefixOut + "Mask.fits"
+    MaskfitsFile = outDir + "/"  + prefixOut + "_mask.fits"
     print("> %s" % MaskfitsFile)
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix",
                overwrite=True)
@@ -289,21 +297,37 @@ def savefits_mask(data, header, outDir, prefixOut):
 
 def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
 
+    """ Save the derived coefficients to a fits file
+    
+    data: 2D planes containing coeffs values.
+    dataerr: 2D planes containing error in coeffs values.
+    header: header to describe the coeffs and error in coeffs
+    polyOrd: the order of polynomial to fit
+    outDir: directory to save the (errors) coeffs fits data
+    prefixOut: prefix to use on the output name 
+    """
                    
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
     
     for i in range(np.abs(polyOrd)+1):
-        outname = outDir + "/"  + prefixOut + 'coeff'+str(i) + '.fits'
+        outname = outDir + "/"  + prefixOut + '_coeff'+str(i) + '.fits'
         pf.writeto(outname, data[i], headcoeff, overwrite=True)
         
-        outname = outDir + "/"  + prefixOut + 'Icoeff'+str(i) + '_err.fits'
+        outname = outDir + "/"  + prefixOut + '_coeff'+str(i) + 'err.fits'
         pf.writeto(outname, dataerr[i], headcoeff, overwrite=True)
 
 
     
 def savefits_model_I(data, header, outDir, prefixOut):
+
+    """ Save the derived Stokes cube model
     
+    data:  Stokes I cube model data
+    header: header to describe the model cube.
+    outDir: directory to save the model cube fits data
+    prefixOut: prefix to use on the output name 
+    """
     
     nDim = data.ndim
     nBits = np.abs(header['BITPIX'])
@@ -332,6 +356,19 @@ def savefits_model_I(data, header, outDir, prefixOut):
 
 def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd, 
                  fit_function, nDetectPix, verbose=True):
+
+    """ Fits polynomial function to Stokes I data
+    
+    xy: Position of pixel to fit (in pixels).
+        The xy consists of pixel number, x and y pixel position.
+    datacube:  Stokes I data cube to model.
+    freqArr_Hz: Frequency array in Hz.
+    rms_Arr: An array containing rms values of each channel.
+    polyOrd: the order of polynomial to fit.
+    fit_function: A type of function to fit. 
+         It can be log or linear.     
+    nDetectPix:  the total number of pixels to be fit.
+    """
     
     i, x, y = xy 
     
@@ -358,30 +395,50 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
     return outs         
        
 
-def make_model_I(datacube, header, freqArr_Hz, polyOrd=2, cutoff=-1,  
-                 nBits=32, threshold=3, num_cores = 10,verbose=True, fit_function='log', 
-                 apply_mask=False, outDir=None, prefixOut=None, save_mask=True, 
-                 save_coefficients=True, save_modelIcube=True):  
+def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
+                 nBits=32, threshold=3, num_cores = 10,verbose=True, 
+                 fit_function='log', apply_mask=False, outDir=None, 
+                 prefixOut=None, save_mask=True, save_coefficients=True,
+                 save_modelIcube=True):  
                 
                  
-    """
-    Estimates Stokes I model data by fitting polynomial function and predicting I
-    using the derived coeffiencients. 
+    """Fits a polynomial function to Stokes I data, derives coefficients,
+       predicts model I, and save the respective fits file.
     
-    datacube:  Stokes I data cube.
-    header: header of the data cube. 
-    freqArr_Hz: frequency values of the cube in Hz. 
-    polyOrd: the order of the polynomial to fit. 0-5 supported, 2 is default.
-    fit_function: fit log or linear.
+    datacube:  Stokes I data cube
+    header: header of the data cube 
+    freqArr_Hz: frequency values of the cube in Hz 
+    polyOrd: the order of the polynomial to fit. 0-5 supported, 2 is default
+    fit_function: fit log or linear
     
-    apply_mask: if true a mask will be applied. 
-    See channel_noise for definitions of cutoff, threshold.
+    num_cores: Number of cores to use for parallel processing
+    verbose: Write to log
+    apply_mask: If true, a mask will be applied
+    threshold: Threshold to use for masking off pixels
+    
+            If the value is +ve, then it is taken as absolute value, and
+            -ve as sigma. E.g. threshold=-5, means consider pixels
+            with emission > noise_median - 5 * rms_noise.
+            Where the noise_median and rms_noise are obtained by computing
+            the median and MAD of the pixel emission > image median + 3 * image MAD
+    outDir: Directory to save all outputs
+    prefixOut: Prefix name to use in all output names
+    save_mask: If true, save mask to fits file
+    save_coefficients: If true, save coefficients to fits files
+    save_modelIcube: If true, save model I cube data to fits file
+    
+    Returns:
+    modelIcube: Model I cube data array
+    
+    Option: Mask (if save_mask=True), coefficients (if save_coefficients=True),
+    modelIcube fits data (if save_modelIcube=True)
+    
     
     """
     nChan = datacube.shape[0]
     dtFloat = "float" + str(nBits) 
     
-    rms_Arr, mskSrc = cube_noise(datacube, header, freqArr_Hz, cutoff=cutoff,
+    rms_Arr, mskSrc = cube_noise(datacube, header, freqArr_Hz,
             threshold=threshold)
     
     mskArr = np.where(mskSrc > 0, 1.0, np.nan)
