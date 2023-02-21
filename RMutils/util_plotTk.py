@@ -87,8 +87,8 @@ from matplotlib.ticker import MaxNLocator
 from matplotlib.patches import Polygon
 from matplotlib.ticker import FuncFormatter
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
-import tkinter.ttk
+# from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+# import tkinter.ttk
 
 from .util_plotFITS import plot_fits_map
 from .util_misc import xfloat
@@ -170,44 +170,44 @@ def format_ticks(ax, pad=10, w=1.0):
 
 
 #-----------------------------------------------------------------------------#
-class CustomNavbar(NavigationToolbar2Tk):
-    """Custom navigation toolbar subclass"""
+# class CustomNavbar(NavigationToolbar2Tk):
+#     """Custom navigation toolbar subclass"""
     
-    def __init__(self, canvas, window):
-        NavigationToolbar2Tk.__init__(self, canvas, window)
-        self.legStat = []
-        for i in range(len(self.canvas.figure.axes)):
-            ax = self.canvas.figure.axes[i]
-            if ax.get_legend() is None:
-                self.legStat.append(None)
-            else:
-                self.legStat.append(True)
+#     def __init__(self, canvas, window):
+#         NavigationToolbar2Tk.__init__(self, canvas, window)
+#         self.legStat = []
+#         for i in range(len(self.canvas.figure.axes)):
+#             ax = self.canvas.figure.axes[i]
+#             if ax.get_legend() is None:
+#                 self.legStat.append(None)
+#             else:
+#                 self.legStat.append(True)
         
-    def _init_toolbar(self):
-        NavigationToolbar2Tk._init_toolbar(self)     
+#     def _init_toolbar(self):
+#         NavigationToolbar2Tk._init_toolbar(self)     
         
-        # Add the legend toggle button
-        self.legBtn = tkinter.ttk.Button(self, text="Hide Legend",
-                                 command=self.toggle_legend)
-        self.legBtn.pack(side="left")
+#         # Add the legend toggle button
+#         self.legBtn = tkinter.ttk.Button(self, text="Hide Legend",
+#                                  command=self.toggle_legend)
+#         self.legBtn.pack(side="left")
 
-        # Remove the back and forward buttons
-        # List of buttons is in self.toolitems
-        buttonLst = self.pack_slaves()
-        buttonLst[1].pack_forget()
-        buttonLst[2].pack_forget()
+#         # Remove the back and forward buttons
+#         # List of buttons is in self.toolitems
+#         buttonLst = self.pack_slaves()
+#         buttonLst[1].pack_forget()
+#         buttonLst[2].pack_forget()
 
-    def toggle_legend(self):
-        for i in range(len(self.canvas.figure.axes)):
-            ax = self.canvas.figure.axes[i]
-            if self.legStat[i] is not None:
-                ax.get_legend().set_visible(not self.legStat[i])
-                self.legStat[i] = not self.legStat[i]
-        if self.legBtn["text"]=="Hide Legend":
-            self.legBtn["text"] = "Show Legend"
-        else:
-            self.legBtn["text"] = "Hide Legend"            
-        self.canvas.draw()
+#     def toggle_legend(self):
+#         for i in range(len(self.canvas.figure.axes)):
+#             ax = self.canvas.figure.axes[i]
+#             if self.legStat[i] is not None:
+#                 ax.get_legend().set_visible(not self.legStat[i])
+#                 self.legStat[i] = not self.legStat[i]
+#         if self.legBtn["text"]=="Hide Legend":
+#             self.legBtn["text"] = "Show Legend"
+#         else:
+#             self.legBtn["text"] = "Hide Legend"            
+#         self.canvas.draw()
         
 
 #-----------------------------------------------------------------------------#
