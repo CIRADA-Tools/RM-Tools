@@ -81,23 +81,17 @@ def main():
                        help="Path + ASCII file containing the frequency vector. If not provided,\nfrequencies are derived from fits header.")
     parser.add_argument("-f", dest="fit_function", type=str, default="log",
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
-    parser.add_argument("-pOrd", dest="polyOrd", type=int, default=2,
+    parser.add_argument("-or", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
-    parser.add_argument("-thresh", dest="threshold", type=float, default=-5,
+    parser.add_argument("-th", dest="threshold", type=float, default=-5,
                         help="Noise cutoff threshold (+ve = abs, -ve = sigma) [-5].")
-    parser.add_argument("-ncores", dest="num_cores", type=int, default=10,
+    parser.add_argument("-nc", dest="num_cores", type=int, default=10,
                         help="Number of cores to use for multiprocessing. Default is 10.")
-    parser.add_argument("-apmask", dest="apply_mask", action='store_true',
-                        help="Apply masking before spectral fitting. Default is False.")
-    parser.add_argument("-svmask", dest="save_mask", action='store_true',
-                        help="Save masked fits image. Default is False.")
-    parser.add_argument("-svcoef", dest="save_coeff", action='store_true',
-                        help="Save coeffiecients fits images. Default is False.")
-    parser.add_argument("-svmod", dest="save_model_Icube", action='store_true',
-                        help="Save model I cube image. Default is False.")                        
-    parser.add_argument("-pref", dest="prefixOut", default="",
+    parser.add_argument("-mk", dest="apply_mask", action='store_true',
+                        help="Apply masking before spectral fitting. Default is False.")                   
+    parser.add_argument("-pf", dest="prefixOut", default="",
                         help="Prefix to use for to output file names.")
-    parser.add_argument("-odir", dest="outDir", default="",
+    parser.add_argument("-od", dest="outDir", default="",
                         help="Output directory to save output files. If none, save inside input directory")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="turn on verbose messages [False].")
@@ -134,10 +128,7 @@ def main():
                  apply_mask   = args.apply_mask,
                  num_cores    = args.num_cores,
                  verbose        = args.verbose,
-                 fit_function = args.fit_function, 
-                 save_mask    = args.save_mask, 
-                 save_coefficients = args.save_coeff,
-                 save_modelIcube = args.save_model_Icube)
+                 fit_function = args.fit_function)
 
 
 #-----------------------------------------------------------------------------#
@@ -398,8 +389,7 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
                  nBits=32, threshold=3, num_cores = 10,verbose=True, 
                  fit_function='log', apply_mask=False, outDir=None, 
-                 prefixOut=None, save_mask=True, save_coefficients=True,
-                 save_modelIcube=True):  
+                 prefixOut=None):  
                 
                  
     """Fits a polynomial function to Stokes I data, derives coefficients,
@@ -423,18 +413,14 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
             the median and MAD of the pixel emission > image median + 3 * image MAD
     outDir: Directory to save all outputs
     prefixOut: Prefix name to use in all output names
-    save_mask: If true, save mask to fits file
-    save_coefficients: If true, save coefficients to fits files
-    save_modelIcube: If true, save model I cube data to fits file
     
     Returns:
-    modelIcube: Model I cube data array
-    
-    Option: Mask (if save_mask=True), coefficients (if save_coefficients=True),
-    modelIcube fits data (if save_modelIcube=True)
-    
-    
+    ModelIcube: Model I cube data array
+    Mask fits data
+    Coefficients fits data
+    Error in coefficients fits data    
     """
+    
     nChan = datacube.shape[0]
     dtFloat = "float" + str(nBits) 
     
@@ -501,17 +487,16 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
             coeffs[5-k,x,y] = j     
             coeffs_error[5-k,x,y] = l         
 
-    if save_mask:
-        print('Saving mask image.')
-        savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
-    if save_coefficients:
-        print("Saving model I coefficients.")
-        savefits_Coeffs(data=coeffs, dataerr=coeffs_error, header=header,
+
+    print("Saving mask image.")
+    savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
+
+    print("Saving model I coefficients.")
+    savefits_Coeffs(data=coeffs, dataerr=coeffs_error, header=header,
              polyOrd=polyOrd, outDir=outDir, prefixOut=prefixOut)
         
-    if save_modelIcube:
-        print("Saving model I cube image. ")
-        savefits_model_I(data=modelIcube, header=header, 
+    print("Saving model I cube image. ")
+    savefits_model_I(data=modelIcube, header=header, 
              outDir=outDir, prefixOut=prefixOut)
         
     return modelIcube
