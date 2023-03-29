@@ -77,7 +77,7 @@ def main():
                                  formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("fitsI", metavar="StokesI.fits", nargs=1,
                         help="FITS cube containing Stokes I data.")
-    parser.add_argument("-freq", dest="freq_file", default="",type=str,
+    parser.add_argument("-freqFile", dest="freq_file", default="",type=str,
                        help="Path + ASCII file containing the frequency vector. If not provided,\nfrequencies are derived from fits header.")
     parser.add_argument("-f", dest="fit_function", type=str, default="log",
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
