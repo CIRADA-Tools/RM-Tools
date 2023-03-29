@@ -81,17 +81,17 @@ def main():
                        help="Path + ASCII file containing the frequency vector. If not provided,\nfrequencies are derived from fits header.")
     parser.add_argument("-f", dest="fit_function", type=str, default="log",
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
-    parser.add_argument("-or", dest="polyOrd", type=int, default=2,
+    parser.add_argument("-p", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
-    parser.add_argument("-th", dest="threshold", type=float, default=-5,
+    parser.add_argument("-t", dest="threshold", type=float, default=-5,
                         help="Noise cutoff threshold (+ve = abs, -ve = sigma) [-5].")
-    parser.add_argument("-nc", dest="num_cores", type=int, default=10,
+    parser.add_argument("-n", dest="num_cores", type=int, default=10,
                         help="Number of cores to use for multiprocessing. Default is 10.")
-    parser.add_argument("-mk", dest="apply_mask", action='store_true',
+    parser.add_argument("-m", dest="apply_mask", action='store_true',
                         help="Apply masking before spectral fitting. Default is False.")                   
-    parser.add_argument("-pf", dest="prefixOut", default="",
+    parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to use for to output file names.")
-    parser.add_argument("-od", dest="outDir", default="",
+    parser.add_argument("-odir", dest="outDir", default="",
                         help="Output directory to save output files. If none, save inside input directory")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="turn on verbose messages [False].")
