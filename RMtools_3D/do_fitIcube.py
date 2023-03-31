@@ -83,12 +83,14 @@ def main():
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
     parser.add_argument("-p", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
-    parser.add_argument("-t", dest="threshold", type=float, default=-5,
-                        help="Noise cutoff threshold (+ve = abs, -ve = sigma) [-5].")
+    parser.add_argument("-c", dest="cutoff", type=float, default=-5,
+                        help="emission cutoff (+ve = abs, -ve = sigma) [-5].")
+    parser.add_argument("-t", dest="threshold", type=float, default=3,
+                        help="threshold in factors of sigma used to estimate rms noise. Default is 3.")
     parser.add_argument("-n", dest="num_cores", type=int, default=10,
                         help="Number of cores to use for multiprocessing. Default is 10.")
     parser.add_argument("-m", dest="apply_mask", action='store_true',
-                        help="Apply masking before spectral fitting. Default is False.")                   
+                        help="Apply masking before spectral fitting. Default is False.")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to use for to output file names.")
     parser.add_argument("-odir", dest="outDir", default="",
@@ -135,7 +137,6 @@ def main():
 
 
 def open_datacube(fitsI, verbose=True):
-
     """ Reads the image fits
     
     Parameters: 
@@ -320,6 +321,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
     prefixOut: prefix to use on the output name 
     """
     
+
     nDim = data.ndim
     nBits = np.abs(header['BITPIX'])
     
@@ -347,7 +349,6 @@ def savefits_model_I(data, header, outDir, prefixOut):
 
 def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd, 
                  fit_function, nDetectPix, verbose=True):
-
     """ Fits polynomial function to Stokes I data
     
     xy: Position of pixel to fit (in pixels).

@@ -256,6 +256,16 @@ def saveOutput(mDict_cl, aDict_cl, prefixOut="", verbose=False, log=print):
     FH.close()
     outFile = prefixOut + "_RMclean.json"
     if verbose: log("> %s" % outFile)
+    for k, v in mDict_cl.items():
+        if isinstance(v, np.float_):
+            mDict_cl[k] = float(v)
+        elif isinstance(v, np.int_):
+            mDict_cl[k] = int(v)
+        elif isinstance(v, np.ndarray):
+            mDict_cl[k] = v.tolist()
+        elif isinstance(v, np.bool_):
+            mDict_cl[k] = bool(v)
+
     json.dump(mDict_cl, open(outFile, "w"))
 
 def readFiles(fdfFile, rmsfFile, weightFile, rmSynthFile, nBits):
