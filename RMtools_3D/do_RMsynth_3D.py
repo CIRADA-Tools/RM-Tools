@@ -40,6 +40,7 @@ import time
 import math as m
 import numpy as np
 import astropy.io.fits as pf
+import astropy.table as at
 
 from RMutils.util_RM import do_rmsynth_planes
 from RMutils.util_RM import get_rmsf_planes
@@ -53,6 +54,7 @@ if sys.version_info.major == 2:
 C = 2.997924538e8 # Speed of light [m/s]
 
 #-----------------------------------------------------------------------------#
+
 def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
                 phiMax_radm2=None, dPhi_radm2=None, nSamples=10.0,
                 weightType="uniform", fitRMSF=False, nBits=32, verbose=True, not_rmsf = False,
@@ -201,7 +203,6 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         # Multiply the dirty FDF by Ifreq0 to recover the PI
         FDFcube *= Ifreq0Arr
 
-
     if not_rmsf:
         dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
 
@@ -209,6 +210,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
         dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
 
     return dataArr
+    
 
 def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
                 nBits = 32, write_seperate_FDF=False, not_rmsf=False, verbose=False, log=print):
@@ -253,9 +255,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     else:
         FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2 = dataArr
 
-    # Default data types
+    # Default data typess
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
+    
 
     if(verbose): log("Saving the dirty FDF, RMSF and ancillary FITS files.")
     # Make a copy of the Q header and alter frequency-axis as Faraday depth
@@ -385,8 +388,6 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             if(verbose): log("> %s" % fitsFileOut)
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             hduLst.close()
-
-
 
     #Because there can be problems with different axes having different FITS keywords,
     #don't try to remove the FD axis, but just make it degenerate.
