@@ -211,22 +211,8 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
     
 
 def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
-                nBits = 32, write_seperate_FDF=False, not_rmsf=False, verbose=False, log=print):
+                nBits = 32, write_seperate_FDF=True, not_rmsf=False, verbose=False, log=print):
     """Write data to disk in FITS
-
-
-    Output files:
-        Default:
-        FDF_dirty.fits: FDF, in 3 extensions: Q,U, and PI.
-        FDF_maxPI.fits: 2D map of peak polarized intensity per pixel.
-        FDF_peakRM.fits: 2D map of Faraday depth of highest peak, per pixel.
-        RMSF.fits: 4 extensions; first 3 are RMSF cubes [Q, U, PI]
-                                 4th is 2D map of RMSF FWHM.
-        write_seperate_FDF=True:
-        FDF_dirty.fits is split into three constituent components:
-            FDF_real_dirty.fits: Stokes Q
-            FDF_im_dirty.fits: Stokes U
-            FDF_tot_dirty.fits: Polarizd Intensity (sqrt(Q^2+U^2))
 
     Args:
       dataArr (list): FDF and RMSF information
@@ -245,6 +231,28 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         verbose (bool): Verbosity.
         not_rmsf (bool): Just do RM synthesis and ignore RMSF?
         log (function): Which logging function to use.
+
+
+    Output files:
+        Default:
+        FDF_maxPI.fits: 2D map of peak polarized intensity per pixel.
+        FDF_peakRM.fits: 2D map of Faraday depth of highest peak, per pixel.
+
+        write_seperate_FDF=True: [default]
+        FDF_dirty.fits is split into three constituent components:
+            FDF_real_dirty.fits: Stokes Q
+            FDF_im_dirty.fits: Stokes U
+            FDF_tot_dirty.fits: Polarizd Intensity (sqrt(Q^2+U^2))
+            RMSF_real.fits: Real/Stokes Q component of RMSF
+            RMSF_im.fits: Imaginary/Stokes U component of RMSF
+            RM_tot.fits: polarized intensity view of RMSF
+            RMSF_FWHM.fits: 2D map of width of RMSF main lobe
+
+        write_seperate_FDF=False:
+            FDF_dirty.fits: FDF, in 3 extensions: Q,U, and PI.
+            RMSF.fits: 4 extensions; first 3 are RMSF cubes [Q, U, PI]
+                                 4th is 2D map of RMSF FWHM.
+
 
     """
     if not_rmsf:
@@ -576,7 +584,7 @@ def main():
     parser.add_argument("-n", dest="noiseFile", default=None,
                         help="Text file containing channel noise values [None].")
     parser.add_argument("-w", dest="weightType", default="uniform",
-                        help="weighting [uniform] (all 1s) or 'variance'.")
+                        help="weighting ['uniform'] (all 1s) or 'variance'.")
     parser.add_argument("-t", dest="fitRMSF", action="store_true",
                         help="Fit a Gaussian to the RMSF [False]")
     parser.add_argument("-l", dest="phiMax_radm2", type=float, default=None,
@@ -588,7 +596,7 @@ def main():
     parser.add_argument("-s", dest="nSamples", type=float, default=5,
                         help="Number of samples across the FWHM RMSF.")
     parser.add_argument("-f", dest="write_seperate_FDF", action="store_false",
-                        help="Store different Stokes as FITS extensions [False, store as seperate files].")
+                        help="Store different Stokes as FITS extensions [False, store as separate files].")
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="Verbose [False].")
     parser.add_argument("-R", dest="not_RMSF", action="store_true",
