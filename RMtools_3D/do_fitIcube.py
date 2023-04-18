@@ -348,7 +348,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
 
 
 def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
-                 fit_function, nDetectPix, verbose=True):
+                 fit_function, nDetectPix, pbar, verbose=True):
     """ Fits polynomial function to Stokes I data
 
     xy: Position of pixel to fit (in pixels).
@@ -380,6 +380,10 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
     outs['chiSqRed'] = pixFitDict['chiSqRed']
     outs['nIter']    = pixFitDict['nIter']
     outs['AIC']      = pixFitDict['AIC']
+
+    pbar.update(1)
+
+    return outs
 
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
                  nBits=32, threshold=3, num_cores = 10,verbose=True,
