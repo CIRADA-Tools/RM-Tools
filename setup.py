@@ -12,11 +12,11 @@ NAME = 'RM-Tools'
 DESCRIPTION = 'RM-synthesis, RM-clean and QU-fitting on polarised radio spectra'
 URL = 'https://github.com/CIRADA-Tools/RM-Tools'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '1.2.0'
+VERSION = '1.3.0'
 DOWNLOAD_URL = 'https://github.com/CIRADA-Tools/RM-Tools/archive/v'+VERSION+'.tar.gz'
 
 REQUIRED = [
-    'numpy', 'scipy', 'matplotlib>=3.4.0', 'astropy', 'tqdm'
+    'numpy<1.24', 'scipy', 'matplotlib>=3.4.0', 'astropy',
 ]
 
 # Using AT's fork for now - includes tiny bug fix for bilby
@@ -55,7 +55,10 @@ setup(
                             'rmtools_fitIcube=RMtools_3D.do_fitIcube:main',
                             'rmtools_peakfitcube=RMtools_3D.RMpeakfit_3D:main',
                             'rmtools_testdata3D=RMtools_3D.mk_test_cube_data:main',
-                            'rmtools_extractregion=RMtools_3D.extract_region:main'],
+                            'rmtools_extractregion=RMtools_3D.extract_region:main',
+                            'rmtools_bwdepol=RMtools_1D.rmtools_bwdepol:main',
+                            'rmtools_bwpredict=RMtools_1D.rmtools_bwpredict:main',
+                            ],
     },
     install_requires=REQUIRED,
     extras_require=extras_require,
@@ -71,6 +74,6 @@ setup(
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
     maintainer='Cameron Van Eck',
-    maintainer_email='cameron.van.eck@dunlap.utoronto.ca',
+    maintainer_email='cameron.vaneck@anu.edu.au',
     test_suite='tests',
 )

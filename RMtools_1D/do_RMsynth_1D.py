@@ -332,8 +332,8 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                               lamSqArr_m2 = lambdaSqArr_m2,
                               lam0Sq      = lam0Sq_m2)
     mDict["Ifreq0"] = toscalar(Ifreq0)
-    mDict["polyCoeffs"] =  ",".join([str(x) for x in fitDict["p"]])
-    mDict["polyCoefferr"] = ",".join([str(x) for x in fitDict["perror"]])
+    mDict["polyCoeffs"] =  ",".join([str(x.astype(np.float32)) for x in fitDict["p"]])
+    mDict["polyCoefferr"] = ",".join([str(x.astype(np.float32)) for x in fitDict["perror"]])
     mDict["poly_reffreq"] = fitDict['reference_frequency_Hz']
     mDict['polyOrd'] = fitDict['polyOrd']
     mDict["IfitStat"] = fitDict["fitStatus"]
@@ -362,7 +362,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Measure the complexity of the q and u spectra
     # Use 'ampPeakPIfitEff' for bias correct PI
-    mDict["fracPol"] = mDict["ampPeakPIfitEff"]/(Ifreq0)
+    mDict["fracPol"] = toscalar(mDict["ampPeakPIfitEff"]/(Ifreq0))
     mD, pD = measure_qu_complexity(freqArr_Hz = freqArr_Hz,
                                    qArr       = qArr,
                                    uArr       = uArr,
@@ -560,6 +560,18 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
 
     if verbose:
         print("> %s" % outFile)
+        
+    for k, v in outdict.items():
+        if isinstance(v, np.float_):
+            outdict[k] = float(v)
+        elif isinstance(v, np.int_):
+            outdict[k] = int(v)
+        elif isinstance(v, np.ndarray):
+            outdict[k] = v.tolist()
+        elif isinstance(v, np.bool_):
+            outdict[k] = bool(v)
+
+        
     json.dump(dict(outdict), open(outFile, "w"))
 
 
