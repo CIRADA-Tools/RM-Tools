@@ -254,8 +254,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
         log("Err: mask dimensions must be <= 3.")
         return None, None, None, None
     if not mskArr.shape[0] == lambdaSqArr_m2.shape[0]:
-        log("Err: mask depth does not match lambda^2 vector (%d vs %d).", end=' ')
-        (mskArr.shape[0], lambdaSqArr_m2.shape[-1])
+        log(f"Err: mask depth does not match lambda^2 vector ({mskArr.shape[0]} vs {lambdaSqArr_m2.shape[-1]}).", end=' ')
         log("     Check that the mask is in [z, y, x] order.")
         return None, None, None, None
 
@@ -297,7 +296,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     # lam0Sq is the weighted mean of LambdaSq distribution (B&dB Eqn. 32)
     # Calculate a single lam0Sq_m2 value, ignoring isolated flagged voxels
     K = 1.0 / np.nansum(weightArr)
-    lam0Sq_m2 = K * np.nansum(weightArr * lambdaSqArr_m2)
+    if lam0Sq_m2 is None:
+        lam0Sq_m2 = K * np.nansum(weightArr * lambdaSqArr_m2)
 
     # Calculate the analytical FWHM width of the main lobe
     fwhmRMSF = 3.8/(np.nanmax(lambdaSqArr_m2) -
@@ -318,12 +318,11 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
         if fitRMSF:
             if verbose:
                 log("Fitting Gaussian to the main lobe.")
-            if fitRMSFreal:
-                mp = fit_rmsf(phi2Arr, RMSFArr.real)
-            else:
-                mp = fit_rmsf(phi2Arr, np.abs(RMSFArr))
+            mp = fit_rmsf(
+                phi2Arr,
+                RMSFArr.real if fitRMSFreal else np.abs(RMSFArr)
+            )
             if mp is None or mp.status<1:
-                 pass
                  log("Err: failed to fit the RMSF.")
                  log("     Defaulting to analytical value.")
             else:
