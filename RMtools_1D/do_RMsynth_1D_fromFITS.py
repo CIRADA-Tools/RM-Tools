@@ -32,7 +32,7 @@
 # DEALINGS IN THE SOFTWARE.                                                   #
 #                                                                             #
 #=============================================================================#
- 
+
 import sys
 import os
 #import time
@@ -77,7 +77,7 @@ def main():
     _RMsynth.json: dictionary of derived parameters for RM spectrum
     _weight.dat: Calculated channel weights [freq_Hz, weight]
     """
-    
+
     # Parse the command line options
     parser = argparse.ArgumentParser(description=descStr,epilog=epilog_text,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -118,10 +118,12 @@ def main():
     parser.add_argument("-D", dest="debug", action="store_true",
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default=None,
-                        help="Intensity units of the data. [from FITS header]")    
-
+                        help="Intensity units of the data. [from FITS header]")
+    parser.add_argument("-r", "--super-resolution", action="store_true",
+                        help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
+                        )
     args = parser.parse_args()
-    
+
     # Sanity checks
     if not os.path.exists(args.dataFile[0]):
         print("File does not exist: '%s'." % args.dataFile[0])
@@ -149,7 +151,7 @@ def main():
     U_array = get_data_Q_U(args.UFile[0], ycoords, xcoords)
     dQ_array = np.full(freq_array.shape, 1*10**(-3))
     dU_array = np.full(freq_array.shape, 1*10**(-3))
-    
+
     Q_array[~np.isfinite(Q_array)]=np.nan
     U_array[~np.isfinite(U_array)]=np.nan
     data = [freq_array, Q_array, U_array, dQ_array, dU_array]
@@ -168,7 +170,7 @@ def main():
         dI_array = np.full(freq_array.shape, 1 * 10 ** (-3))
         data=[freq_array,I_array, Q_array, U_array, dI_array, dQ_array, dU_array]
     # Run RM-synthesis on the spectra
-    dict, aDict = run_rmsynth(data           = data,
+    mDict, aDict = run_rmsynth(data           = data,
                 polyOrd        = args.polyOrd,
                 phiMax_radm2   = args.phiMax_radm2,
                 dPhi_radm2     = args.dPhi_radm2,
@@ -181,10 +183,11 @@ def main():
                 debug          = args.debug,
                 verbose        = verbose,
                 units          = args.units,
-                saveFigures    = args.saveOutput)
-    #pdb.set_trace()
+                saveFigures    = args.saveOutput,
+                super_resolution=args.super_resolution,
+            )
     if args.saveOutput:
-        saveOutput(dict, aDict, prefixOut, verbose)
+        saveOutput(mDict, aDict, prefixOut, verbose)
 
 def get_data_Q_U(filename, ycoords, xcoords):
     hduList = fits.open(filename)

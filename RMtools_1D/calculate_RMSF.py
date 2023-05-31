@@ -14,7 +14,7 @@ OR
 Input values for mininum frequency, maximum frequency, and channel width.
 (assumes equal weights and all channels present)
 
-The outputs are a list of relavant RMSF properties, and a plot of the RMSF 
+The outputs are a list of relavant RMSF properties, and a plot of the RMSF
 shape.
 """
 
@@ -28,14 +28,14 @@ C = 2.997924538e8 # Speed of light [m/s]
 
 def main():
     """
-    Determines what set of input parameters were defined, reads in file or 
+    Determines what set of input parameters were defined, reads in file or
     generates frequency array as appropriate, and passes frequency and weight
     arrays to the function that works out the RMSF properties.
     """
 
     descStr = """
-    Calculate and plot RMSF and report main properties, given a supplied 
-    frequency coverage and optional weights (either as second column of 
+    Calculate and plot RMSF and report main properties, given a supplied
+    frequency coverage and optional weights (either as second column of
     frequency file, or as separate file)."""
 
     parser = argparse.ArgumentParser(description=descStr,
@@ -55,20 +55,22 @@ def main():
                         help="Filename to save plot to. [do not save]")
     parser.add_argument("-n", dest="plotname", default=None,
                         help="Name of plot [\"Simulated RMSF\"]")
-
+    parser.add_argument("-r", "--super-resolution", action="store_true",
+                        help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
+                        )
     args = parser.parse_args()
-    
-    
+
+
     #Check that at least one frequency input has been given:
     if args.freqFile == None and args.freq_parms == None:
         print("Please supply either a file with frequency values or use the -f flag.")
         raise(Exception("No frequency input! Use -h flag for help on inputs."))
-    
+
     # if args.phiMax_radm2 != None:
     #     if args.phiMax_radm2
-    
+
     #Order of priority: frequency file takes precedence over -i flag.
-    #                   weight file takes precedence over 2nd column of frequency file.       
+    #                   weight file takes precedence over 2nd column of frequency file.
     if args.freqFile != None:
         data=np.genfromtxt(args.freqFile,encoding=None,dtype=None)
         if len(data.shape) == 2:
@@ -88,11 +90,11 @@ def main():
         weights_array=np.genfromtxt(args.weightFile,encoding=None,dtype=None)
         if len(weights_array) != len(freq_array):
             raise Exception('Weights file does not have same number of channels as frequency source')
-    
 
-    determine_RMSF_parameters(freq_array,weights_array,args.phiMax_radm2,args.dphi_radm2,args.plotfile,args.plotname)
-    
-def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None):
+
+    determine_RMSF_parameters(freq_array,weights_array,args.phiMax_radm2,args.dphi_radm2,args.plotfile,args.plotname, args.super_resolution)
+
+def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=None,plotname=None, super_resolution=False):
     """
     Characterizes an RMSF given the supplied frequency and weight arrays.
     Prints the results to terminal and produces a plot.
@@ -108,7 +110,7 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     l2_min=np.min(lambda2_array)
     l2_max=np.max(lambda2_array)
     dl2=np.median(np.abs(np.diff(lambda2_array)))
-    
+
     if phi_max == None:
         phi_max = 10*2*np.sqrt(3.0) / (l2_max-l2_min)  #~10*FWHM
     if dphi == None:
@@ -116,9 +118,16 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
 
     phi_array=np.arange(-1*phi_max/2,phi_max/2+1e-6,dphi) #division by two accounts for how RMSF is always twice as wide as FDF.
 
-    RMSFcube, phi2Arr, fwhmRMSFArr, statArr=get_rmsf_planes(lambda2_array,phi_array,weightArr=weights_array,fitRMSF=True)
-    
-    
+    RMSFcube, phi2Arr, fwhmRMSFArr, statArr=get_rmsf_planes(
+        lambda2_array,
+        phi_array,
+        weightArr=weights_array,
+        fitRMSF=True,
+        fitRMSFreal=super_resolution,
+        lam0Sq_m2=0 if super_resolution else None,
+    )
+
+
     #Output key results to terminal:
     print('RMSF PROPERTIES:')
     print('Theoretical (unweighted) FWHM:       {:.4g} rad m^-2'.format(3.8 / (l2_max-l2_min)))
@@ -128,18 +137,18 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
     print('*50% bandwdith depolarization threshold, for median channel width in Delta-lambda^2')
     print('* may not be reliable over very large fractional bandwidths or in data with ')
     print('differing channel widths or many frequency gaps.')
-    #Explanation for below: This code find the local maxima in the positive half of the RMSF, 
+    #Explanation for below: This code find the local maxima in the positive half of the RMSF,
     #finds the highest amplitude one, and calls that the first sidelobe.
     try:
         x=np.diff(np.sign(np.diff(np.abs(RMSFcube[RMSFcube.size//2:])))) #-2=local max, +2=local min
         y=1+np.where(x==-2)[0]  #indices of peaks, +1 is because of offset from double differencing
-        peaks=np.abs(RMSFcube[RMSFcube.size//2:])[y] 
+        peaks=np.abs(RMSFcube[RMSFcube.size//2:])[y]
         print('First sidelobe FD and amplitude:     {:.4g} rad m^-2'.format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]]))
         print('                                     {:.4g} % of peak'.format(np.max(peaks)*100))
     except:
         pass
-    
-    
+
+
     #Plotting:
     plt.figure(figsize=(7,7))
     plt.subplot(211)
@@ -177,8 +186,8 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
                  '                                     {:.4g} % of peak').format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]],np.max(peaks)*100),
                 family='monospace',horizontalalignment='left',verticalalignment='top')
     except:
-        pass                    
-                                                                 
+        pass
+
 #    ax.text(0.,0.7,('Theoretical (unweighted) FWHM:      {:.4g} rad m^-2'.format(2*np.sqrt(3.0) / (l2_max-l2_min)))
 #    ax.text(0.,0.58,'Measured FWHM:                               {:.4g} rad m^-2'.format(fwhmRMSFArr))
 #    ax.text(0.,0.46,'Theoretical largest FD scale probed: {:.4g} rad m^-2'.format(np.pi/l2_min))
@@ -191,9 +200,9 @@ def determine_RMSF_parameters(freq_array,weights_array,phi_max,dphi,plotfile=Non
         plt.savefig(plotfile,bbox_inches='tight')
     else:
         plt.show()
-    
-    
-    
+
+
+
 if __name__ == "__main__":
     main()
 

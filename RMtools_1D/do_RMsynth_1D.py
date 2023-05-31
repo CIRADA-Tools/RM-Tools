@@ -70,9 +70,10 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                 nSamples=10.0, weightType="variance", fitRMSF=False,
-                noStokesI=False, modStokesI=None, phiNoise_radm2=1e6, nBits=32, showPlots=False,
-                debug=False, verbose=False, log=print,units='Jy/beam', 
-                prefixOut="prefixOut", saveFigures=None,fit_function='log'):
+                noStokesI=False, modStokesI=None, phiNoise_radm2=1e6, nBits=32,
+                showPlots=False, debug=False, verbose=False, log=print,
+                units='Jy/beam', prefixOut="prefixOut", saveFigures=None,
+                fit_function='log', super_resolution=False):
     """Run RM synthesis on 1D data.
 
     Args:
@@ -168,7 +169,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                                  fit_function = fit_function,
                                  modStokesI = modStokesI,
                                  )
-             
+
     dquArr = (dqArr + duArr)/2.0
     dquArr= np.where(np.isfinite(dquArr),dquArr,np.nan)
 
@@ -176,7 +177,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     # Plot the data and the Stokes I model fit
     if verbose: log("Plotting the input data and spectral index fit.")
     freqHirArr_Hz =  np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-    if modStokesI is None:   
+    if modStokesI is None:
         IModHirArr = calculate_StokesI_model(fitDict,freqHirArr_Hz)
     elif modStokesI is not None:
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
@@ -239,7 +240,10 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     dLambdaSqMax_m2 = np.nanmax(np.abs(np.diff(lambdaSqArr_m2)))
 
     # Set the Faraday depth range
-    fwhmRMSF_radm2 = 2.0 * m.sqrt(3.0) / lambdaSqRange_m2
+    if not super_resolution:
+        fwhmRMSF_radm2 = 2.0 * m.sqrt(3.0) / lambdaSqRange_m2 #B&dB05 theoretical RMSF width
+    else: #If super resolution, use R&C23 theoretical width
+        fwhmRMSF_radm2 = 2.0 / (np.nanmax(lambdaSqArr_m2) + np.nanmin(lambdaSqArr_m2))
     if dPhi_radm2 is None:
         dPhi_radm2 = fwhmRMSF_radm2 / nSamples
     if phiMax_radm2 is None:
@@ -275,7 +279,9 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                                             weightArr       = weightArr,
                                             nBits           = nBits,
                                             verbose         = verbose,
-                                            log             = log)
+                                            log             = log,
+                                            lam0Sq_m2       = 0 if super_resolution else None,
+                                            )
 
     # Calculate the Rotation Measure Spread Function
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = \
@@ -285,8 +291,8 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                         mskArr          = ~np.isfinite(qArr),
                         lam0Sq_m2       = lam0Sq_m2,
                         double          = True,
-                        fitRMSF         = fitRMSF,
-                        fitRMSFreal     = False,
+                        fitRMSF         = fitRMSF or super_resolution,
+                        fitRMSFreal     = super_resolution,
                         nBits           = nBits,
                         verbose         = verbose,
                         log             = log)
@@ -305,16 +311,17 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
 
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
+    # This will break if lam0Sq_m2==0. Using the mean frequency in this case.
     # Multiply the dirty FDF by Ifreq0 to recover the PI
-    freq0_Hz = C / m.sqrt(lam0Sq_m2)
-    if modStokesI is None:   
+    freq0_Hz = C / m.sqrt(lam0Sq_m2) if lam0Sq_m2 > 0 else np.nanmean(freqArr_Hz)
+    if modStokesI is None:
         Ifreq0 = calculate_StokesI_model(fitDict,freq0_Hz)
     elif modStokesI is not None:
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
         Ifreq0 = modStokesI_interp(freq0_Hz)
     dirtyFDF *= (Ifreq0)    # FDF is in fracpol units initially, convert back to flux
 
-    # if modStokesI is None:   
+    # if modStokesI is None:
     #     #Need to renormalize the Stokes I parameters here to the actual reference frequency.
     #     fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
 
@@ -345,7 +352,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
     mDict["dQU"] = toscalar(nanmedian(dQUArr))
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
-    
+
     if (fitDict["fitStatus"] >= 128) and verbose:
         log("WARNING: Stokes I model contains negative values!")
     elif (fitDict["fitStatus"] >= 64) and verbose:
@@ -476,16 +483,16 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 def readFile(dataFile, nBits, verbose=True, debug=False):
     """
     Read the I, Q & U data from the ASCII file.
-    
+
     Inputs:
         datafile (str): relative or absolute path to file.
         nBits (int): number of bits to store the data as.
         verbose (bool): Print verbose messages to terminal?
         debug (bool): Print full traceback in case of failure?
-        
+
     Returns:
         data (list of arrays): List containing the columns found in the file.
-        If Stokes I is present, this will be [freq_Hz, I, Q, U, dI, dQ, dU], 
+        If Stokes I is present, this will be [freq_Hz, I, Q, U, dI, dQ, dU],
         else [freq_Hz, q, u,  dq, du].
     """
 
@@ -560,7 +567,7 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
 
     if verbose:
         print("> %s" % outFile)
-        
+
     for k, v in outdict.items():
         if isinstance(v, np.float_):
             outdict[k] = float(v)
@@ -571,7 +578,7 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
         elif isinstance(v, np.bool_):
             outdict[k] = bool(v)
 
-        
+
     json.dump(dict(outdict), open(outFile, "w"))
 
 
@@ -585,7 +592,7 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in an ASCII
-    file. The Stokes I spectrum is first fit with a polynomial or power law 
+    file. The Stokes I spectrum is first fit with a polynomial or power law
     and the resulting model used to create fractional q = Q/I and u = U/I spectra.
 
     The ASCII file should the following columns, in a space separated format:
@@ -640,6 +647,9 @@ def main():
                         help="turn on debugging messages & plots [False].")
     parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
                         help="Intensity units of the data. [Jy/beam]")
+    parser.add_argument("-r", "--super-resolution", action="store_true",
+                        help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). "
+                        )
     args = parser.parse_args()
 
     # Sanity checks
@@ -656,7 +666,8 @@ def main():
     data = readFile(args.dataFile[0],nBits, verbose=verbose, debug=args.debug)
 
     # Run RM-synthesis on the spectra
-    mDict, aDict = run_rmsynth(data           = data,
+    mDict, aDict = run_rmsynth(
+                data           = data,
                 polyOrd        = args.polyOrd,
                 phiMax_radm2   = args.phiMax_radm2,
                 dPhi_radm2     = args.dPhi_radm2,
@@ -671,7 +682,9 @@ def main():
                 units          = args.units,
                 prefixOut      = prefixOut,
                 saveFigures    = args.saveOutput,
-                fit_function   = args.fit_function)
+                fit_function   = args.fit_function,
+                super_resolution=args.super_resolution,
+    )
 
     if args.saveOutput:
         saveOutput(mDict, aDict, prefixOut, verbose)
