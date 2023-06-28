@@ -39,7 +39,7 @@ def model(pDict, lamSqArr_m2):
 #-----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.001, 
+        minimum=0.0, 
         maximum=1.0, 
         name="fracPol", 
         latex_label="$p$"
