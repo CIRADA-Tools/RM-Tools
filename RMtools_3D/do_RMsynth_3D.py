@@ -355,7 +355,10 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save the RMSF
     if not_rmsf is not True:
         header["NAXIS"+str(freq_axis)] = phi2Arr_radm2.size
-        header["CRVAL"+str(freq_axis)] = (phi2Arr_radm2[0],'[rad/m^2] Coordinate value at reference point')
+        header["CDELT"+str(freq_axis)] = (np.diff(phi2Arr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
+        header["CRPIX"+str(freq_axis)] = phi2Arr_radm2.size//2+1
+        header["CRVAL"+str(freq_axis)] = (phi2Arr_radm2[phi2Arr_radm2.size//2], '[rad/m^2] Coordinate value at reference point')
+
         header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
         header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
         rmheader=header.copy()
