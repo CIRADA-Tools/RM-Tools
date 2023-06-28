@@ -68,19 +68,19 @@ def converter(parameters):
 priors = PriorDict(conversion_function=converter)
 
 priors['fracPol1'] = bilby.prior.Uniform(
-    minimum=0.001,
+    minimum=0.0,
     maximum=1.0,
     name='fracPol1',
     latex_label='$p_1$',
 )
 priors['fracPol2'] = bilby.prior.Uniform(
-    minimum=0.001,
+    minimum=0.0,
     maximum=1.0,
     name='fracPol2',
     latex_label='$p_2$',
 )
 priors['fracPol3'] = bilby.prior.Uniform(
-    minimum=0.001,
+    minimum=0.0,
     maximum=1.0,
     name='fracPol3',
     latex_label='$p_3$',
@@ -139,7 +139,7 @@ priors['delta_RM2_RM3_radm2'] = Constraint(
     latex_label="$\Delta\phi_{1,2}$ (rad m$^{-2}$)",
 )
 priors['sum_p1_p2_p3'] = Constraint(
-    minimum=0.001,
+    minimum=0.0,
     maximum=1,
     name="sum_p1_p2_p3",
     latex_label="$p_1+p_2+p_3$)",
