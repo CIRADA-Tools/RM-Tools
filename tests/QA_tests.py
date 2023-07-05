@@ -235,8 +235,10 @@ class test_RMtools(unittest.TestCase):
             create_1D_data(self.freq_arr)
         if not os.path.exists('models_ns'):
             shutil.copytree('../RMtools_1D/models_ns','models_ns')
-        returncode=subprocess.call('qufit simdata/1D/simsource.dat --sampler nestle',shell=True)
-        self.assertEqual(returncode, 0, 'QU fitting failed to run.')
+        
+        for model in (1, 2, 3, 4, 5, 6, 7, 11, 111):
+            returncode=subprocess.call(f"qufit simdata/1D/simsource.dat --sampler nestle -m {model}",shell=True)
+            self.assertEqual(returncode, 0, 'QU fitting failed to run.')
         shutil.rmtree('models_ns')
 
     def test_f2_QUfit_values(self):
