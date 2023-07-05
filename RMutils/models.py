@@ -117,11 +117,11 @@ def get_model(name):
             freqArr=C/np.sqrt(lamSqArr_m2)
 
             # Model fractional linear polarization (power-law)
-            pfracArr = (pDict["fracPol"] * np.ones_like(freqArr)) * (freqArr/freqArr.min())**(pDict["gamma"])
+            pfracArr = (pDict["fracPol"] * np.ones_like(freqArr)) * (freqArr/400e6)**(pDict["gamma"])
             # Calculate linear polarization w/ Stokes I model
             pArr = pfracArr * IModArr
             # Create model V spectrum (power-law)
-            vfracArr = (pDict["fracPol_V"] * np.ones_like(lamSqArr_m2)) * (freqArr/freqArr.min())**(pDict["gamma_V"])
+            vfracArr = (pDict["fracPol_V"] * np.ones_like(lamSqArr_m2)) * (freqArr/400e6)**(pDict["gamma_V"])
             VModArr = vfracArr * IModArr
             # Model differential X,Y response
             gain_X = 1
