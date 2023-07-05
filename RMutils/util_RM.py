@@ -70,9 +70,9 @@ from scipy.stats import kurtosistest
 from scipy.stats import anderson
 from scipy.stats import kstest
 from scipy.stats import norm
+from tqdm.auto import tqdm, trange
 
 from RMutils.mpfit import mpfit
-from RMutils.util_misc import progress
 from RMutils.util_misc import toscalar
 from RMutils.util_misc import calc_parabola_vertex
 from RMutils.util_misc import create_pqu_spectra_burn
@@ -174,13 +174,8 @@ def do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
         KArr = np.nan_to_num(KArr)
 
     # Do the RM-synthesis on each plane
-    if verbose:
-        log("Running RM-synthesis by channel.")
-        progress(40, 0)
     a = lambdaSqArr_m2 - lam0Sq_m2
-    for i in range(nPhi):
-        if verbose:
-            progress(40, ((i+1)*100.0/nPhi))
+    for i in trange(nPhi, desc="Running RM-synthesis by channel", disable=not verbose):
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)[:, np.newaxis,np.newaxis]
         FDFcube[i,:,:] =  KArr * np.sum(pCube * arg, axis=0)
 
@@ -337,7 +332,7 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
     # Calculate the RMSF at each pixel
     else:
         if verbose:
-            log("Calculating RMSF by channel.")
+            log()
 
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
@@ -348,12 +343,8 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        if verbose:
-            progress(40, 0)
         a = (lambdaSqArr_m2 - lam0Sq_m2)
-        for i in range(nPhi):
-            if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
+        for i in trange(nPhi, desc="Calculating RMSF by channel", disable=not verbose):
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
 
@@ -366,13 +357,10 @@ def get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None, mskArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-                progress(40, 0)
             k = 0
-            for i in range(nX):
+            for i in trange(nX, desc="Fitting RMSF by pixel", disable=not verbose):
                 for j in range(nY):
                     k += 1
-                    if verbose:
-                        progress(40, ((i+1)*100.0/nPhi))
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:,j,i].real)
                     else:
@@ -491,22 +479,18 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
 
 
     if pool is None:
-        if verbose:
-            progress(40,0)
-            i=0
         output=[]
         for pix in inputs:
             output.append(rmc.cleanloop(pix))
-            if verbose:
-                progress(40, ((i)*100.0/nCleanPix))
-                i+=1
     else:
-        if verbose:
-            log('(Progress bar is not supported for parallel mode. Please wait for the code to finish.')
-        if chunksize is not None:
-            output = list(pool.map(rmc.cleanloop, inputs, chunksize=chunksize))
-        else:
-                output = list(pool.map(rmc.cleanloop, inputs))
+        output = list(
+            tqdm(
+                pool.imap(rmc.cleanloop, inputs, chunksize=chunksize if chunksize is not None else 1),
+                desc="RM-CLEANing",
+                disable=not verbose,
+                total=len(inputs),
+            )
+        )
         pool.close()
     # Put data back in correct shape
 #    ccArr = np.reshape(np.rot90(np.stack([model for _, _, model in output]), k=-1),dirtyFDF.shape)
@@ -1349,14 +1333,8 @@ def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
     arg = np.exp( np.outer(a, b) )
 
     # Do the synthesis at each pixel of the image
-    nPix = nX * nY
-    j = 0
-    progress(40, 0)
-    for k in range(nY):
+    for k in trange(nY, desc='RM-synthesis'):
         for i in range(nX):
-            j += 1
-            progress(40, ((j)*100.0/nPix))
-
             # Calculate the FDF, B&dB Eqns. (25) and (36)
             # B&dB Eqns. (25) and (36)
             FDFcube[k,i,:] = K * np.nansum(pCube[k,i,:] * arg, axis=1)
@@ -1851,13 +1829,8 @@ def threeDnoise_do_rmsynth_planes(dataQ, dataU, lambdaSqArr_m2, phiArr_radm2,
         KArr = np.nan_to_num(KArr)
 
     # Do the RM-synthesis on each plane
-    if verbose:
-        log("Running RM-synthesis by channel.")
-        progress(40, 0)
     a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - lam0Sq_m2[np.newaxis, :, :]
-    for i in range(nPhi):
-        if verbose:
-            progress(40, ((i+1)*100.0/nPhi))
+    for i in trange(nPhi, desc="Running RM-synthesis by channel", disable=not verbose):
         arg = np.exp(-2.0j * phiArr_radm2[i] * a)
         FDFcube[i, :, :] = KArr * np.sum(pCube * arg, axis=0)
     # Remove redundant dimensions in the FDF array
@@ -2002,9 +1975,6 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
 
     # Calculate the RMSF at each pixel
     else:
-        if verbose:
-            log("Calculating RMSF in 3D.")
-
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -2013,13 +1983,9 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        if verbose:
-            progress(40, 0)
         a = lambdaSqArr_m2[:, np.newaxis, np.newaxis] - \
             lam0Sq_m2[np.newaxis, :, :]
-        for i in range(nPhi):
-            if verbose:
-                progress(40, ((i+1)*100.0/nPhi))
+        for i in trange(nPhi, desc="Calculating RMSF in 3D", disable=not verbose):
             arg = np.exp(-2.0j * phi2Arr[i] * a)
 #            RMSFcube[i,:,:] =  KArr * np.sum(uCube * arg, axis=0)
             RMSFcube[i,:,:] =  KArr * np.sum(weightArr * arg, axis=0)
@@ -2032,13 +1998,8 @@ def threeDnoise_get_rmsf_planes(lambdaSqArr_m2, phiArr_radm2, weightArr=None,
             if verbose:
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
-            progress(40, 0)
-            k = 0
-            for i in range(nX):
+            for i in trange(nX, desc="Fitting RMSF", disable=not verbose):
                 for j in range(nY):
-                    k += 1
-                    if verbose:
-                        progress(40, (k*100.0/nPix))
                     if fitRMSFreal:
                         mp = fit_rmsf(phi2Arr, RMSFcube[:,j,i].real)
                     else:

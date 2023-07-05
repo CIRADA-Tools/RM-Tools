@@ -5,7 +5,7 @@
 #                                                                             #
 # PURPOSE:  Make a model Stokes I cube and a noise vector.                    #
 #                                                                             #
-# MODIFIED: 26-Feb-2017 by C. Purcell 
+# MODIFIED: 26-Feb-2017 by C. Purcell
 # MODIFIED: 18 January 2023 by Lerato Baidoo  (re-structured and optimized)   #
 #                                                                             #
 #=============================================================================#
@@ -42,12 +42,12 @@ import argparse
 import math as m
 import numpy as np
 import astropy.io.fits as pf
+from tqdm.auto import tqdm, trange
 
 from RMutils.util_misc import MAD
 from RMutils.util_misc import fit_StokesI_model, calculate_StokesI_model
-from RMutils.util_misc import progress
 from RMutils.util_FITS import strip_fits_dims
-from RMtools_3D.do_RMsynth_3D import readFitsCube 
+from RMtools_3D.do_RMsynth_3D import readFitsCube
 from RMtools_3D.make_freq_file import  get_freq_array
 
 
@@ -64,7 +64,7 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Create a model Stokes I dataset by fitting a polynomial to emitting regions
-    above a cutoff threshold in the Stokes I cube. Also outputs a noise spectrum 
+    above a cutoff threshold in the Stokes I cube. Also outputs a noise spectrum
     with the Stokes I noise per channel.
 
     NOTE: Each pixel is fit independently, so there are no protections in place
@@ -98,7 +98,7 @@ def main():
     parser.add_argument("-v", dest="verbose", action="store_true",
                         help="turn on verbose messages [False].")
     args = parser.parse_args()
-    
+
     # Sanity checks
     for f in [args.fitsI[0]]:
         if not os.path.exists(f):
@@ -107,20 +107,20 @@ def main():
     out_directory = args. outDir
     if not out_directory:
         out_directory, dummy = os.path.split(args.fitsI[0])
-    
+
     I_filename = args.fitsI[0]
     datacube, headI = open_datacube(fitsI=I_filename, verbose=args.verbose)
-    
+
     #if frequency file is not provided, extract frequency information from the input fits header.
     if args.freq_file:
-        freqArr_Hz = get_frequencies(datacube=datacube, header=headI, freqFile=args.freq_file) 
-    else:   
+        freqArr_Hz = get_frequencies(datacube=datacube, header=headI, freqFile=args.freq_file)
+    else:
         print("Frequency file not provided. Deriving frequencies from the fits header.")
-        freqArr_Hz = get_freq_array (I_filename) 
-       
+        freqArr_Hz = get_freq_array (I_filename)
+
     # Run polynomial fitting on the spectra
-    make_model_I(datacube     = datacube, 
-                 header       = headI, 
+    make_model_I(datacube     = datacube,
+                 header       = headI,
                  freqArr_Hz   = freqArr_Hz,
                  polyOrd      = args.polyOrd,
                  prefixOut    = args.prefixOut,
@@ -138,101 +138,101 @@ def main():
 
 def open_datacube(fitsI, verbose=True):
     """ Reads the image fits
-    
-    Parameters: 
+
+    Parameters:
     fitsI : Input Stokes I cube fits image
     verbose: If true, write logs
-    
+
     Returns:
     datacube: Image data
-    header: Fits header  
+    header: Fits header
     """
 
     # Default data type
-    
+
     # Sanity check on header dimensions
     print("Reading FITS cube header from '%s':" % fitsI)
     header, datacube = readFitsCube(fitsI, verbose)
-    
+
     nDim = datacube.ndim
     if nDim < 3 or nDim > 4:
         print("Err: only 3 or 4 dimensions supported: D = %d." % header["NAXIS"])
         sys.exit()
 
-    # freq_axis=find_freq_axis(header) 
+    # freq_axis=find_freq_axis(header)
     # #If the frequency axis isn't the last one, rotate the array until it is.
     # #Recall that pyfits reverses the axis ordering, so we want frequency on
     # #axis 0 of the numpy array.
     # if freq_axis != 0 and freq_axis != nDim:
     #     datacube=np.moveaxis(datacube,nDim-freq_axis,0)
-    
+
     return datacube, header
-    
-    
+
+
 def get_frequencies(datacube, header, freqFile):
 
     """ Reads a frequency file
-    
+
     Parameters:
     datacube: Image cube data
-    header: A header of the input datacube 
+    header: A header of the input datacube
     freqFile: A frequency file in text format
-    
+
     Returns:
     freqArr_Hz: frequency array
     """
 
-    nBits = np.abs(header['BITPIX'])    
+    nBits = np.abs(header['BITPIX'])
     dtFloat = "float" + str(nBits)
 
     nChan = datacube.shape[0] # for now, assumes frequency is the first axis
-    
+
     # Read the frequency vector
     print("Reading frequency vector from '%s'." % freqFile)
     freqArr_Hz = np.loadtxt(freqFile, dtype=dtFloat)
     if nChan!=len(freqArr_Hz):
         print("Err: frequency vector and frequency axis of cube unequal length.")
         sys.exit()
-        
+
     return freqArr_Hz
-   
-   
+
+
 def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
 
 
     """Estimates noise of each channel in an image cube.
-     
+
     Parameters:
     datacube: Input cube data
     header : Header of a cube image
     frequency: Frequency values of a cube image in Hz
-    threshold: Threshold to use for masking off pixels. 
+    threshold: Threshold to use for masking off pixels.
             If the value is +ve, then it is taken as absolute value, and
             -ve as sigma. E.g. threshold=-5, means consider pixels
             with emission > noise_median - 5 * rms_noise.
             Where the noise_median and rms_noise are obtained by computing
             the median and MAD of the pixel emission > image median + 3 * image MAD.
-    
+
     Returns:
     rms_Arr: An array containing rms values of each channel
     mskSrc:  A 2D image data containing masking values (0s and 1s)
     """
-    nBits=np.abs(header['BITPIX'])    
-    dtFloat = "float" + str(nBits)    
+    nBits=np.abs(header['BITPIX'])
+    dtFloat = "float" + str(nBits)
     nChan = datacube.shape[0]
-    
+
 
     if nChan!=len(freqArr_Hz):
         print("Err: frequency vector and frequency axis of cube unequal length.")
         sys.exit()
-        
+
     # Measure the RMS spectrum using 2 passes of MAD on each plane
     # Determine which pixels have emission above the threshold
     print("Measuring the RMS noise and creating an emission mask")
     rmsArr = np.zeros_like(freqArr_Hz)
     medSky = np.zeros_like(freqArr_Hz)
     mskSrc = np.zeros((header["NAXIS2"], header["NAXIS1"]), dtype=dtFloat)
-    
+
     start = time.time()
     for i in range(nChan):
         dataPlane = datacube[i]
@@ -240,17 +240,17 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
             idxSky = np.where(dataPlane<threshold) #replaced cutoff with threshold
         else:
             idxSky = np.where(dataPlane)
-        
+
         # Pass 1
         rmsTmp = MAD(dataPlane[idxSky])
         medTmp = np.nanmedian(dataPlane[idxSky])
-        
+
         # Pass 2: use a fixed 3-sigma cutoff to mask off emission
         idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
         medSky[i] = np.nanmedian(dataPlane[idxSky])
         rmsArr[i] = MAD(dataPlane[idxSky])
 
-        
+
         # When building final emission mask treat +ve threshold as absolute
         # values and negative threshold as sigma values
         if threshold > 0:
@@ -263,23 +263,23 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
     end = time.time()
     print(' For loop masking takes %.3fs'%(end-start))
     return rmsArr, mskSrc
-  
-    
+
+
 def savefits_mask(data, header, outDir, prefixOut):
-    
+
     """ Save the derived mask to a fits file
-    
+
     data:  2D data defining the mask.
     header: header to describe the mask
     outDir: directory to save the mask fits data
-    prefixOut: prefix to use on the output name 
+    prefixOut: prefix to use on the output name
     """
-       
+
     headMask = strip_fits_dims(header=header, minDim=2)
     headMask["DATAMAX"] = 1
     headMask["DATAMIN"] = 0
     del headMask["BUNIT"]
-    
+
     mskArr = np.where(data > 0, 1.0, np.nan)
     MaskfitsFile = outDir + "/"  + prefixOut + "_mask.fits"
     print("> %s" % MaskfitsFile)
@@ -290,53 +290,53 @@ def savefits_mask(data, header, outDir, prefixOut):
 def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
 
     """ Save the derived coefficients to a fits file
-    
+
     data: 2D planes containing coeffs values.
     dataerr: 2D planes containing error in coeffs values.
     header: header to describe the coeffs and error in coeffs
     polyOrd: the order of polynomial to fit
     outDir: directory to save the (errors) coeffs fits data
-    prefixOut: prefix to use on the output name 
+    prefixOut: prefix to use on the output name
     """
-                   
+
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
-    
+
     for i in range(np.abs(polyOrd)+1):
         outname = outDir + "/"  + prefixOut + '_coeff'+str(i) + '.fits'
         pf.writeto(outname, data[i], headcoeff, overwrite=True)
-        
+
         outname = outDir + "/"  + prefixOut + '_coeff'+str(i) + 'err.fits'
         pf.writeto(outname, dataerr[i], headcoeff, overwrite=True)
 
 
-    
+
 def savefits_model_I(data, header, outDir, prefixOut):
 
     """ Save the derived Stokes cube model
-    
+
     data:  Stokes I cube model data
     header: header to describe the model cube.
     outDir: directory to save the model cube fits data
-    prefixOut: prefix to use on the output name 
+    prefixOut: prefix to use on the output name
     """
-    
+
 
     nDim = data.ndim
     nBits = np.abs(header['BITPIX'])
-    
+
     headModelCube = strip_fits_dims(header=header, minDim=nDim)
     headModelCube["NAXIS1"] = header["NAXIS1"]
     headModelCube["NAXIS2"] = header["NAXIS2"]
     headModelCube["NAXIS3"] = header["NAXIS3"]
-    
+
     nVoxels = header["NAXIS1"] * header["NAXIS2"] * header["NAXIS3"]
     if nDim == 4:
         headModelCube["NAXIS4"] = header["NAXIS4"]
         nVoxels *= header["NAXIS4"]
     while len(headModelCube) < (36 * 4 - 1):
         headModelCube.append()
-        
+
     fitsModelFile = outDir + "/"  + prefixOut + "model.i.fits"
     headModelCube.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
@@ -347,32 +347,32 @@ def savefits_model_I(data, header, outDir, prefixOut):
     HDULst.close()
 
 
-def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd, 
-                 fit_function, nDetectPix, verbose=True):
+def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
+                 fit_function, nDetectPix, pbar, verbose=True):
     """ Fits polynomial function to Stokes I data
-    
+
     xy: Position of pixel to fit (in pixels).
         The xy consists of pixel number, x and y pixel position.
     datacube:  Stokes I data cube to model.
     freqArr_Hz: Frequency array in Hz.
     rms_Arr: An array containing rms values of each channel.
     polyOrd: the order of polynomial to fit.
-    fit_function: A type of function to fit. 
-         It can be log or linear.     
+    fit_function: A type of function to fit.
+         It can be log or linear.
     nDetectPix:  the total number of pixels to be fit.
     """
-    
-    i, x, y = xy 
-    
+
+    i, x, y = xy
+
     Ispectrum = datacube[:, x, y]
-    
+
     pixFitDict = fit_StokesI_model(freqArr_Hz, Ispectrum, rms_Arr,
                  polyOrd=polyOrd, fit_function=fit_function)
-        
+
     pixImodel = calculate_StokesI_model(pixFitDict, freqArr_Hz)
-        
+
     outs = dict()
-        
+
     outs['I'] = pixImodel
     outs['coeffs'] = pixFitDict['p']
     outs['coeffs_err'] = pixFitDict['perror']
@@ -380,33 +380,31 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
     outs['chiSqRed'] = pixFitDict['chiSqRed']
     outs['nIter']    = pixFitDict['nIter']
     outs['AIC']      = pixFitDict['AIC']
-    
-    if verbose:
-       progress(40, i/nDetectPix*100.)
-    
-    return outs         
-       
+
+    pbar.update(1)
+
+    return outs
 
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
-                 nBits=32, threshold=3, num_cores = 10,verbose=True, 
-                 fit_function='log', apply_mask=False, outDir=None, 
-                 prefixOut=None):  
-                
-                 
+                 nBits=32, threshold=3, num_cores = 10,verbose=True,
+                 fit_function='log', apply_mask=False, outDir=None,
+                 prefixOut=None):
+
+
     """Fits a polynomial function to Stokes I data, derives coefficients,
        predicts model I, and save the respective fits file.
-    
+
     datacube:  Stokes I data cube
-    header: header of the data cube 
-    freqArr_Hz: frequency values of the cube in Hz 
+    header: header of the data cube
+    freqArr_Hz: frequency values of the cube in Hz
     polyOrd: the order of the polynomial to fit. 0-5 supported, 2 is default
     fit_function: fit log or linear
-    
+
     num_cores: Number of cores to use for parallel processing
     verbose: Write to log
     apply_mask: If true, a mask will be applied
     threshold: Threshold to use for masking off pixels
-    
+
             If the value is +ve, then it is taken as absolute value, and
             -ve as sigma. E.g. threshold=-5, means consider pixels
             with emission > noise_median - 5 * rms_noise.
@@ -414,31 +412,31 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
             the median and MAD of the pixel emission > image median + 3 * image MAD
     outDir: Directory to save all outputs
     prefixOut: Prefix name to use in all output names
-    
+
     Returns:
     ModelIcube: Model I cube data array
     Mask fits data
     Coefficients fits data
-    Error in coefficients fits data    
+    Error in coefficients fits data
     """
-    
+
     nChan = datacube.shape[0]
-    dtFloat = "float" + str(nBits) 
-    
+    dtFloat = "float" + str(nBits)
+
     rms_Arr, mskSrc = cube_noise(datacube, header, freqArr_Hz,
             threshold=threshold)
-    
+
     mskArr = np.where(mskSrc > 0, 1.0, np.nan)
-        
+
     if not apply_mask:
         mskSrc = np.ones((header['naxis2'], header['naxis1']), dtype=dtFloat)
         mskArr = np.where(mskSrc > 0, 1.0, np.nan)
 
     srcCoords = np.rot90(np.where(mskSrc > 0))
-    
+
     nPix = mskSrc.shape[-1] * mskSrc.shape[-2]
     nDetectPix = len(srcCoords)
-    
+
     if verbose:
         print("Emission present in %d spectra (%.1f percent)." % \
               (nDetectPix, (nDetectPix*100.0/nPix)))
@@ -446,47 +444,51 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     modelIcube = np.zeros_like(datacube)
     modelIcube[:] = np.nan
     results = []
-    
+
     coeffs = np.array([mskArr] * 6)
     coeffs_error = np.array([mskArr] * 6)
     datacube = np.squeeze(datacube)
-   
+
     # Inform user job magnitude
     startTime = time.time()
-    
+
     xy = list(zip(np.arange(1, len(srcCoords)), srcCoords[:, 0], srcCoords[:, 1]))
-    #print(xy)
-    
-    if verbose:
-        print("Fitting %d/%d spectra." % (nDetectPix, nPix))
-        progress(40, 0)
-        
-    with mp.Pool(num_cores) as pool_:
-        results = pool_.map( partial(fit_spectra_I, datacube=datacube, freqArr_Hz=freqArr_Hz, 
-                    rms_Arr=rms_Arr, polyOrd=polyOrd, fit_function=fit_function,
-                    nDetectPix=nDetectPix),
-           xy)
-    
+
+    with mp.Pool(num_cores) as pool_, tqdm(total=nDetectPix, desc=f"Fitting {nDetectPix}/{nPix} spectra", disable=not verbose) as pbar:
+        results = pool_.map(
+            partial(
+                fit_spectra_I,
+                datacube=datacube,
+                freqArr_Hz=freqArr_Hz,
+                rms_Arr=rms_Arr,
+                polyOrd=polyOrd,
+                fit_function=fit_function,
+                nDetectPix=nDetectPix,
+                pbar=pbar,
+            ),
+            xy
+        )
+
     results = list(results)
-    
+
     #print(results)
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
-                   
+
     endTime = time.time()
     cputime = (endTime - startTime)
     print("Fitting completed in %.2f seconds." % cputime)
-    
-    
+
+
     for _, an in enumerate(xy):
         i, x, y =  an
-        
+
         modelIcube[:, x, y] =  results[_]['I']
-        
-        for k,j,l in zip(range(len(coeffs)), results[_]['coeffs'], 
+
+        for k,j,l in zip(range(len(coeffs)), results[_]['coeffs'],
                          results[_]['coeffs_err']):
-            coeffs[5-k,x,y] = j     
-            coeffs_error[5-k,x,y] = l         
+            coeffs[5-k,x,y] = j
+            coeffs_error[5-k,x,y] = l
 
 
     print("Saving mask image.")
@@ -495,16 +497,16 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     print("Saving model I coefficients.")
     savefits_Coeffs(data=coeffs, dataerr=coeffs_error, header=header,
              polyOrd=polyOrd, outDir=outDir, prefixOut=prefixOut)
-        
+
     print("Saving model I cube image. ")
-    savefits_model_I(data=modelIcube, header=header, 
+    savefits_model_I(data=modelIcube, header=header,
              outDir=outDir, prefixOut=prefixOut)
-        
+
     return modelIcube
-    
 
 
-    
+
+
 #-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()

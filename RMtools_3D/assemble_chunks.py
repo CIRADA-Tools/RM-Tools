@@ -16,24 +16,7 @@ import os.path as path
 from math import ceil, floor, log10
 from glob import glob
 import re
-#from RMutils.util_misc import progress  
-
-
-def progress(width, percent):
-    """
-    Print a progress bar to the terminal.
-    Stolen from Mike Bell.
-    """
-    import math as m
-    import sys
-    
-    marks = m.floor(width * (percent / 100.0))
-    spaces = m.floor(width - marks)
-    loader = '  [' + ('=' * int(marks)) + (' ' * int(spaces)) + ']'
-    sys.stdout.write("%s %d%%\r" % (loader, percent))
-    if percent >= 100:
-        sys.stdout.write("\n")
-    sys.stdout.flush()
+from tqdm.auto import tqdm, trange
 
 
 def main():
@@ -46,10 +29,10 @@ def main():
     Supply one of the chunk files (other files will be identified by name pattern).
     Output name will follow the name of the input chunk, minus the '.C??.'
     """
-    
+
     parser = argparse.ArgumentParser(description=descStr,
                              formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("chunkname", metavar="chunk.fits", 
+    parser.add_argument("chunkname", metavar="chunk.fits",
                         help="One of the chunks to be assembled")
     parser.add_argument("-f", dest="output", default=None,
                         help="Specify output file name [basename of chunk]")
@@ -59,11 +42,11 @@ def main():
     args = parser.parse_args()
 
     if args.output == None:
-        output_filename='.'.join([ x for x in args.chunkname.split('.') if not 
+        output_filename='.'.join([ x for x in args.chunkname.split('.') if not
                               (x.startswith('C') and x[1:].isnumeric()) ])
     else:
         output_filename=args.output
-        
+
     #Get all the chunk filenames. Missing chunks will break things!
     filename=re.search('\.C\d+\.',args.chunkname)
     chunkfiles=glob(args.chunkname[0:filename.start()]+'.C*.'+args.chunkname[filename.end():])
@@ -102,16 +85,15 @@ def main():
         raise Exception('Number of chunk files found does not match expectations!')
 
     base_idx_arr=np.array(range(Nperchunk))
-    
+
     large=pf.open(output_filename,mode='update',memmap=True)
-    
-    for i in range(num_chunks-1):
-        progress(40,i/num_chunks*100)
+
+    for i in trange(num_chunks-1, desc='Assembling chunks'):
         file=chunkfiles[i]
         idx=base_idx_arr+i*Nperchunk
         xarr = idx // y_dim
         yarr = idx % y_dim
-        
+
         chunk=pf.open(file,memmap=True)
         if Ndim == 4:
             large[0].data[:,:,yarr,xarr]=chunk[0].data[:,:,0,:]
@@ -138,13 +120,12 @@ def main():
         large[0].data[yarr,xarr]=chunk[0].data
     large.flush()
     chunk.close()
-    progress(40,100)
 
 
     large.close()
 
 if __name__ == "__main__":
     main()
-    
-    
+
+
 
