@@ -14,22 +14,24 @@ import bilby
 def model(pDict, lamSqArr_m2):
     """
     
-    Single Faraday component with external Faraday dispersion
+    Single Faraday component with differential Faraday rotation
+    "Burn slab"
     
     Ref:
-    Burn (1966) Eq 21
-    Sokoloff et al. (1998) Eq B3
-    O'Sullivan et al. (2012) Eq 11
-    Ma et al. (2019a) Eq 13
+    Burn (1966) Eq 18; with N >> (H_r/2H_z^0)^2
+    Sokoloff et al. (1998) Eq 3
+    O'Sullivan et al. (2012) Eq 9
+    Ma et al. (2019a) Eq 12
     
     """
     
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
     quArr = (pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
-                                  pDict["RM_radm2"] * lamSqArr_m2))
-             * np.exp(-2.0 * pDict["sigmaRM_radm2"]**2.0 
-                      * lamSqArr_m2**2.0))
+                                  (0.5*pDict["deltaRM_radm2"] + 
+                                   pDict["RM_radm2"]) * lamSqArr_m2))
+             * np.sin(pDict["deltaRM_radm2"] * lamSqArr_m2) / 
+               (pDict["deltaRM_radm2"] * lamSqArr_m2))
     
     return quArr
 
@@ -59,10 +61,10 @@ priors = {
         name="RM_radm2",
         latex_label="RM (rad m$^{-2}$)",
     ),
-    "sigmaRM_radm2": bilby.prior.Uniform(
+    "deltaRM_radm2": bilby.prior.Uniform(
         minimum=0.0,
         maximum=100.0,
-        name="sigmaRM_radm2",
-        latex_label="$\sigma_{RM}$ (rad m$^{-2}$)",
+        name="deltaRM_radm2",
+        latex_label="$\Delta{RM}$ (rad m$^{-2}$)",
     ),
 }
