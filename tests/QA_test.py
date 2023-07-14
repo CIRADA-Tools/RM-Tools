@@ -23,6 +23,9 @@ from astropy.io import fits as pf
 from scipy.ndimage import gaussian_filter
 import unittest
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 def Faraday_thin_complex_polarization(freq_array,RM,Polint,initial_angle):
     """freq_array = channel frequencies in Hz
@@ -174,6 +177,8 @@ class test_RMtools(unittest.TestCase):
         #Clean up old simulations to prevent interference with new runs.
         N_chan=288
         self.freq_arr=np.linspace(800e6,1088e6,num=N_chan)
+        self.models = (1, 2, 3, 4, 5, 6, 7, 11, 111)
+        self.sampler = "nestle"
 
     def test_a1_1D_synth_runs(self):
         create_1D_data(self.freq_arr)
@@ -236,31 +241,41 @@ class test_RMtools(unittest.TestCase):
         if not os.path.exists('models_ns'):
             shutil.copytree('../RMtools_1D/models_ns','models_ns')
         
-        for model in (1, 2, 3, 4, 5, 6, 7, 11, 111):
-            returncode=subprocess.call(f"qufit simdata/1D/simsource.dat --sampler nestle -m {model}",shell=True)
+        for model in self.models:
+            logger.info(f"Testing model {model}")
+            returncode=subprocess.call(f"qufit simdata/1D/simsource.dat --sampler {self.sampler} -m {model}",shell=True)
             self.assertEqual(returncode, 0, 'QU fitting failed to run.')
         shutil.rmtree('models_ns')
 
     def test_f2_QUfit_values(self):
-        mDict = json.load(open('simdata/1D/simsource_m1_nestle.json', "r"))
-        #The QU-fitting code has internal randomness that I can't control. So every run
-        #will produce slightly different results. I want to assert that these differences
-        #are below 1%.
-        self.assertTrue(abs(mDict['values'][0]-0.695)/0.695 < 0.01 , 'values[0] differs from expectation.')
-        self.assertTrue(abs(mDict['values'][1]-48.3)/48.3 < 0.01 , 'values[1] differs from expectation.')
-        self.assertTrue(abs(mDict['values'][2]-200.)/200. < 0.01 , 'values[2] differs from expectation.')
-        self.assertTrue(abs(mDict['chiSqRed']-1.09)/1.09 < 0.01 , 'chiSqRed differs from expectation.')
-        self.assertTrue(abs(mDict['BIC']+558)/558 < 0.01 , 'BIC differs from expectation.')
+        err_limit = 0.01 # 10%
 
-
+        for model in self.models:
+            with open(f'simdata/1D/simsource_m{model}_{self.sampler}.json', "r") as f:
+                mDict = json.load(f)
+            with open(f"QUfit_referencevalues/simsource_m{model}_{self.sampler}.json", "r") as f:
+                refDict = json.load(f)
+            #The QU-fitting code has internal randomness that I can't control. So every run
+            #will produce slightly different results. I want to assert that these differences
+            #are below 1%.
+            for key, val in refDict.items():
+                if isinstance(val, str):
+                    continue
+                if isinstance(val, list):
+                    for i, v in enumerate(val):
+                        if isinstance(v, str):
+                            continue
+                        self.assertTrue(abs(mDict[key][i]-v)/abs(v) < err_limit , f'values[{i}] differs from expectation.')
+                else:
+                    self.assertTrue(abs(mDict[key]-val)/abs(val) < err_limit , f'{key} differs from expectation.')
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     if os.path.exists('simdata'):
         shutil.rmtree('simdata')
 
-    print('\nUnit tests running.')
-    print('Test data inputs and outputs can be found in {}\n\n'.format(os.getcwd()))
+    logger.info('\nUnit tests running.')
+    logger.info('Test data inputs and outputs can be found in {}\n\n'.format(os.getcwd()))
 
     unittest.TestLoader.sortTestMethodsUsing=None
     suite = unittest.TestLoader().loadTestsFromTestCase(test_RMtools)
