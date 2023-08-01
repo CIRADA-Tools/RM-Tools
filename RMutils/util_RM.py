@@ -411,32 +411,32 @@ def do_rmclean_hogbom(dirtyFDF, phiArr_radm2, RMSFArr, phi2Arr_radm2,
     # Sanity checks on array sizes
     nPhi = phiArr_radm2.shape[0]
     if nPhi != dirtyFDF.shape[0]:
-        log("Err: 'phi2Arr_radm2' and 'dirtyFDF' are not the same length.")
-        return None, None, None
+        log("Err: 'phiArr_radm2' and 'dirtyFDF' are not the same length.")
+        return None, None, None, None
     nPhi2 = phi2Arr_radm2.shape[0]
     if not nPhi2 == RMSFArr.shape[0]:
         log("Err: missmatch in 'phi2Arr_radm2' and 'RMSFArr' length.")
-        return None, None, None
+        return None, None, None, None
     if not (nPhi2 >= 2 * nPhi):
         log("Err: the Faraday depth of the RMSF must be twice the FDF.")
-        return None, None, None
+        return None, None, None, None
     nDims = len(dirtyFDF.shape)
     if not nDims <= 3:
         log("Err: FDF array dimensions must be <= 3.")
-        return None, None, None
+        return None, None, None, None
     if not nDims == len(RMSFArr.shape):
         log("Err: the input RMSF and FDF must have the same number of axes.")
-        return None, None, None
+        return None, None, None, None
     if not RMSFArr.shape[1:] == dirtyFDF.shape[1:]:
         log("Err: the xy dimesions of the RMSF and FDF must match.")
-        return None, None, None
+        return None, None, None, None
     if mskArr is not None:
         if not mskArr.shape == dirtyFDF.shape[1:]:
             log("Err: pixel mask must match xy dimesnisons of FDF cube.")
             log("     FDF[z,y,z] = {:}, Mask[y,x] = {:}.".format(
                 dirtyFDF.shape, mskArr.shape), end=' ')
 
-            return None, None, None
+            return None, None, None, None
     else:
         mskArr = np.ones(dirtyFDF.shape[1:], dtype="bool")
 
