@@ -2,6 +2,16 @@
 
 Github main branch:
 
+
+1.3.1:
+-progress bars updated to use tdqm, which should make them faster.
+-Integrated super-resolution method of Cotton & Rudnick 2023, which creates
+  narrower RMSF shapes by setting lambda^2_0 = 0.
+-Added options to dofitIcube tool to save more outputs (coefficient maps, 
+  errors, etc).
+-Made RMSF theoretical width calculations consistent: Dickey et al. 2019
+  now used throughout.
+
 1.3.0:
 -merged in bwdepol branch. This does not change any core functionality in the
   existing RM-Tools programs, but adds two new command-line tools: rmtools_bwpredict

@@ -118,7 +118,7 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
 
     # Set the Faraday depth range
     if not super_resolution:
-        fwhmRMSF_radm2 = 2.0 * m.sqrt(3.0) / lambdaSqRange_m2 #B&dB05 theoretical RMSF width
+        fwhmRMSF_radm2 = 3.8 / lambdaSqRange_m2 #Dickey+2019 theoretical RMSF width
     else: #If super resolution, use R&C23 theoretical width
         fwhmRMSF_radm2 = 2.0 / (np.nanmax(lambdaSqArr_m2) + np.nanmin(lambdaSqArr_m2))
     if dPhi_radm2 is None:
