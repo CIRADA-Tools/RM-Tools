@@ -16,7 +16,7 @@ VERSION = '1.3.1'
 DOWNLOAD_URL = 'https://github.com/CIRADA-Tools/RM-Tools/archive/v'+VERSION+'.tar.gz'
 
 REQUIRED = [
-    'numpy<1.24', 'scipy', 'matplotlib>=3.4.0', 'astropy',
+    'numpy<1.24', 'scipy', 'matplotlib>=3.4.0', 'astropy','tdqm'
 ]
 
 # Using AT's fork for now - includes tiny bug fix for bilby
