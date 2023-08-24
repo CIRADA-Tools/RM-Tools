@@ -7,7 +7,7 @@ RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
 
 
  Initial version by Cormac R. Purcell  
- Currently maintained by CIRADA
+ Currently hosted by CIRADA and maintained by Cameron Van Eck
 
 Version 1.2 is now released! Check the wiki for new functionality.
 
@@ -46,7 +46,7 @@ rmtools_extractregion
 If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being.  
 A paper with a full description of the package is being prepared but is not available yet.
 
-Questions, bug reports, and feature requests can be posted to the GitHub issues page or sent to Cameron Van Eck, cameron.van.eck (at) dunlap.utoronto.ca.
+Questions, bug reports, and feature requests can be posted to the GitHub issues page or sent to Cameron Van Eck, cameron.vaneck (at) anu.edu.au.
 
 More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.ca.
 
