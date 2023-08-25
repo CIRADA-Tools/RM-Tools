@@ -40,10 +40,10 @@ import time
 import argparse
 import numpy as np
 import astropy.io.fits as pf
+from tqdm.auto import tqdm
 
 from RMutils.util_misc import MAD
 from RMutils.util_misc import fit_StokesI_model, calculate_StokesI_model
-from RMutils.util_misc import progress
 from RMutils.util_FITS import strip_fits_dims
 from RMtools_3D.do_RMsynth_3D import readFitsCube 
 from RMtools_3D.make_freq_file import  get_freq_array
@@ -380,9 +380,6 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
     outs['nIter']    = pixFitDict['nIter']
     outs['AIC']      = pixFitDict['AIC']
     
-    if verbose:
-       progress(40, i/nDetectPix*100.)
-    
     return outs         
        
 
@@ -458,17 +455,28 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     
     if verbose:
         print("Fitting %d/%d spectra." % (nDetectPix, nPix))
-        progress(40, 0)
         
-    with mp.Pool(num_cores) as pool_:
-        results = pool_.map( partial(fit_spectra_I, datacube=datacube, freqArr_Hz=freqArr_Hz, 
-                    rms_Arr=rms_Arr, polyOrd=polyOrd, fit_function=fit_function,
-                    nDetectPix=nDetectPix, verbose=verbose),
-           xy)
+    with mp.Pool(num_cores) as pool:
+        results = list(
+            tqdm(
+            pool.imap(
+                    partial(
+                        fit_spectra_I, 
+                        datacube=datacube, 
+                        freqArr_Hz=freqArr_Hz, 
+                        rms_Arr=rms_Arr, 
+                        polyOrd=polyOrd, 
+                        fit_function=fit_function,
+                        nDetectPix=nDetectPix, 
+                        verbose=verbose
+                        ),
+                    xy
+                ),
+                disable=not verbose,
+                desc="Fitting spectra",
+            )
+        )
     
-    results = list(results)
-    
-    #print(results)
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
                    
