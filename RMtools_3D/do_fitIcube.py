@@ -474,6 +474,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
                 ),
                 disable=not verbose,
                 desc="Fitting spectra",
+                total=nDetectPix
             )
         )
 
