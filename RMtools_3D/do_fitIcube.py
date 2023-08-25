@@ -37,9 +37,7 @@
 import sys
 import os
 import time
-import traceback
 import argparse
-import math as m
 import numpy as np
 import astropy.io.fits as pf
 
@@ -70,6 +68,9 @@ def main():
     NOTE: Each pixel is fit independently, so there are no protections in place
     to ensure smoothness across the image-plane. Noise levels are estimated
     per-channel using 2 passes of the MAD.
+    The source mask, if applied, is calculated per-pixel by looking for values 
+    above a threshold (either an absolute intensity threshold or a multiple of 
+    the noise) in any channel.
     """
 
     # Parse the command line options
@@ -83,14 +84,12 @@ def main():
                         help="Stokes I fitting function: 'linear' or ['log'] polynomials.")
     parser.add_argument("-p", dest="polyOrd", type=int, default=2,
                         help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.")
-    parser.add_argument("-c", dest="cutoff", type=float, default=-5,
-                        help="emission cutoff (+ve = abs, -ve = sigma) [-5].")
-    parser.add_argument("-t", dest="threshold", type=float, default=3,
-                        help="threshold in factors of sigma used to estimate rms noise. Default is 3.")
-    parser.add_argument("-n", dest="num_cores", type=int, default=10,
-                        help="Number of cores to use for multiprocessing. Default is 10.")
+    parser.add_argument("-n", dest="num_cores", type=int, default=1,
+                        help="Number of cores to use for multiprocessing. Default is 1.")
     parser.add_argument("-m", dest="apply_mask", action='store_true',
                         help="Apply masking before spectral fitting. Default is False.")
+    parser.add_argument("-t", dest="threshold", type=float, default=-3,
+                        help="Source masking threshold in flux units (if positive) or factors of per-channel sigma (if negative). Default is -3 (i.e. 3 sigma mask).")
     parser.add_argument("-o", dest="prefixOut", default="",
                         help="Prefix to use for to output file names.")
     parser.add_argument("-odir", dest="outDir", default="",
@@ -136,7 +135,7 @@ def main():
 #-----------------------------------------------------------------------------#
 
 
-def open_datacube(fitsI, verbose=True):
+def open_datacube(fitsI, verbose=False):
     """ Reads the image fits
     
     Parameters: 
@@ -228,12 +227,12 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
         
     # Measure the RMS spectrum using 2 passes of MAD on each plane
     # Determine which pixels have emission above the threshold
-    print("Measuring the RMS noise and creating an emission mask")
+    print("Measuring the per-channel noise and creating an emission mask")
     rmsArr = np.zeros_like(freqArr_Hz)
     medSky = np.zeros_like(freqArr_Hz)
     mskSrc = np.zeros((header["NAXIS2"], header["NAXIS1"]), dtype=dtFloat)
     
-    start = time.time()
+    # start = time.time()
     for i in range(nChan):
         dataPlane = datacube[i]
         if threshold >0:
@@ -260,8 +259,8 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
 
         mskSrc[idxSrc] +=1
 
-    end = time.time()
-    print(' For loop masking takes %.3fs'%(end-start))
+    # end = time.time()
+    # print(' For loop masking takes %.3fs'%(end-start))
     return rmsArr, mskSrc
   
     
@@ -337,7 +336,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
     while len(headModelCube) < (36 * 4 - 1):
         headModelCube.append()
         
-    fitsModelFile = os.path.join(outDir ,prefixOut + "model.i.fits")
+    fitsModelFile = os.path.join(outDir ,prefixOut + "_model.i.fits")
     headModelCube.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
         f.seek(len(headModelCube.tostring()) + (nVoxels*int(nBits/8)) - 1)
@@ -348,7 +347,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
 
 
 def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd, 
-                 fit_function, nDetectPix, verbose=True):
+                 fit_function, nDetectPix, verbose=False):
     """ Fits polynomial function to Stokes I data
     
     xy: Position of pixel to fit (in pixels).
@@ -388,7 +387,7 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
        
 
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
-                 nBits=32, threshold=3, num_cores = 10,verbose=True, 
+                 nBits=32, threshold=3, num_cores = 10,verbose=False, 
                  fit_function='log', apply_mask=False, outDir=None, 
                  prefixOut=None):  
                 
@@ -439,7 +438,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     nPix = mskSrc.shape[-1] * mskSrc.shape[-2]
     nDetectPix = len(srcCoords)
     
-    if verbose:
+    if verbose and apply_mask:
         print("Emission present in %d spectra (%.1f percent)." % \
               (nDetectPix, (nDetectPix*100.0/nPix)))
 
@@ -454,7 +453,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     # Inform user job magnitude
     startTime = time.time()
     
-    xy = list(zip(np.arange(1, len(srcCoords)), srcCoords[:, 0], srcCoords[:, 1]))
+    xy = list(zip(np.arange(0, len(srcCoords)), srcCoords[:, 0], srcCoords[:, 1]))
     #print(xy)
     
     if verbose:
@@ -464,7 +463,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     with mp.Pool(num_cores) as pool_:
         results = pool_.map( partial(fit_spectra_I, datacube=datacube, freqArr_Hz=freqArr_Hz, 
                     rms_Arr=rms_Arr, polyOrd=polyOrd, fit_function=fit_function,
-                    nDetectPix=nDetectPix),
+                    nDetectPix=nDetectPix, verbose=verbose),
            xy)
     
     results = list(results)
