@@ -41,6 +41,7 @@ import argparse
 import numpy as np
 import astropy.io.fits as pf
 from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from RMutils.util_misc import MAD
 from RMutils.util_misc import fit_StokesI_model, calculate_StokesI_model
@@ -88,6 +89,7 @@ def main():
                         help="Number of cores to use for multiprocessing. Default is 1.")
     parser.add_argument("-m", dest="apply_mask", action='store_true',
                         help="Apply masking before spectral fitting. Default is False.")
+    parser.add_argument("-c", dest="chunk_size", type=int, default=1, help="Chunk size for multiprocessing. Default is 1.")
     parser.add_argument("-t", dest="threshold", type=float, default=-3,
                         help="Source masking threshold in flux units (if positive) or factors of per-channel sigma (if negative). Default is -3 (i.e. 3 sigma mask).")
     parser.add_argument("-o", dest="prefixOut", default="",
@@ -128,6 +130,7 @@ def main():
                  threshold    = args.threshold,
                  apply_mask   = args.apply_mask,
                  num_cores    = args.num_cores,
+                 chunk_size   = args.chunk_size,
                  verbose        = args.verbose,
                  fit_function = args.fit_function)
 
@@ -346,7 +349,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
     HDULst.close()
 
 
-def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
+def fit_spectra_I(Ispectrum, freqArr_Hz, rms_Arr, polyOrd,
                  fit_function, nDetectPix, verbose=False):
     """ Fits polynomial function to Stokes I data
 
@@ -360,11 +363,6 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
          It can be log or linear.
     nDetectPix:  the total number of pixels to be fit.
     """
-
-    i, x, y = xy
-
-    # Read into memory
-    Ispectrum = np.array(datacube[:, x, y])
 
     pixFitDict = fit_StokesI_model(freqArr_Hz, Ispectrum, rms_Arr,
                  polyOrd=polyOrd, fit_function=fit_function)
@@ -385,7 +383,8 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
 
 
 def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
-                 nBits=32, threshold=3, num_cores = 10,verbose=False,
+                 nBits=32, threshold=3, num_cores = 1, chunk_size=1, 
+                 verbose=False,
                  fit_function='log', apply_mask=False, outDir=None,
                  prefixOut=None):
 
@@ -400,6 +399,7 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     fit_function: fit log or linear
 
     num_cores: Number of cores to use for parallel processing
+    chunk_size: Chunk size for multiprocessing
     verbose: Write to log
     apply_mask: If true, a mask will be applied
     threshold: Threshold to use for masking off pixels
@@ -418,8 +418,6 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     Coefficients fits data
     Error in coefficients fits data
     """
-
-    nChan = datacube.shape[0]
     dtFloat = "float" + str(nBits)
 
     rms_Arr, mskSrc = cube_noise(datacube, header, freqArr_Hz,
@@ -447,37 +445,38 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     coeffs = np.array([mskArr] * 6)
     coeffs_error = np.array([mskArr] * 6)
     datacube = np.squeeze(datacube)
+    # Select only the spectra with emission
+    srcData = np.rot90(datacube[:, mskSrc > 0])
 
     # Inform user job magnitude
     startTime = time.time()
 
     xy = list(zip(np.arange(0, len(srcCoords)), srcCoords[:, 0], srcCoords[:, 1]))
-    #print(xy)
 
     if verbose:
         print("Fitting %d/%d spectra." % (nDetectPix, nPix))
+    if verbose:
+        print(f"Using {num_cores} cores and chunksize {chunk_size} for parallel processing.")
 
-    with mp.Pool(num_cores) as pool:
-        results = list(
-            tqdm(
-            pool.imap(
-                    partial(
-                        fit_spectra_I,
-                        datacube=datacube,
-                        freqArr_Hz=freqArr_Hz,
-                        rms_Arr=rms_Arr,
-                        polyOrd=polyOrd,
-                        fit_function=fit_function,
-                        nDetectPix=nDetectPix,
-                        verbose=verbose
-                        ),
-                    xy
-                ),
-                disable=not verbose,
-                desc="Fitting spectra",
-                total=nDetectPix
-            )
-        )
+    func = partial(
+        fit_spectra_I,
+        freqArr_Hz=freqArr_Hz,
+        rms_Arr=rms_Arr,
+        polyOrd=polyOrd,
+        fit_function=fit_function,
+        nDetectPix=nDetectPix,
+        verbose=verbose
+    )
+    # Send each spectrum to a different core
+    results = process_map(
+        func, 
+        srcData, 
+        max_workers=num_cores, 
+        chunksize=chunk_size, 
+        disable=not verbose,
+        desc="Fitting spectra",
+        total=nDetectPix
+    )
 
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
