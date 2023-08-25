@@ -387,7 +387,8 @@ def fit_StokesI_model(freqArr,IArr,dIArr,polyOrd,fit_function="log"):
     fitDict["chiSqRed"] = mp.fnorm/fitDict["dof"]
     fitDict["nIter"] = mp.niter
     fitDict["perror"] = mp.perror
-
+    if mp.perror is None:
+        fitDict["perror"] = np.zeros_like(fitDict["p"])
 
     return fitDict
 
