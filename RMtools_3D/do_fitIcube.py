@@ -363,7 +363,8 @@ def fit_spectra_I(xy, datacube, freqArr_Hz, rms_Arr, polyOrd,
 
     i, x, y = xy
 
-    Ispectrum = datacube[:, x, y]
+    # Read into memory
+    Ispectrum = np.array(datacube[:, x, y])
 
     pixFitDict = fit_StokesI_model(freqArr_Hz, Ispectrum, rms_Arr,
                  polyOrd=polyOrd, fit_function=fit_function)
