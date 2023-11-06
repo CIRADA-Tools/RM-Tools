@@ -431,20 +431,22 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
                 errDict[name] = model_dict['posterior'][name][idx]
             QUerrmodel.append(model_dict['model'](errDict, lamSqHirArr_m2))
         QUerrmodel = np.array(QUerrmodel)
-        low, med, high = np.percentile(QUerrmodel, [16, 50, 84], axis=0)
+        low_re, med_re, high_re = np.percentile(np.real(QUerrmodel), [16, 50, 84], axis=0)
+        low_im, med_im, high_im = np.percentile(np.imag(QUerrmodel), [16, 50, 84], axis=0)
+        low_abs, med_abs, high_abs = np.percentile(np.abs(QUerrmodel), [16, 50, 84], axis=0)
 
-        ax.plot(lamSqHirArr_m2, np.real(med),  
+        ax.plot(lamSqHirArr_m2, med_re,  
                 '-', color='tab:blue', linewidth=0.1, alpha=1)
-        ax.fill_between(lamSqHirArr_m2, np.real(low), np.real(high),
+        ax.fill_between(lamSqHirArr_m2, low_re, high_re,
                 color='tab:blue', alpha=0.5)
-        ax.plot(lamSqHirArr_m2, np.imag(med),  
+        ax.plot(lamSqHirArr_m2, med_im,  
                 '-', color='tab:red', linewidth=0.1, alpha=1)
-        ax.fill_between(lamSqHirArr_m2, np.imag(low), np.imag(high),
+        ax.fill_between(lamSqHirArr_m2, low_im, high_im,
                 color='tab:red', alpha=0.5)
         if qModArr is not None and uModArr is not None:
-            ax.plot(lamSqHirArr_m2, np.abs(med),  
+            ax.plot(lamSqHirArr_m2, med_abs,  
                 '-', color='k', linewidth=0.1, alpha=1)
-            ax.fill_between(lamSqHirArr_m2, np.abs(low), np.abs(high),
+            ax.fill_between(lamSqHirArr_m2, low_abs, high_abs,
                 color='k', alpha=0.5)
 
     # Formatting
