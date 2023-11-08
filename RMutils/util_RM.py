@@ -63,6 +63,7 @@
 import sys
 import math as m
 import numpy as np
+from deprecation import deprecated
 from scipy.stats import kurtosis
 from scipy.stats import skew
 from scipy.stats import skewtest
@@ -78,6 +79,7 @@ from RMutils.util_misc import calc_parabola_vertex
 from RMutils.util_misc import create_pqu_spectra_burn
 from RMutils.util_misc import calc_mom2_FDF
 from RMutils.util_misc import MAD
+from . import __version__
 
 # Constants
 C = 2.99792458e8
@@ -1263,6 +1265,12 @@ def measure_fdf_complexity(phiArr, FDF):
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="0.0",
+    removed_in="1.4",
+    current_version=__version__,
+    details="Use 'do_rmsynth_planes' instead.",
+)
 def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
     """Perform RM-synthesis on Stokes Q and U cubes. This version operates on
     data in spectral order, i.e., [zyx] => [yxz] (np.transpose(dataQ, (1,2,0)).
@@ -1357,6 +1365,12 @@ def do_rmsynth(dataQ, dataU, lamSqArr, phiArr, weight=None, dtype='float32'):
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="0.0",
+    removed_in="1.4",
+    current_version=__version__,
+    details="Use 'get_rmsf_planes' instead.",
+)
 def get_RMSF(lamSqArr, phiArr, weightArr=None, lam0Sq_m2=None, double=True,
              fitRMSFreal=False, dtype="float32"):
     """Calculate the RMSF from 1D wavelength^2 and Faraday depth arrays.
@@ -1410,6 +1424,12 @@ def get_RMSF(lamSqArr, phiArr, weightArr=None, lam0Sq_m2=None, double=True,
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="0.0",
+    removed_in="1.4",
+    current_version=__version__,
+    details="Use 'do_rmclean_hogbom' instead.",
+)
 def do_rmclean(dirtyFDF, phiArr, lamSqArr, cutoff, maxIter=1000, gain=0.1,
                weight=None, RMSFArr=None, RMSFphiArr=None, fwhmRMSF=None,
                fitRMSFreal=False, dtype='float32', doPlots=True):
@@ -1638,6 +1658,11 @@ def do_rmclean(dirtyFDF, phiArr, lamSqArr, cutoff, maxIter=1000, gain=0.1,
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="0.0",
+    removed_in="1.4",
+    current_version=__version__,
+)
 def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg,
                     RM_radm2):
 
