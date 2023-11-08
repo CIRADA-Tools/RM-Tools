@@ -185,7 +185,12 @@ class test_RMtools(unittest.TestCase):
         mDict = json.load(open('simdata/1D/simsource_RMsynth.json', "r"))
         refDict = json.load(open('RMsynth1D_referencevalues.json', "r"))
         for key in mDict.keys():
-            if type(mDict[key])==str or refDict[key] == 0:
+            if (key == 'polyCoefferr') or key == 'polyCoeffs':
+                ref_values=refDict[key].split(',')
+                test_values=mDict[key].split(',')
+                for ref,test in zip(ref_values,test_values):
+                    self.assertAlmostEqual(test,ref,places=3,msg=f'Key {key} differs from expectation')
+            elif type(mDict[key])==str or refDict[key] == 0:
                 self.assertEqual(mDict[key],refDict[key],'{} differs from expectation.'.format(key))
             else:
                 self.assertTrue(np.abs((mDict[key]-refDict[key])/refDict[key]) < 1e-3,
