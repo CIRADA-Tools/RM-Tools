@@ -301,12 +301,12 @@ def plot_PQU_vs_nu_ax(ax, freqArr_Hz, QArr, UArr, dQArr=None,
     
     # Plot the models
     if QmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='tab:blue', lw=0.5, label='Model Q')
+        ax.plot(freqHirArr_Hz/1e9, QmodArr, color='tab:blue', lw=2.5, label='Model Q')
     if UmodArr is not None:
-        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='tab:red', lw=0.5, label='Model U')
+        ax.plot(freqHirArr_Hz/1e9, UmodArr, color='tab:red', lw=2.5, label='Model U')
     if QmodArr is not None and UmodArr is not None:
         PmodArr = np.sqrt(QmodArr**2.0 + UmodArr**2.0 )
-        ax.plot(freqHirArr_Hz/1e9, PmodArr, color='k', lw=0.5, label='Model P')
+        ax.plot(freqHirArr_Hz/1e9, PmodArr, color='k', lw=2.5, label='Model P')
 
     # Formatting
     ax.yaxis.set_major_locator(MaxNLocator(4))
@@ -415,12 +415,12 @@ def plot_pqu_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, pArr=None, dqArr=None,
     
     # Plot the models
     if qModArr is not None:
-        ax.plot(lamSqHirArr_m2, qModArr, color='tab:blue', alpha=1, lw=0.1, label='Model q')
+        ax.plot(lamSqHirArr_m2, qModArr, color='tab:blue', alpha=1, lw=2.5, label='Model q')
     if uModArr is not None:
-        ax.plot(lamSqHirArr_m2, uModArr, color='tab:red', alpha=1, lw=0.1, label='Model u')
+        ax.plot(lamSqHirArr_m2, uModArr, color='tab:red', alpha=1, lw=2.5, label='Model u')
     if qModArr is not None and uModArr is not None:
         pModArr = np.sqrt(qModArr**2.0 + uModArr**2.0 )
-        ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=1, lw=0.1, label='Model p')
+        ax.plot(lamSqHirArr_m2, pModArr, color='k', alpha=1, lw=2.5, label='Model p')
     if model_dict is not None:
         errDict = {}
         QUerrmodel = []
@@ -508,7 +508,7 @@ def plot_psi_vs_lamsq_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
     # Plot the model
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees( np.arctan2(uModArr, qModArr) / 2.0 )
-        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='tab:red', lw=0.1,
+        ax.plot(lamSqHirArr_m2, psiHirArr_deg, color='tab:red', lw=2.5,
                  label='Model $\psi$')
     if model_dict is not None:
         errDict = {}
@@ -572,7 +572,7 @@ def plot_q_vs_u_ax(ax, lamSqArr_m2, qArr, uArr, dqArr=None, duArr=None,
 
     # Plot the model
     if qModArr is not None and uModArr is not None:
-        ax.plot(qModArr, uModArr, color="k", lw=0.1, label='Model q & u',
+        ax.plot(qModArr, uModArr, color="k", lw=2.5, label='Model q & u',
                 zorder=2)
     if model_dict is not None:
         errDict = {}
