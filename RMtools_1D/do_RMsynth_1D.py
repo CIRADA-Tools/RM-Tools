@@ -170,7 +170,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                                  modStokesI = modStokesI,
                                  )
 
-    dquArr = (dqArr + duArr)/2.0
+    dquArr = np.abs(dqArr + duArr)/2.0
     dquArr= np.where(np.isfinite(dquArr),dquArr,np.nan)
 
 
@@ -188,9 +188,9 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
                               IArr           = IArr,
                               qArr           = qArr,
                               uArr           = uArr,
-                              dIArr          = dIArr,
-                              dqArr          = dqArr,
-                              duArr          = duArr,
+                              dIArr          = np.abs(dIArr),
+                              dqArr          = np.abs(dqArr),
+                              duArr          = np.abs(duArr),
                               freqHirArr_Hz  = freqHirArr_Hz,
                               IModArr        = IModHirArr,
                               fig            = specFig,
@@ -327,7 +327,7 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
-    dFDFth = Ifreq0*np.sqrt( np.nansum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
+    dFDFth = np.abs(Ifreq0)*np.sqrt( np.nansum(weightArr**2 * np.nan_to_num(dquArr)**2) / (np.sum(weightArr))**2 )
 
 
     # Measure the parameters of the dirty FDF
