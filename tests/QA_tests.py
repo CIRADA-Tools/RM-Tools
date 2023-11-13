@@ -189,7 +189,7 @@ class test_RMtools(unittest.TestCase):
                 ref_values=refDict[key].split(',')
                 test_values=mDict[key].split(',')
                 for ref,test in zip(ref_values,test_values):
-                    self.assertAlmostEqual(test,ref,places=3,msg=f'Key {key} differs from expectation')
+                    self.assertAlmostEqual(float(test),float(ref),places=3,msg=f'Key {key} differs from expectation')
             elif type(mDict[key])==str or refDict[key] == 0:
                 self.assertEqual(mDict[key],refDict[key],'{} differs from expectation.'.format(key))
             else:
