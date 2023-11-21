@@ -48,6 +48,7 @@ except:
 
 from RMutils.util_RM import do_rmclean_hogbom
 from RMutils.util_RM import fits_make_lin_axis
+from RMtools_3D.do_RMsynth_3D import _setStokes
 
 C = 2.997924538e8 # Speed of light [m/s]
 
@@ -190,54 +191,84 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2*nBits)
+    header=headtemp.copy()
+    
+    header['HISTORY']="RM-CLEAN3D output from RM-Tools"
+
 
 
     if outDir=='':  #To prevent code breaking if file is in current directory
         outDir='.'
     # Save the clean FDF
     if not write_separate_FDF:
+        header=_setStokes(header, 'Q')
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
+        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
+        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), header)
+
+
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean.fits"
         if(verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
-        hdu1 = pf.ImageHDU(cleanFDF.imag.astype(dtFloat), headtemp)
-        hdu2 = pf.ImageHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
         hduLst = pf.HDUList([hdu0, hdu1, hdu2])
         hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         hduLst.close()
     else:
-        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), headtemp)
+        
+        header=_setStokes(header, 'Q')
+        hdu0 = pf.PrimaryHDU(cleanFDF.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
+        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
+        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), header)
+        
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_real.fits"
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(cleanFDF.imag.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_im.fits"
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(cleanFDF).astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_clean_tot.fits"
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
 
+
+
+
     if not write_separate_FDF:
     #Save the complex clean components as another file.
+        header=_setStokes(header, 'Q')
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
+        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
+        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), header)
+
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC.fits"
         if (verbose): log("> %s" % fitsFileOut)
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
-        hdu1 = pf.ImageHDU(ccArr.imag.astype(dtFloat), headtemp)
-        hdu2 = pf.ImageHDU(np.abs(ccArr).astype(dtFloat), headtemp)
         hduLst = pf.HDUList([hdu0, hdu1, hdu2])
         hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         hduLst.close()
     else:
-        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), headtemp)
+        header=_setStokes(header, 'Q')
+        hdu0 = pf.PrimaryHDU(ccArr.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
+        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
+        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), header)
+
+        
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_real.fits"
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu1 = pf.PrimaryHDU(ccArr.imag.astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_im.fits"
         hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
-        hdu2 = pf.PrimaryHDU(np.abs(ccArr).astype(dtFloat), headtemp)
         fitsFileOut = outDir + "/" + prefixOut + "FDF_CC_tot.fits"
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
         if (verbose): log("> %s" % fitsFileOut)
@@ -246,17 +277,24 @@ def writefits(cleanFDF, ccArr, iterCountArr, residFDF, headtemp, nBits=32,
     #don't try to remove the FD axis, but just make it degenerate.
 
     if headtemp['NAXIS'] > 2:
-        headtemp["NAXIS3"] = 1
+        header["NAXIS3"] = 1
+        header['CTYPE3'] = ('DEGENERATE','Axis left in to avoid FITS errors')
+        header['CUNIT3'] = ''
     if headtemp['NAXIS'] == 4:
-        headtemp["NAXIS4"] = 1
+        header["NAXIS4"] = 1
+        header['CTYPE4'] = ('DEGENERATE','Axis left in to avoid FITS errors')
+        header['CUNIT4'] = ''
+
 
     # Save the iteration count mask
     fitsFileOut = outDir + "/" + prefixOut + "CLEAN_nIter.fits"
     if (verbose): log("> %s" % fitsFileOut)
-    headtemp["BUNIT"] = "Iterations"
+    header["BUNIT"] = "Iterations"
+    if 'STOKES' in header:
+        del header['STOKES']
     hdu0 = pf.PrimaryHDU(np.expand_dims(iterCountArr.astype(dtFloat), 
                         axis=tuple(range(headtemp['NAXIS']-iterCountArr.ndim))),
-                        headtemp)
+                        header)
     hduLst = pf.HDUList([hdu0])
     hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
     hduLst.close()

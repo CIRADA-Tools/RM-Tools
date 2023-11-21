@@ -321,11 +321,19 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     FDFcube=np.moveaxis(FDFcube,0,Ndim-freq_axis)
     if not_rmsf is not True: RMSFcube=np.moveaxis(RMSFcube,0,Ndim-freq_axis)
 
+    if 'BUNIT' in header:
+        header['BUNIT']=header['BUNIT']+'/RMSF'
+
 
     if(write_seperate_FDF):
+        header=_setStokes(header, 'Q')
         hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
         hdu1 = pf.PrimaryHDU(FDFcube.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
         hdu2 = pf.PrimaryHDU(np.abs(FDFcube).astype(dtFloat), header)
+
         fitsFileOut = outDir + "/" + prefixOut + "FDF_real_dirty.fits"
         if(verbose): log("> %s" % fitsFileOut)
         hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -339,10 +347,15 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
     else:
-        # Save the dirty FDF
+        header=_setStokes(header, 'Q')
         hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
+        header=_setStokes(header, 'U')
         hdu1 = pf.ImageHDU(FDFcube.imag.astype(dtFloat), header)
+        header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+        del header['STOKES']    
         hdu2 = pf.ImageHDU(np.abs(FDFcube).astype(dtFloat), header)
+
+        # Save the dirty FDF
         fitsFileOut = outDir + "/" + prefixOut + "FDF_dirty.fits"
         if(verbose): log("> %s" % fitsFileOut)
         hduLst = pf.HDUList([hdu0, hdu1, hdu2])
@@ -358,24 +371,42 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
         header["CDELT"+str(freq_axis)] = (np.diff(phi2Arr_radm2)[0], '[rad/m^2] Coordinate increment at reference point')
         header["CRPIX"+str(freq_axis)] = phi2Arr_radm2.size//2+1
         header["CRVAL"+str(freq_axis)] = (phi2Arr_radm2[phi2Arr_radm2.size//2], '[rad/m^2] Coordinate value at reference point')
+        header['BUNIT']=''
 
-        header["DATAMAX"] = np.max(fwhmRMSFCube) + 1
-        header["DATAMIN"] = np.max(fwhmRMSFCube) - 1
+
         rmheader=header.copy()
         rmheader['BUNIT']='rad/m^2'
+        if 'BTYPE' in rmheader:
+            del rmheader['BTYPE']
         #Because there can be problems with different axes having different FITS keywords,
         #don't try to remove the FD axis, but just make it degenerate.
         # Also requires np.expand_dims to set the correct NAXIS.
         rmheader["NAXIS"+str(freq_axis)] = 1
+        rmheader['CTYPE'+str(freq_axis)] = ('DEGENERATE','Axis left in to avoid FITS errors')
+        rmheader['CUNIT'+str(freq_axis)] = ''
         rmheader["CRVAL"+str(freq_axis)] = phiArr_radm2[0]
+        stokes_axis=None
+        for axis in range(1,rmheader['NAXIS']+1):
+            if 'STOKES' in rmheader[f'CTYPE{axis}']:
+                stokes_axis=axis
+        if stokes_axis is not None:
+            rmheader[f'CTYPE{stokes_axis}']=('DEGENERATE','Axis left in to avoid FITS errors')
+
+
+
 
         if(write_seperate_FDF):
+            header=_setStokes(header, 'Q')            
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
+            header=_setStokes(header, 'U')
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
+            header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+            del header['STOKES']
             hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
             hdu3 = pf.PrimaryHDU(np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0),
                                 rmheader)
 
+            
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
             if(verbose): log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -393,11 +424,18 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
             hdu3.writeto(fitsFileOut, output_verify="fix", overwrite=True)
 
         else:
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
+            header=_setStokes(header, 'Q')            
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
+            header=_setStokes(header, 'U')
             hdu1 = pf.ImageHDU(RMSFcube.imag.astype(dtFloat), header)
+            header=_setStokes(header, 'PI') #Sets Stokes axis to zero, which is a non-standard value.
+            del header['STOKES']    
             hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
-            hdu3 = pf.ImageHDU(fwhmRMSFCube.astype(dtFloat), rmheader)
+            hdu3 = pf.ImageHDU(np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0),
+                                rmheader)
+
+            
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
             hduLst = pf.HDUList([hdu0, hdu1, hdu2, hdu3])
             if(verbose): log("> %s" % fitsFileOut)
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
@@ -419,6 +457,19 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 
     maxPI,peakRM = create_peak_maps(FDFcube,phiArr_radm2,Ndim-freq_axis)
     # Save a maximum polarised intensity map
+    header['BUNIT']=headtemplate['BUNIT']
+    header["NAXIS"+str(freq_axis)] = 1
+    header['CTYPE'+str(freq_axis)] = ('DEGENERATE','Axis left in to avoid FITS errors')
+    header['CUNIT'+str(freq_axis)] = ''
+    
+    stokes_axis=None
+    for axis in range(1,header['NAXIS']+1):
+        if 'STOKES' in header[f'CTYPE{axis}']:
+            stokes_axis=axis
+    if stokes_axis is not None:
+        header[f'CTYPE{stokes_axis}']=('DEGENERATE','Axis left in to avoid FITS errors')
+
+
     fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
     if(verbose): log("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut,
@@ -428,6 +479,7 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
     # Save a peak RM map
     fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
     header["BUNIT"] = "rad/m^2"
+    header['BTYPE'] = 'FDEP'
     if(verbose): log("> %s" % fitsFileOut)
     pf.writeto(fitsFileOut, np.expand_dims(peakRM,axis=0), header, overwrite=True,
                output_verify="fix")
@@ -443,6 +495,26 @@ def writefits(dataArr, headtemplate, fitRMSF=False, prefixOut="", outDir="",
 #    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
 #               output_verify="fix")
 
+
+def _setStokes(header,stokes):
+    """Check if header has Stokes axis. If so, set to correct numerical value 
+    (if IQUV). If not a valid Stokes parameter, sets to zero. 
+    Adds Stokes keyword regardless. Returns new, updated header.
+    """
+    stokes_dict={'I':1, 'Q':2, 'U':3, 'V':4}
+
+    outheader=header.copy()
+    stokes_axis=None
+    for axis in range(1,header['NAXIS']+1):
+        if 'STOKES' in header[f'CTYPE{axis}']:
+            stokes_axis=axis
+
+    if stokes_axis is not None:
+        outheader[f'CRPIX{stokes_axis}']=1.0
+        outheader[f'CRVAL{stokes_axis}']=stokes_dict.get(stokes.upper(),0)
+    outheader['STOKES']=stokes
+
+    return outheader
 
 def create_peak_maps(FDFcube,phiArr_radm2,phi_axis=0):
     """Finds the location and amplitude of the highest peak in the FDF (pixelwise)

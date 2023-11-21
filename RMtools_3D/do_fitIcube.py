@@ -267,6 +267,9 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
     return rmsArr, mskSrc
 
 
+
+
+
 def savefits_mask(data, header, outDir, prefixOut):
 
     """ Save the derived mask to a fits file
@@ -283,7 +286,7 @@ def savefits_mask(data, header, outDir, prefixOut):
     del headMask["BUNIT"]
 
     mskArr = np.where(data > 0, 1.0, np.nan)
-    MaskfitsFile = os.path.join(outDir,prefixOut + "_mask.fits")
+    MaskfitsFile = os.path.join(outDir,prefixOut + "mask.fits")
     print("> %s" % MaskfitsFile)
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix",
                overwrite=True)
@@ -302,13 +305,15 @@ def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
     """
 
     headcoeff = strip_fits_dims(header=header, minDim=2)
-    del headcoeff["BUNIT"]
+    headcoeff["BUNIT"]=''
+    if 'BTYPE' in headcoeff:
+        del headcoeff['BTYPE']
 
     for i in range(np.abs(polyOrd)+1):
-        outname = os.path.join(outDir,prefixOut + '_coeff'+str(i) + '.fits')
+        outname = os.path.join(outDir,prefixOut + 'coeff'+str(i) + '.fits')
         pf.writeto(outname, data[i], headcoeff, overwrite=True)
 
-        outname = os.path.join(outDir,prefixOut + '_coeff'+str(i) + 'err.fits')
+        outname = os.path.join(outDir,prefixOut + 'coeff'+str(i) + 'err.fits')
         pf.writeto(outname, dataerr[i], headcoeff, overwrite=True)
 
 
@@ -339,7 +344,7 @@ def savefits_model_I(data, header, outDir, prefixOut):
     while len(headModelCube) < (36 * 4 - 1):
         headModelCube.append()
 
-    fitsModelFile = os.path.join(outDir ,prefixOut + "_model.i.fits")
+    fitsModelFile = os.path.join(outDir ,prefixOut + "model.i.fits")
     headModelCube.tofile(fitsModelFile, overwrite=True)
     with open(fitsModelFile, "rb+") as f:
         f.seek(len(headModelCube.tostring()) + (nVoxels*int(nBits/8)) - 1)
@@ -497,6 +502,13 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
             coeffs_error[5-k,x,y] = l
 
 
+    header['HISTORY'] = "Stokes I model fitted by RM-Tools"
+    if polyOrd < 0:
+        header['HISTORY'] = f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
+    else:
+        header['HISTORY'] = f"Fit model is {polyOrd}-order {fit_function}-polynomial"
+
+
     print("Saving mask image.")
     savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
 
@@ -507,6 +519,11 @@ def make_model_I(datacube, header, freqArr_Hz, polyOrd=2,
     print("Saving model I cube image. ")
     savefits_model_I(data=modelIcube, header=header,
              outDir=outDir, prefixOut=prefixOut)
+
+
+    np.savetxt(os.path.join(outDir, prefixOut + "noise.dat"), rms_Arr)
+
+
 
     return modelIcube
 

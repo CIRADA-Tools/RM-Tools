@@ -160,13 +160,16 @@ def save_maps(map_dict, prefix_path,FDFheader):
         delete_FITSheader_axis(product_header, 3)
     if 'NAXIS4' in product_header:
         delete_FITSheader_axis(product_header, 4)
-
-
+    if 'STOKES' in product_header:
+        del product_header['STOKES']
+    product_header['HISTORY'] = "Polarization peak maps created with RM-Tools RMpeakfit_3D"
+    
     #Set flux unit from FITS header if possible
     if 'BUNIT' in FDFheader:
         flux_unit=FDFheader['BUNIT']
     else:
         flux_unit=''
+
 
 
     #Dictionary of units for peak fitting output parameters (for FITS headers)
