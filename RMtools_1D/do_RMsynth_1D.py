@@ -216,11 +216,11 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
         rmsFig = plt.figure(facecolor='w',figsize=(12.0, 8))
         ax = rmsFig.add_subplot(111)
         ax.plot(freqArr_Hz/1e9, dQUArr, marker='o', color='k', lw=0.5,
-                label='rms <QU>')
+                label='noise <QU>')
         ax.plot(freqArr_Hz/1e9, dQArr, marker='o', color='b', lw=0.5,
-                label='rms Q')
+                label='noise Q')
         ax.plot(freqArr_Hz/1e9, dUArr, marker='o', color='r', lw=0.5,
-                label='rms U')
+                label='noise U')
         xRange = (np.nanmax(freqArr_Hz)-np.nanmin(freqArr_Hz))/1e9
         ax.set_xlim( np.min(freqArr_Hz)/1e9 - xRange*0.05,
                      np.max(freqArr_Hz)/1e9 + xRange*0.05)
@@ -431,7 +431,6 @@ def run_rmsynth(data, polyOrd=2, phiMax_radm2=None, dPhi_radm2=None,
        log('QU Noise = %.4g %s' % (mDict["dQU"],units))
        log('FDF Noise (theory)   = %.4g %s' % (mDict["dFDFth"],units))
        log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],units))
-       log('FDF Noise (rms)   = %.4g %s' % (mDict["dFDFrms"],units))
        log('FDF SNR = %.4g ' % (mDict["snrPIfit"]))
        log('sigma_add(q) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],

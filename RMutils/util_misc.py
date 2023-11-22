@@ -68,11 +68,8 @@
 #                                                                             #
 #=============================================================================#
 
-import os
 import sys
-import copy
 import re
-import time
 import traceback
 import math as m
 import numpy as np
@@ -80,16 +77,23 @@ import numpy.ma as ma
 import scipy.ndimage as ndi
 from scipy.stats import norm
 #import ConfigParser
-import sqlite3
-import csv
-import json
 
 from RMutils.mpfit import mpfit
+
+from . import __version__
+from deprecation import deprecated
+
 
 C = 2.99792458e8
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="1.3.1",
+    removed_in="1.4",
+    current_version=__version__,
+    details="This function is not used anywhere in current RM-Tools.",
+)
 def config_read(filename, delim='=', doValueSplit=True):
     """
     Read a configuration file and output a 'KEY=VALUE' dictionary.
@@ -179,6 +183,12 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="1.3.1",
+    removed_in="1.4",
+    current_version=__version__,
+    details="This function is not used anywhere in RM-Tools.",
+)
 def cleanup_str_input(textBlock):
     
     # Compile a few useful regular expressions
@@ -209,6 +219,12 @@ def split_repeat_lst(inLst, nPre, nRepeat):
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="1.3.1",
+    removed_in="1.4",
+    current_version=__version__,
+    details="This function is not used anywhere in RM-Tools.",
+)
 def deg2dms(deg, delim=':', doSign=False, nPlaces=2):
     """
     Convert a float in degrees to 'dd mm ss' format.
@@ -408,7 +424,12 @@ def calculate_StokesI_model(fitDict,freqArr_Hz):
 
 
 
-
+@deprecated(
+    deprecated_in="1.3",
+    removed_in="2.0",
+    current_version=__version__,
+    details="This function cannot current propagate errors. It may be reactivated if someone works through how to do that.",
+)
 def renormalize_StokesI_model(fitDict,new_reference_frequency):
     """This functions adjusts the reference frequency for the Stokes I model
     and fixes the fit parameters such that the the model is the same. This is
@@ -785,6 +806,12 @@ def calc_stats(a, maskzero=False):
 
 
 #-----------------------------------------------------------------------------#
+@deprecated(
+    deprecated_in="1.3.1",
+    removed_in="1.4",
+    current_version=__version__,
+    details="This function is not used anywhere in current RM-Tools.",
+)
 def sort_nicely(l):
     """
     Sort a list in the order a human would.

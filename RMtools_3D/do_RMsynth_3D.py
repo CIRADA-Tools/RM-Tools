@@ -69,12 +69,12 @@ def run_rmsynth(dataQ, dataU, freqArr_Hz, dataI=None, rmsArr=None,
 
     Kwargs:
         dataI (array_like): Model cube of Stokes I spectra (see do_fitIcube).
-        rmsArr (array_like): Cube of RMS spectra.
+        rmsArr (array_like): Cube of uncertainty spectra.
         phiMax_radm2 (float): Maximum absolute Faraday depth (rad/m^2).
         dPhi_radm2 (float): Faraday depth channel size (rad/m^2).
         nSamples (float): Number of samples across the RMSF.
            weightType (str): Can be "variance" or "uniform"
-            "variance" -- Weight by RMS.
+            "variance" -- Weight by inverse variance.
             "uniform" -- Weight uniformly (i.e. with 1s)
         fitRMSF (bool): Fit a Gaussian to the RMSF?
         nBits (int): Precision of floating point numbers.

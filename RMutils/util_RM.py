@@ -832,7 +832,6 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     # Determine the peak channel in the FDF, its amplitude and index
     absFDF = np.abs(FDF)
     indxPeakPIchan = np.nanargmax(absFDF[1:-1])+1  #Masks out the edge channels, since they can't be fit to.
-    ampPeakPIchan = absFDF[indxPeakPIchan]
 
     # Measure the RMS noise in the spectrum after masking the peak
     dPhi = np.nanmin(np.diff(phiArr))
@@ -844,42 +843,17 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
     absFDFmsked = absFDFmsked[np.where(absFDFmsked==absFDFmsked)]
     if float(len(absFDFmsked))/len(absFDF)<0.3:
         dFDFcorMAD = MAD(absFDF)
-        dFDFrms = np.sqrt( np.mean(absFDF**2) )
     else:
         dFDFcorMAD = MAD(absFDFmsked)
-        dFDFrms = np.sqrt( np.mean(absFDFmsked**2) )
 
     # Default to using the measured FDF if a noise value has not been provided
     if dFDF is None:
         dFDF = dFDFcorMAD
 
-    # Measure the RM of the peak channel
-    phiPeakPIchan = phiArr[indxPeakPIchan]
-    dPhiPeakPIchan = fwhmRMSF * dFDF / (2.0 * ampPeakPIchan)
-    snrPIchan = ampPeakPIchan / dFDF
 
-    # Correct the peak for polarisation bias (POSSUM report 11)
-    ampPeakPIchanEff = ampPeakPIchan
-    if snrPIchan >= snrDoBiasCorrect:
-        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dFDF**2.0)
-
-    # Calculate the polarisation angle from the channel
-    peakFDFimagChan = FDF.imag[indxPeakPIchan]
-    peakFDFrealChan = FDF.real[indxPeakPIchan]
-    polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
-                                         peakFDFrealChan)) % 180
-    dPolAngleChan_deg = np.degrees(dFDF / (2.0 * ampPeakPIchan))
-
-    # Calculate the derotated polarisation angle and uncertainty
-    polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
-                                  phiPeakPIchan * lam0Sq) % 180
     nChansGood = np.sum(np.where(lamSqArr_m2==lamSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
-    dPolAngle0Chan_rad = \
-        np.sqrt( dFDF**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
-                 ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
-    dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
 
     # Determine the peak in the FDF, its amplitude and Phi using a
     # 3-point parabolic interpolation
@@ -946,20 +920,6 @@ def measure_FDF_parms(FDF, phiArr, fwhmRMSF, dFDF=None, lamSqArr_m2=None,
 
     # Store the measurements in a dictionary and return
     mDict = {'dFDFcorMAD':       toscalar(dFDFcorMAD),
-             'dFDFrms':          toscalar(dFDFrms),
-             'phiPeakPIchan_rm2':     toscalar(phiPeakPIchan),
-             'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
-             'ampPeakPIchan':    toscalar(ampPeakPIchan),
-             'ampPeakPIchanEff': toscalar(ampPeakPIchanEff),
-             'dAmpPeakPIchan':   toscalar(dFDF),
-             'snrPIchan':             toscalar(snrPIchan),
-             'indxPeakPIchan':        toscalar(indxPeakPIchan),
-             'peakFDFimagChan':       toscalar(peakFDFimagChan),
-             'peakFDFrealChan':       toscalar(peakFDFrealChan),
-             'polAngleChan_deg':      toscalar(polAngleChan_deg),
-             'dPolAngleChan_deg':     toscalar(dPolAngleChan_deg),
-             'polAngle0Chan_deg':     toscalar(polAngle0Chan_deg),
-             'dPolAngle0Chan_deg':    toscalar(dPolAngle0Chan_deg),
              'phiPeakPIfit_rm2':      toscalar(phiPeakPIfit),
              'dPhiPeakPIfit_rm2':     toscalar(dPhiPeakPIfit),
              'ampPeakPIfit':     toscalar(ampPeakPIfit),

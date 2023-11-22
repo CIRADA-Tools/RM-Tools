@@ -173,15 +173,7 @@ def save_maps(map_dict, prefix_path,FDFheader):
 
 
     #Dictionary of units for peak fitting output parameters (for FITS headers)
-    unit_dict={"dFDFcorMAD": flux_unit, "dFDFrms": flux_unit,
-           "phiPeakPIchan_rm2": 'rad/m^2', "dPhiPeakPIchan_rm2": 'rad/m^2',
-           "ampPeakPIchan": flux_unit, "ampPeakPIchanEff": flux_unit,
-           "dAmpPeakPIchan": flux_unit,
-           "snrPIchan": '',
-           "indxPeakPIchan": '',
-           "peakFDFimagChan": flux_unit, "peakFDFrealChan": flux_unit,
-           "polAngleChan_deg": 'deg', "dPolAngleChan_deg": 'deg',
-           "polAngle0Chan_deg": 'deg', "dPolAngle0Chan_deg": 'deg',
+    unit_dict={"dFDFcorMAD": flux_unit, 
            "phiPeakPIfit_rm2": 'rad/m^2', "dPhiPeakPIfit_rm2": 'rad/m^2',
            "ampPeakPIfit": flux_unit, "ampPeakPIfitEff": flux_unit,
            "dAmpPeakPIfit": flux_unit,
@@ -344,12 +336,7 @@ def main():
                       "ampPeakPIfitEff","dAmpPeakPIfit","snrPIfit",
                       "polAngle0Fit_deg","dPolAngle0Fit_deg"]
     elif args.all_products:
-        product_list=['dFDFcorMAD', 'dFDFrms', 'phiPeakPIchan_rm2',
-                      'dPhiPeakPIchan_rm2', 'ampPeakPIchan', 'ampPeakPIchanEff',
-                      'dAmpPeakPIchan', 'snrPIchan', 'indxPeakPIchan',
-                      'peakFDFimagChan', 'peakFDFrealChan', 'polAngleChan_deg',
-                      'dPolAngleChan_deg', 'polAngle0Chan_deg',
-                      'dPolAngle0Chan_deg', 'phiPeakPIfit_rm2',
+        product_list=['dFDFcorMAD', 'phiPeakPIfit_rm2',
                       'dPhiPeakPIfit_rm2', 'ampPeakPIfit', 'ampPeakPIfitEff',
                       'dAmpPeakPIfit', 'snrPIfit', 'indxPeakPIfit',
                       'peakFDFimagFit', 'peakFDFrealFit', 'polAngleFit_deg',

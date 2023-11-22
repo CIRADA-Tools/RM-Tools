@@ -186,7 +186,6 @@ def run_rmclean(mDict, aDict, cutoff,
         log('QU Noise = %.4g %s' % (mDict["dQU"],mDict["units"]))
         log('FDF Noise (theory)   = %.4g %s' % (mDict["dFDFth"],mDict["units"]))
         log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict_cl["dFDFcorMAD"],mDict["units"]))
-        log('FDF Noise (rms)   = %.4g %s' % (mDict_cl["dFDFrms"],mDict["units"]))
 
         log('FDF SNR = %.4g ' % (mDict_cl["snrPIfit"]))
         log()

@@ -616,7 +616,6 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
     rm_fdf = absFDF / adjoint_noise # RM spectrum in S:N units (normalized by RM-dependent noise)
     amp_fdf = absFDF/ adjoint_sens # RM spectrum normalized by (RM-dependent) sensitivity
     indxPeakPIchan = np.nanargmax(rm_fdf[1:-1])+1  # Masks out the edge channels
-    ampPeakPIchan = amp_fdf[indxPeakPIchan]  # since they can't be fit to.
 
     # new theoretical dFDF correction for adjoint method
     #This is noise in the adjoint-spectrum.
@@ -638,42 +637,17 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
     absFDFmsked = absFDFmsked[np.where(absFDFmsked==absFDFmsked)]
     if float(len(absFDFmsked))/len(absFDF)<0.3:
         dFDFcorMAD = MAD(rm_fdf)
-        dFDFrms = np.sqrt( np.mean(rm_fdf**2) )
     else:
         dFDFcorMAD = MAD(absFDFmsked)
-        dFDFrms = np.sqrt( np.mean(absFDFmsked**2) )
 
     #The noise is re-normalized by the predicted noise at the peak RM.
     dFDFcorMAD = dFDFcorMAD * adjoint_noise[indxPeakPIchan]
-    dFDFrms  = dFDFrms  * adjoint_noise[indxPeakPIchan]
 
-    # Measure the RM of the peak channel
-    phiPeakPIchan = phiArr[indxPeakPIchan]
-    snrPIchan = ampPeakPIchan * adjoint_sens[indxPeakPIchan] / dFDF
-    dPhiPeakPIchan = fwhmRMSF / (2.0 * snrPIchan)
 
-    # Correct the peak for polarisation bias (POSSUM report 11)
-    ampPeakPIchanEff = ampPeakPIchan
-    if snrPIchan >= snrDoBiasCorrect:
-        ampPeakPIchanEff = np.sqrt(ampPeakPIchan**2.0 - 2.3 * dampPeakPI**2.0)
 
-    # Calculate the polarisation angle from the channel; normalize by sensitivity
-    peakFDFimagChan = FDF.imag[indxPeakPIchan] / adjoint_sens[indxPeakPIchan]
-    peakFDFrealChan = FDF.real[indxPeakPIchan] / adjoint_sens[indxPeakPIchan]
-    polAngleChan_deg = 0.5 * np.degrees(np.arctan2(peakFDFimagChan,
-                                         peakFDFrealChan)) % 180
-    dPolAngleChan_deg = np.degrees(0.5 / snrPIchan)
-
-    # Calculate the derotated polarisation angle and uncertainty
-    polAngle0Chan_deg = np.degrees(np.radians(polAngleChan_deg) -
-                                  phiPeakPIchan * lam0Sq) % 180
     nChansGood = np.sum(np.where(lamSqArr_m2==lamSqArr_m2, 1.0, 0.0))
     varLamSqArr_m2 = (np.sum(lamSqArr_m2**2.0) -
                       np.sum(lamSqArr_m2)**2.0/nChansGood) / (nChansGood-1)
-    dPolAngle0Chan_rad = \
-        np.sqrt( dampPeakPI**2.0*nChansGood / (4.0*(nChansGood-2.0)*ampPeakPIchan**2.0) *
-                 ((nChansGood-1)/nChansGood + lam0Sq**2.0/varLamSqArr_m2) )
-    dPolAngle0Chan_deg = np.degrees(dPolAngle0Chan_rad)
 
     # Determine the peak in the FDF, its amplitude and Phi using a
     # 3-point parabolic interpolation
@@ -733,20 +707,6 @@ def bwdepol_measure_FDF_parms(FDF, phiArr, fwhmRMSF, adjoint_sens, adjoint_noise
 
     # Store the measurements in a dictionary and return
     mDict = {'dFDFcorMAD':       toscalar(dFDFcorMAD),
-             'dFDFrms':          toscalar(dFDFrms),
-             'phiPeakPIchan_rm2':     toscalar(phiPeakPIchan),
-             'dPhiPeakPIchan_rm2':    toscalar(dPhiPeakPIchan),
-             'ampPeakPIchan':    toscalar(ampPeakPIchan),
-             'ampPeakPIchanEff': toscalar(ampPeakPIchanEff),
-             'dAmpPeakPIchan':   toscalar(dampPeakPI),
-             'snrPIchan':             toscalar(snrPIchan),
-             'indxPeakPIchan':        toscalar(indxPeakPIchan),
-             'peakFDFimagChan':       toscalar(peakFDFimagChan),
-             'peakFDFrealChan':       toscalar(peakFDFrealChan),
-             'polAngleChan_deg':      toscalar(polAngleChan_deg),
-             'dPolAngleChan_deg':     toscalar(dPolAngleChan_deg),
-             'polAngle0Chan_deg':     toscalar(polAngle0Chan_deg),
-             'dPolAngle0Chan_deg':    toscalar(dPolAngle0Chan_deg),
              'phiPeakPIfit_rm2':      toscalar(phiPeakPIfit),
              'dPhiPeakPIfit_rm2':     toscalar(dPhiPeakPIfit),
              'ampPeakPIfit':     toscalar(ampPeakPIfit),
@@ -1224,7 +1184,6 @@ def run_adjoint_rmsynth(data, polyOrd=3, phiMax_radm2=None, dPhi_radm2=None,
        log('QU Noise = %.4g %s' % (mDict["dQU"],units))
        log('FDF Noise (theory)   = %.4g %s' % (mDict["dFDFth"],units))
        log('FDF Noise (Corrected MAD) = %.4g %s' % (mDict["dFDFcorMAD"],units))
-       log('FDF Noise (rms)   = %.4g %s' % (mDict["dFDFrms"],units))
        log('FDF SNR = %.4g ' % (mDict["snrPIfit"]))
        log('sigma_add(q) = %.4g (+%.4g, -%.4g)' % (mDict["sigmaAddQ"],
                                             mDict["dSigmaAddPlusQ"],
