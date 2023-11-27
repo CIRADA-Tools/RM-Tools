@@ -3,10 +3,8 @@
 
 import io
 import os
-import sys
-from shutil import rmtree
 
-from setuptools import Command, find_packages, setup
+from setuptools import setup
 
 NAME = "RM-Tools"
 DESCRIPTION = "RM-synthesis, RM-clean and QU-fitting on polarised radio spectra"
@@ -20,7 +18,11 @@ DOWNLOAD_URL = (
 REQUIRED = ["numpy<2", "scipy", "matplotlib>=3.4.0", "astropy", "tdqm", "deprecation"]
 
 # Using AT's fork for now - includes tiny bug fix for bilby
-extras_require = {"QUfitting": ["bilby>=1.1.5"], "parallel": ["schwimmbad"], "dev": ["pre-commit", "black", "isort", "pytest"]]}
+extras_require = {
+    "QUfitting": ["bilby>=1.1.5"],
+    "parallel": ["schwimmbad"],
+    "dev": ["pre-commit", "black", "isort", "pytest"],
+}
 
 here = os.path.abspath(os.path.dirname(__file__))
 
