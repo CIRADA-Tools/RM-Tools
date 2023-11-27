@@ -22,15 +22,14 @@ Contributed by Peter K. G. Williams <peter@newton.cx>.
 
 """
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ["InterruptiblePool"]
 
-import signal
 import functools
-from multiprocessing.pool import Pool
+import signal
 from multiprocessing import TimeoutError
+from multiprocessing.pool import Pool
 
 
 def _initializer_wrapper(actual_initializer, *rest):
@@ -65,13 +64,14 @@ class InterruptiblePool(Pool):
         Extra arguments. Python 2.7 supports a ``maxtasksperchild`` parameter.
 
     """
+
     wait_timeout = 3600
 
-    def __init__(self, processes=None, initializer=None, initargs=(),
-                 **kwargs):
+    def __init__(self, processes=None, initializer=None, initargs=(), **kwargs):
         new_initializer = functools.partial(_initializer_wrapper, initializer)
-        super(InterruptiblePool, self).__init__(processes, new_initializer,
-                                                initargs, **kwargs)
+        super(InterruptiblePool, self).__init__(
+            processes, new_initializer, initargs, **kwargs
+        )
 
     def map(self, func, iterable, chunksize=None):
         """

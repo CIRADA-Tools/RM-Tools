@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
-from .sampler import *
-from .mh import *
-from .ensemble import *
-from .ptsampler import *
-from . import utils
-from . import autocorr
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+from . import autocorr, utils
+from .ensemble import *
+from .mh import *
+from .ptsampler import *
+from .sampler import *
 
 __version__ = "2.1.0"
 
 
 def test():
     from inspect import getmembers, ismethod
+
     from .tests import Tests
 
     print("Starting tests...")
@@ -28,8 +27,7 @@ def test():
             try:
                 o[1]()
             except Exception as e:
-                print("Failed with:\n    {0.__class__.__name__}: {0}"
-                      .format(e))
+                print("Failed with:\n    {0.__class__.__name__}: {0}".format(e))
                 failures += 1
             else:
                 print("    Passed.")
