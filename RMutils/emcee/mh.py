@@ -5,8 +5,7 @@ A vanilla Metropolis-Hastings sampler
 
 """
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ["MHSampler"]
 
@@ -41,6 +40,7 @@ class MHSampler(Sampler):
         will be called with the sequence ``lnpostfn(p, *args, **kwargs)``.
 
     """
+
     def __init__(self, cov, *args, **kwargs):
         super(MHSampler, self).__init__(*args, **kwargs)
         self.cov = cov
@@ -50,8 +50,9 @@ class MHSampler(Sampler):
         self._chain = np.empty((0, self.dim))
         self._lnprob = np.empty(0)
 
-    def sample(self, p0, lnprob=None, randomstate=None, thin=1,
-               storechain=True, iterations=1):
+    def sample(
+        self, p0, lnprob=None, randomstate=None, thin=1, storechain=True, iterations=1
+    ):
         """
         Advances the chain ``iterations`` steps as an iterator
 
@@ -100,8 +101,7 @@ class MHSampler(Sampler):
         # Resize the chain in advance.
         if storechain:
             N = int(iterations / thin)
-            self._chain = np.concatenate((self._chain,
-                                          np.zeros((N, self.dim))), axis=0)
+            self._chain = np.concatenate((self._chain, np.zeros((N, self.dim))), axis=0)
             self._lnprob = np.append(self._lnprob, np.zeros(N))
 
         i0 = self.iterations

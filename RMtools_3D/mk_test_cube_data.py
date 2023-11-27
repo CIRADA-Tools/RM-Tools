@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#=============================================================================#
+# =============================================================================#
 #                                                                             #
 # NAME:     mk_test_cube_data.py                                              #
 #                                                                             #
@@ -15,7 +15,7 @@
 #                                                                             #
 # MODIFIED: 25-Feb-2017 by C. Purcell                                         #
 #                                                                             #
-#=============================================================================#
+# =============================================================================#
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
@@ -39,7 +39,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER         #
 # DEALINGS IN THE SOFTWARE.                                                   #
 #                                                                             #
-#=============================================================================#
+# =============================================================================#
 
 # BEGIN USER EDITS -----------------------------------------------------------#
 
@@ -49,10 +49,10 @@ endFreq_Hz = 1.8e9
 nChans = 111
 
 # Spatial sampling parameters
-beamMinFWHM_deg = 1.5/3600.0
-beamMajFWHM_deg = 2.5/3600.0
+beamMinFWHM_deg = 1.5 / 3600.0
+beamMajFWHM_deg = 2.5 / 3600.0
 beamPA_deg = 20.0
-pixScale_deg = 0.3/3600.0
+pixScale_deg = 0.3 / 3600.0
 nPixX = 120
 nPixY = 100
 
@@ -74,28 +74,31 @@ freq0_Hz = startFreq_Hz
 
 # END USER EDITS -------------------------------------------------------------#
 
-import os
-import sys
 import argparse
-import shutil
 import math as m
-import numpy as np
+import os
+import shutil
+import sys
+
 import astropy.wcs.wcs as pw
+import numpy as np
 from tqdm.auto import tqdm, trange
 
-from RMutils.util_misc import twodgaussian
-from RMutils.util_misc import create_IQU_spectra_burn
-from RMutils.util_misc import create_IQU_spectra_diff
-from RMutils.util_misc import csv_read_to_list
-from RMutils.util_misc import split_repeat_lst
-from RMutils.util_misc import calc_stats
-from RMutils.util_misc import extrap
-from RMutils.util_FITS import strip_fits_dims
-from RMutils.util_FITS import create_simple_fits_hdu
+from RMutils.util_FITS import create_simple_fits_hdu, strip_fits_dims
+from RMutils.util_misc import (
+    calc_stats,
+    create_IQU_spectra_burn,
+    create_IQU_spectra_diff,
+    csv_read_to_list,
+    extrap,
+    split_repeat_lst,
+    twodgaussian,
+)
 
 C = 2.99792458e8
 
-#-----------------------------------------------------------------------------#
+
+# -----------------------------------------------------------------------------#
 def main():
     """
     Start the create_IQU_fits_data function if called from the command line.
@@ -183,27 +186,45 @@ def main():
     """
 
     # Parse the command line options
-    parser = argparse.ArgumentParser(description=descStr,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("inCatFile", metavar="catalogue.csv", nargs=1,
-                        help="Input catalogue file in CSV format")
-    parser.add_argument("dataPath", metavar="PATH/TO/DATA",
-                        default="data", nargs="?",
-                        help="Path to new data directory [data/]")
-    parser.add_argument('-n', dest='noiseTmpFile', metavar="NOISE.TXT",
-                        help="File providing a template noise curve [freq amp]")
-    parser.add_argument('-f', dest='flagFreqStr', metavar='f1,f2,f1,f2,...',
-                        default="", help="Frequency ranges to flag out")
+    parser = argparse.ArgumentParser(
+        description=descStr, formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "inCatFile",
+        metavar="catalogue.csv",
+        nargs=1,
+        help="Input catalogue file in CSV format",
+    )
+    parser.add_argument(
+        "dataPath",
+        metavar="PATH/TO/DATA",
+        default="data",
+        nargs="?",
+        help="Path to new data directory [data/]",
+    )
+    parser.add_argument(
+        "-n",
+        dest="noiseTmpFile",
+        metavar="NOISE.TXT",
+        help="File providing a template noise curve [freq amp]",
+    )
+    parser.add_argument(
+        "-f",
+        dest="flagFreqStr",
+        metavar="f1,f2,f1,f2,...",
+        default="",
+        help="Frequency ranges to flag out",
+    )
     args = parser.parse_args()
     inCatFile = args.inCatFile[0]
     dataPath = args.dataPath
     noiseTmpFile = args.noiseTmpFile
     flagRanges_Hz = []
-    if len(args.flagFreqStr)>0:
+    if len(args.flagFreqStr) > 0:
         try:
             flagFreqLst = args.flagFreqStr.split(",")
             flagFreqLst = [float(x) for x in flagFreqLst]
-            flagRanges_Hz = list(zip(*[iter(flagFreqLst)]*2))
+            flagRanges_Hz = list(zip(*[iter(flagFreqLst)] * 2))
         except Exception:
             "Warn: Failed to parse frequency flagging string!"
 
@@ -214,19 +235,47 @@ def main():
         noiseTmpArr = None
 
     # Call the function to create FITS data
-    nSrc = create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz,
-                                nChans, rmsNoise, beamMinFWHM_deg,
-                                beamMajFWHM_deg, beamPA_deg, pixScale_deg,
-                                xCent_deg, yCent_deg, nPixX, nPixY,
-                                coordSys, noiseTmpArr, flagRanges_Hz)
+    nSrc = create_IQU_cube_data(
+        dataPath,
+        inCatFile,
+        startFreq_Hz,
+        endFreq_Hz,
+        nChans,
+        rmsNoise,
+        beamMinFWHM_deg,
+        beamMajFWHM_deg,
+        beamPA_deg,
+        pixScale_deg,
+        xCent_deg,
+        yCent_deg,
+        nPixX,
+        nPixY,
+        coordSys,
+        noiseTmpArr,
+        flagRanges_Hz,
+    )
 
 
-#-----------------------------------------------------------------------------#
-def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
-                         rmsNoise, beamMinFWHM_deg, beamMajFWHM_deg,
-                         beamPA_deg, pixScale_deg, xCent_deg, yCent_deg,
-                         nPixX, nPixY, coordSys="EQU", noiseTmpArr=None,
-                         flagRanges_Hz=[]):
+# -----------------------------------------------------------------------------#
+def create_IQU_cube_data(
+    dataPath,
+    inCatFile,
+    startFreq_Hz,
+    endFreq_Hz,
+    nChans,
+    rmsNoise,
+    beamMinFWHM_deg,
+    beamMajFWHM_deg,
+    beamPA_deg,
+    pixScale_deg,
+    xCent_deg,
+    yCent_deg,
+    nPixX,
+    nPixY,
+    coordSys="EQU",
+    noiseTmpArr=None,
+    flagRanges_Hz=[],
+):
     """
     Create a set of Stokes I Q & U data-cubes containing polarised sources.
     """
@@ -234,16 +283,18 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
     # Sample frequency space
     freqArr_Hz = np.linspace(startFreq_Hz, endFreq_Hz, nChans)
     freqNoFlgArr_Hz = freqArr_Hz.copy()
-    dFreq_Hz = (endFreq_Hz - startFreq_Hz)/ (nChans-1)
-    print("\nSampling frequencies %.2f - %.2f MHz by %.2f MHz." % \
-          (freqArr_Hz[0]/1e6, freqArr_Hz[-1]/1e6, dFreq_Hz/1e6))
-    if len(flagRanges_Hz)>0:
+    dFreq_Hz = (endFreq_Hz - startFreq_Hz) / (nChans - 1)
+    print(
+        "\nSampling frequencies %.2f - %.2f MHz by %.2f MHz."
+        % (freqArr_Hz[0] / 1e6, freqArr_Hz[-1] / 1e6, dFreq_Hz / 1e6)
+    )
+    if len(flagRanges_Hz) > 0:
         print("Flagging frequency ranges:")
         print("> ", flagRanges_Hz)
     for i in range(len(freqArr_Hz)):
         for fRng in flagRanges_Hz:
-            if freqArr_Hz[i]>=fRng[0] and freqArr_Hz[i]<=fRng[1]:
-                freqArr_Hz[i]=np.nan
+            if freqArr_Hz[i] >= fRng[0] and freqArr_Hz[i] <= fRng[1]:
+                freqArr_Hz[i] = np.nan
 
     # Create normalised noise array from a template or assume all ones.
     if noiseTmpArr is None:
@@ -271,28 +322,30 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
         if not os.path.exists(dirStr):
             os.mkdir(dirStr)
     if os.path.exists(dataPath):
-        print("\n ", end=' ')
-        print("*** WARNING ***" *5)
-        print("  About to delete existing data directory!", end=' ')
+        print("\n ", end=" ")
+        print("*** WARNING ***" * 5)
+        print("  About to delete existing data directory!", end=" ")
         print("Previous results will be deleted.\n")
-        print("Press <RETURN> to continue ...", end=' ')
+        print("Press <RETURN> to continue ...", end=" ")
         input()
         shutil.rmtree(dataPath, True)
     os.mkdir(dataPath)
 
     # Create simple HDUs in memmory
     print("Creating test data in memory.")
-    hduI = create_simple_fits_hdu(shape=(1, nChans, nPixY, nPixX),
-                                  freq_Hz=startFreq_Hz,
-                                  dFreq_Hz=dFreq_Hz,
-                                  xCent_deg=xCent_deg,
-                                  yCent_deg=yCent_deg,
-                                  beamMinFWHM_deg=beamMinFWHM_deg,
-                                  beamMajFWHM_deg=beamMajFWHM_deg,
-                                  beamPA_deg=beamPA_deg,
-                                  pixScale_deg=pixScale_deg,
-                                  stokes="I",
-                                  system=coordSys)
+    hduI = create_simple_fits_hdu(
+        shape=(1, nChans, nPixY, nPixX),
+        freq_Hz=startFreq_Hz,
+        dFreq_Hz=dFreq_Hz,
+        xCent_deg=xCent_deg,
+        yCent_deg=yCent_deg,
+        beamMinFWHM_deg=beamMinFWHM_deg,
+        beamMajFWHM_deg=beamMajFWHM_deg,
+        beamPA_deg=beamPA_deg,
+        pixScale_deg=pixScale_deg,
+        stokes="I",
+        system=coordSys,
+    )
     head2D = strip_fits_dims(header=hduI.header, minDim=2, forceCheckDims=4)
     wcs2D = pw.WCS(head2D)
     shape2D = (nPixY, nPixX)
@@ -302,11 +355,11 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
     hduU.header["CRVAL4"] = 3.0
 
     # Calculate some beam parameters
-    gfactor = 2.0*m.sqrt(2.0*m.log(2.0))
-    beamMinSigma_deg = beamMinFWHM_deg/gfactor
-    beamMajSigma_deg = beamMajFWHM_deg/gfactor
-    beamMinSigma_pix = beamMinSigma_deg/pixScale_deg
-    beamMajSigma_pix = beamMajSigma_deg/pixScale_deg
+    gfactor = 2.0 * m.sqrt(2.0 * m.log(2.0))
+    beamMinSigma_deg = beamMinFWHM_deg / gfactor
+    beamMajSigma_deg = beamMajFWHM_deg / gfactor
+    beamMinSigma_pix = beamMinSigma_deg / pixScale_deg
+    beamMajSigma_pix = beamMajSigma_deg / pixScale_deg
     beamPA_rad = m.radians(beamPA_deg)
 
     # Loop through the sources, calculate the spectra and pixel position
@@ -321,39 +374,39 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
         modelType = int(e[0])
 
         # Type 1 = multiple Burn depolarisation affected components
-        if modelType==1:
-
+        if modelType == 1:
             # Parse the parameters of multiple components
-            preLst, parmArr = split_repeat_lst(e[1:],7,4)
+            preLst, parmArr = split_repeat_lst(e[1:], 7, 4)
 
             # Create the model spectra from multiple thin components
             # modified by external depolarisation
-            IArr, QArr, UArr = \
-                create_IQU_spectra_burn(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5],
-                                        SI = preLst[6],
-                                        fracPolArr = parmArr[0],
-                                        psi0Arr_deg = parmArr[1],
-                                        RMArr_radm2 = parmArr[2],
-                                        sigmaRMArr_radm2 = parmArr[3],
-                                        freq0_Hz = freq0_Hz)
+            IArr, QArr, UArr = create_IQU_spectra_burn(
+                freqArr_Hz=freqArr_Hz,
+                fluxI=preLst[5],
+                SI=preLst[6],
+                fracPolArr=parmArr[0],
+                psi0Arr_deg=parmArr[1],
+                RMArr_radm2=parmArr[2],
+                sigmaRMArr_radm2=parmArr[3],
+                freq0_Hz=freq0_Hz,
+            )
 
         # Type 2 = multiple internal depolarisation affected components
-        elif modelType==2:
-
+        elif modelType == 2:
             # Parse the parameters of multiple components
-            preLst, parmArr = split_repeat_lst(e[1:],7,3)
+            preLst, parmArr = split_repeat_lst(e[1:], 7, 3)
 
             # Create the model spectra from multiple components
             # modified by internal Faraday depolarisation
-            IArr, QArr, UArr = \
-                create_IQU_spectra_diff(freqArr_Hz = freqArr_Hz,
-                                        fluxI = preLst[5],
-                                        SI = preLst[6],
-                                        fracPolArr = parmArr[0],
-                                        psi0Arr_deg = parmArr[1],
-                                        RMArr_radm2 = parmArr[2],
-                                        freq0_Hz = freq0_Hz)
+            IArr, QArr, UArr = create_IQU_spectra_diff(
+                freqArr_Hz=freqArr_Hz,
+                fluxI=preLst[5],
+                SI=preLst[6],
+                fracPolArr=parmArr[0],
+                psi0Arr_deg=parmArr[1],
+                RMArr_radm2=parmArr[2],
+                freq0_Hz=freq0_Hz,
+            )
         else:
             continue
 
@@ -361,19 +414,23 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
         spectraQLst.append(QArr)
         spectraULst.append(UArr)
         coordLst_deg.append([preLst[0], preLst[1]])
-        [ (x_pix, y_pix) ] = wcs2D.wcs_world2pix([ (preLst[0], preLst[1]) ], 0)
+        [(x_pix, y_pix)] = wcs2D.wcs_world2pix([(preLst[0], preLst[1])], 0)
         coordLst_pix.append([x_pix, y_pix])
-        successCount +=1
+        successCount += 1
 
     # Loop through the frequency channels & insert the IQU planes
-    for iChan, _ in enumerate(tqdm(freqArr_Hz), desc=f"Looping through {nChans} frequency channels"):
+    for iChan, _ in enumerate(
+        tqdm(freqArr_Hz), desc=f"Looping through {nChans} frequency channels"
+    ):
         for iSrc, _ in enumerate(spectraILst):
-            params = [spectraILst[iSrc][iChan],  # amplitude
-                      coordLst_pix[iSrc][0],     # X centre (pix)
-                      coordLst_pix[iSrc][1],     # Y centre
-                      beamMinSigma_pix,          # width (sigma)
-                      beamMajSigma_pix,          # height (sigma)
-                      beamPA_rad]                # PA (rad) W of N (clockwise)
+            params = [
+                spectraILst[iSrc][iChan],  # amplitude
+                coordLst_pix[iSrc][0],  # X centre (pix)
+                coordLst_pix[iSrc][1],  # Y centre
+                beamMinSigma_pix,  # width (sigma)
+                beamMajSigma_pix,  # height (sigma)
+                beamPA_rad,
+            ]  # PA (rad) W of N (clockwise)
             planeI = twodgaussian(params, shape2D).reshape((nPixY, nPixX))
             params[0] = spectraQLst[iSrc][iChan]
             planeQ = twodgaussian(params, shape2D).reshape((nPixY, nPixX))
@@ -384,12 +441,15 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
             hduU.data[0, iChan, :, :] += planeU
 
         # Add the noise
-        hduI.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
-                                      size=(nPixY, nPixX))* noiseArr[iChan])
-        hduQ.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
-                                      size=(nPixY, nPixX))* noiseArr[iChan])
-        hduU.data[0, iChan, :, :] += (np.random.normal(scale=rmsNoise,
-                                      size=(nPixY, nPixX))* noiseArr[iChan])
+        hduI.data[0, iChan, :, :] += (
+            np.random.normal(scale=rmsNoise, size=(nPixY, nPixX)) * noiseArr[iChan]
+        )
+        hduQ.data[0, iChan, :, :] += (
+            np.random.normal(scale=rmsNoise, size=(nPixY, nPixX)) * noiseArr[iChan]
+        )
+        hduU.data[0, iChan, :, :] += (
+            np.random.normal(scale=rmsNoise, size=(nPixY, nPixX)) * noiseArr[iChan]
+        )
 
     # DEBUG
     if False:
@@ -415,24 +475,24 @@ def create_IQU_cube_data(dataPath, inCatFile, startFreq_Hz, endFreq_Hz, nChans,
     # Write to the FITS files
     print("Saving the FITS files to disk in directory '%s'" % dataPath)
     sys.stdout.flush()
-    fitsFileOut =  dataPath + "/StokesI.fits"
+    fitsFileOut = dataPath + "/StokesI.fits"
     print("> %s" % fitsFileOut)
     hduI.writeto(fitsFileOut, overwrite=True)
-    fitsFileOut =  dataPath + "/StokesQ.fits"
+    fitsFileOut = dataPath + "/StokesQ.fits"
     print("> %s" % fitsFileOut)
     hduQ.writeto(fitsFileOut, overwrite=True)
-    fitsFileOut =  dataPath + "/StokesU.fits"
+    fitsFileOut = dataPath + "/StokesU.fits"
     print("> %s" % fitsFileOut)
     hduU.writeto(fitsFileOut, overwrite=True)
 
     # Save a vector of frequency values
-    freqFileOut =  dataPath + "/freqs_Hz.dat"
+    freqFileOut = dataPath + "/freqs_Hz.dat"
     print("> %s" % freqFileOut)
-    np.savetxt(freqFileOut,freqNoFlgArr_Hz)
+    np.savetxt(freqFileOut, freqNoFlgArr_Hz)
 
     return successCount
 
 
-#-----------------------------------------------------------------------------#
-if __name__=="__main__":
+# -----------------------------------------------------------------------------#
+if __name__ == "__main__":
     main()
