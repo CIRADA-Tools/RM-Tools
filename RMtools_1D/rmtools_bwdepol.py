@@ -1418,7 +1418,6 @@ def run_adjoint_rmsynth(
 
 # -----------------------------------------------------------------------------#
 def main():
-
     """
     Start the function to perform bwdepol RM-synthesis if called from the command line.
     """

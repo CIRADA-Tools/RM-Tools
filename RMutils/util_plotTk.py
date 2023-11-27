@@ -157,7 +157,6 @@ def tweakAxFormat(
     bbox_to_anchor=(1.00, 1.00),
     showLeg=True,
 ):
-
     # Axis/tic formatting
     ax.tick_params(pad=pad)
     for line in ax.get_xticklines() + ax.get_yticklines():
@@ -183,7 +182,6 @@ def tweakAxFormat(
 
 # -----------------------------------------------------------------------------#
 def format_ticks(ax, pad=10, w=1.0):
-
     ax.tick_params(pad=pad)
     for line in ax.get_xticklines() + ax.get_yticklines():
         line.set_markeredgewidth(w)
@@ -453,7 +451,6 @@ def plot_pqu_vs_lamsq_ax(
     axisYright=False,
     axisXtop=False,
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -618,7 +615,6 @@ def plot_psi_vs_lamsq_ax(
     axisYright=False,
     axisXtop=False,
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -718,7 +714,6 @@ def plot_q_vs_u_ax(
     axisYright=False,
     axisXtop=False,
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -789,7 +784,6 @@ def plot_q_vs_u_ax(
 
 # -----------------------------------------------------------------------------#
 def unwrap_lines(dat, lims=[-90.0, 90.0], thresh=0.95):
-
     jump = np.nonzero(np.abs(np.diff(dat)) > ((lims[1] - lims[0]) * thresh))[0]
     lasti = 0
     for ind in jump:
@@ -802,7 +796,6 @@ def unwrap_lines(dat, lims=[-90.0, 90.0], thresh=0.95):
 def plot_RMSF_ax(
     ax, phiArr, RMSFArr, fwhmRMSF=None, axisYright=False, axisXtop=False, doTitle=False
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -880,7 +873,6 @@ def plot_dirtyFDF_ax(
     doTitle=False,
     units="",
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -955,7 +947,6 @@ def plot_cleanFDF_ax(
     showComplex=True,
     units="",
 ):
-
     # Set the axis positions
     if axisYright:
         ax.yaxis.tick_right()
@@ -1057,7 +1048,6 @@ def plot_hist4_ax(
     legLoc="tr",
     verbose=False,
 ):
-
     # Format of the histogram lines and shading.
     # Up to four histograms are supported and two alternative styles
     edgeColourLst = [
@@ -1168,7 +1158,6 @@ def plot_hist4_ax(
     # more control than inbuilt matplotlib function - when originally writing
     # this code the fill styles did not work well.
     for i in range(len(nLst)):
-
         # Set the legend labels
         try:
             legLabel = legLabLst[i]
@@ -1225,7 +1214,6 @@ def plot_scatter4_ax(
     legLoc="tr",
     verbose=False,
 ):
-
     # Format of the scatter points and shading.
     # Up to four populations are supported and two alternative styles
     edgeColourLst = [
@@ -1340,7 +1328,6 @@ def plot_scatter4_ax(
     sc3D = None
     zMap = "r"
     for i in range(len(xLst)):
-
         # Map the z axis to the colours
         if not zLst == []:
             if np.all(np.isnan(zLst[i])):
@@ -1394,7 +1381,6 @@ def plot_scatter4_ax(
 
 # -----------------------------------------------------------------------------#
 def plotSpecIPQU(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, QArr, rmsQArr = dataMan.get_specQ_byindx(indx)
@@ -1451,7 +1437,6 @@ def plotSpecIPQU(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotSpecRMS(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, QArr, rmsQArr = dataMan.get_specQ_byindx(indx)
@@ -1479,7 +1464,6 @@ def plotSpecRMS(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotPolang(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, modIArr = dataMan.get_modI_byindx(indx)
@@ -1530,7 +1514,6 @@ def plotPolang(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotFracPol(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, modIArr = dataMan.get_modI_byindx(indx)
@@ -1580,7 +1563,6 @@ def plotFracPol(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotFracQvsU(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, modIArr = dataMan.get_modI_byindx(indx)
@@ -1731,7 +1713,6 @@ def plot_Ipqu_spectra_fig(
 
 # -----------------------------------------------------------------------------#
 def plotPolsummary(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, modIArr = dataMan.get_modI_byindx(indx)
@@ -1783,7 +1764,6 @@ def plotPolsummary(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotPolresidual(dataMan, indx, io="fig"):
-
     # Get the data
     freqArr_Hz, IArr, rmsIArr = dataMan.get_specI_byindx(indx)
     dummy, modIArr = dataMan.get_modI_byindx(indx)
@@ -1905,7 +1885,6 @@ def plot_rmsf_fdf_fig(
 
 # -----------------------------------------------------------------------------#
 def plotRMSF(dataMan, indx, io="fig"):
-
     # Get the data and Gaussian fit to RMSF
     phiArr, RMSFArr = dataMan.get_RMSF_byindx(indx)
     pDict = dataMan.get_RMSF_params_byindx(indx)
@@ -1930,7 +1909,6 @@ def plotRMSF(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotDirtyFDF(dataMan, indx, io="fig"):
-
     # Get the data
     phiArr, FDFArr = dataMan.get_dirtyFDF_byindx(indx)
 
@@ -1965,7 +1943,6 @@ def plotDirtyFDF(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotCleanFDF(dataMan, indx, io="fig"):
-
     # Get the data
     phiArr, dirtyFDFArr = dataMan.get_dirtyFDF_byindx(indx)
     dummy, cleanFDFArr = dataMan.get_cleanFDF_byindx(indx)
@@ -2016,7 +1993,6 @@ def plot_cleanFDF_fig(
     showComplex=True,
     fig=None,
 ):
-
     # Default to a pyplot figure
     if fig == None:
         fig = plt.figure(facecolor="w", figsize=(12.0, 8))
@@ -2054,7 +2030,6 @@ def plot_cleanFDF_fig(
 
 # -----------------------------------------------------------------------------#
 def plotStampI(dataMan, indx, io="fig"):
-
     # Get the data & header of the saved postage stamp
     data, head = dataMan.get_stampI_byindx(indx)
 
@@ -2076,7 +2051,6 @@ def plotStampI(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotStampP(dataMan, indx, io="fig"):
-
     # Get the data & header of the saved postage stamp
     data, head = dataMan.get_stampP_byindx(indx)
 
@@ -2098,7 +2072,6 @@ def plotStampP(dataMan, indx, io="fig"):
 
 # -----------------------------------------------------------------------------#
 def plotSctHstQuery(dataMan, plotParm, io="fig"):
-
     # What type of plot are we creating?
     plotType = plotParm.configDict.get("TYPE", "Histogram")
 

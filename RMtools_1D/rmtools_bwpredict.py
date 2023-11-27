@@ -122,7 +122,6 @@ def bwdepol_compute_predictions(
 
 
 def main():
-
     """
     Start the function to generate the figures if called from the command line.
     """

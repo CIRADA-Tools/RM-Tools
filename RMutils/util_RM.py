@@ -754,7 +754,6 @@ def fit_rmsf(xData, yData, thresh=0.4, ampThresh=0.4):
     """
 
     try:
-
         # Detect the peak and mask off the sidelobes
         msk1 = detect_peak(yData, thresh)
         msk2 = np.where(yData < ampThresh, 0.0, msk1)
@@ -1195,7 +1194,6 @@ def calc_sigma_add(xArr, yArr, dyArr, yMed=None, noise=None, nSamp=1000, suffix=
 
     # DEBUG PLOTS
     if False:
-
         # Setup for the figure
         import matplotlib.pyplot as plt
 
@@ -1333,7 +1331,6 @@ def calc_normal_tests(inArr, suffix=""):
 def measure_qu_complexity(
     freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_radm2, specF=1
 ):
-
     # Create a RM-thin model to subtract
     pModArr, qModArr, uModArr = create_pqu_spectra_burn(
         freqArr_Hz=freqArr_Hz,
@@ -1382,7 +1379,6 @@ def measure_qu_complexity(
 
 # -----------------------------------------------------------------------------#
 def measure_fdf_complexity(phiArr, FDF):
-
     # Second moment of clean component spectrum
     mom2FDF = calc_mom2_FDF(FDF, phiArr)
 
@@ -1607,7 +1603,6 @@ def do_rmclean(
     #  - Twice the number of channels as dirtyFDF
     #  - Must be complex
     if not RMSFArr is None:
-
         # Check 1D
         if len(RMSFArr.shape) != 1:
             print("Err: input RMSF must be a 1D array.")
@@ -1649,7 +1644,6 @@ def do_rmclean(
 
     # If the weight array has been passed in ...
     if not weight is None:
-
         uniformWt = False
         weightArr = np.array(weight, dtype=dtype)
 
@@ -1664,7 +1658,6 @@ def do_rmclean(
         weightArr = np.ones(lamSqArr.shape, dtype=dtype)
 
     if doPlots:
-
         from matplotlib import pyplot as plt
 
         # Setup the figure to track the clean
@@ -1866,7 +1859,6 @@ def do_rmclean(
 
 # -----------------------------------------------------------------------------#
 def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_radm2):
-
     import matplotlib.pyplot as plt
     from matplotlib.ticker import MaxNLocator
 

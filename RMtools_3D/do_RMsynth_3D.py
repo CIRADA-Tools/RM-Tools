@@ -51,6 +51,7 @@ if sys.version_info.major == 2:
 
 C = 2.997924538e8  # Speed of light [m/s]
 
+
 # -----------------------------------------------------------------------------#
 def run_rmsynth(
     dataQ,
@@ -68,7 +69,6 @@ def run_rmsynth(
     not_rmsf=False,
     log=print,
 ):
-
     """Run RM-synthesis on 2/3D data.
 
     Args:

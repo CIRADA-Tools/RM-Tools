@@ -111,13 +111,11 @@ def config_read(filename, delim="=", doValueSplit=True):
 
     # Read in the input file, line by line
     for line in CONFIGFILE:
-
         valueLst = []
         line = line.rstrip("\n\r")
 
         # Filter for comments and blank lines
         if not comment.match(line) and keyVal.match(line):
-
             # Weed out internal comments & split on 1st space
             line = comment.sub("", line)
             (keyword, value) = line.split(delim, 1)
@@ -182,7 +180,6 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
 
 # -----------------------------------------------------------------------------#
 def cleanup_str_input(textBlock):
-
     # Compile a few useful regular expressions
     spaces = re.compile(r"[^\S\r\n]+")
     newlines = re.compile(r"\n+")
@@ -1088,7 +1085,6 @@ def create_pqu_resid_RMthin(qArr, uArr, freqArr_Hz, fracPol, psi0_deg, RM_radm2)
 
 # -----------------------------------------------------------------------------#
 def xfloat(x, default=None):
-
     if x is None or x == "":
         return default
     try:

@@ -274,7 +274,6 @@ class Tests:
         assert np.any([blobs[-1] != blobs[i] for i in range(len(blobs) - 1)])
 
     def test_run_mcmc_resume(self):
-
         self.sampler = s = EnsembleSampler(
             self.nwalkers, self.ndim, lnprob_gaussian, args=[self.icov]
         )

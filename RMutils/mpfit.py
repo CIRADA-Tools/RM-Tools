@@ -608,7 +608,6 @@ except Exception:
 
 
 class mpfit:
-
     (blas_enorm32,) = blas.get_blas_funcs(
         ["nrm2"], numpy.array([0], dtype=numpy.float32)
     )
@@ -1074,7 +1073,6 @@ class mpfit:
         # Beginning of the outer loop
 
         while 1:
-
             # If requested, call fcn to enable printing of iterates
             self.params[ifree] = x
             if self.qanytied:
@@ -1227,7 +1225,6 @@ class mpfit:
 
             # Beginning of the inner loop
             while 1:
-
                 # Determine the levenberg-marquardt parameter
                 catch_msg = "calculating LM parameter (MPFIT_)"
                 [fjac, par, wa1, wa2] = self.lmpar(
@@ -1242,7 +1239,6 @@ class mpfit:
                     wa2 = x + wa1
 
                 else:
-
                     # Respect the limits.  If a step were to go out of bounds, then
                     # we should take a step in the same direction but shorter distance.
                     # The step should take us right to the limit in that case.
@@ -1452,7 +1448,6 @@ class mpfit:
         ):
             sz = fjac.shape
             if (n > 0) and (sz[0] >= n) and (sz[1] >= n) and (len(ipvt) >= n):
-
                 catch_msg = "computing the covariance matrix"
                 cv = self.calc_covar(fjac[0:n, 0:n], ipvt[0:n])
                 cv.shape = [n, n]
@@ -1504,7 +1499,6 @@ class mpfit:
         pformat="%.10g",
         dof=1,
     ):
-
         if self.debug:
             print("Entering defiter...")
         if quiet:
@@ -1612,7 +1606,6 @@ class mpfit:
         ifree=None,
         dstep=None,
     ):
-
         if self.debug:
             print("Entering fdjac2...")
         machep = self.machar.machep
@@ -1843,7 +1836,6 @@ class mpfit:
     # explicitly, and MPFIT does not.
 
     def qrfac(self, a, pivot=0):
-
         if self.debug:
             print("Entering qrfac...")
         machep = self.machar.machep
@@ -2172,7 +2164,6 @@ class mpfit:
     #
 
     def lmpar(self, r, ipvt, diag, qtb, delta, x, sdiag, par=None):
-
         if self.debug:
             print("Entering lmpar...")
         dwarf = self.machar.minnum
@@ -2369,7 +2360,6 @@ class mpfit:
     # 	 **********
 
     def calc_covar(self, rr, ipvt=None, tol=1.0e-14):
-
         if self.debug:
             print("Entering calc_covar...")
         # if numpy.rank(rr) != 2:

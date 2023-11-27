@@ -567,7 +567,6 @@ class lnlike_call(bilby.Likelihood):
     """Returns a function to evaluate the log-likelihood"""
 
     def __init__(self, parNames, lamSqArr_m2, qArr, dqArr, uArr, duArr, modelNum):
-
         self.parNames = parNames
         self.lamSqArr_m2 = lamSqArr_m2
         self.qArr = qArr
@@ -614,7 +613,6 @@ def chisq_model(parNames, p, lamSqArr_m2, qArr, dqArr, uArr, duArr, model):
 
 # -----------------------------------------------------------------------------#
 def wrap_chains(chains, wraps, bounds, p, verbose=False):
-
     # Get the indices of the periodic parameters
     iWrap = [i for i, e in enumerate(wraps) if e != 0]
 

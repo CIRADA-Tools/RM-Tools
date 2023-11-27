@@ -160,7 +160,6 @@ def strip_fits_dims(data=None, header=None, minDim=2, forceCheckDims=0):
 
     # Strip unused dimensions from the header
     if not data is None:
-
         naxis = len(data.shape)
         extraDims = naxis - minDim
         if extraDims < 0:
@@ -184,7 +183,6 @@ def strip_fits_dims(data=None, header=None, minDim=2, forceCheckDims=0):
 
     # Strip unused dimensions from the header
     if not header is None:
-
         header = header.copy()
         naxis = header["NAXIS"]
 

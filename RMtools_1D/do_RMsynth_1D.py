@@ -77,6 +77,7 @@ if sys.version_info.major == 2:
 
 C = 2.997924538e8  # Speed of light [m/s]
 
+
 # -----------------------------------------------------------------------------#
 def run_rmsynth(
     data,

@@ -168,7 +168,6 @@ def main():
 
 
 def open_datacube(fitsI, verbose=True):
-
     # Default data type
 
     # Sanity check on header dimensions
@@ -191,7 +190,6 @@ def open_datacube(fitsI, verbose=True):
 
 
 def get_frequencies(datacube, headI, freqFile):
-
     nBits = np.abs(headI["BITPIX"])
     dtFloat = "float" + str(nBits)
 
@@ -208,7 +206,6 @@ def get_frequencies(datacube, headI, freqFile):
 
 
 def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
-
     """
     Estimate channel noise of a cube data. Returns rms values and a mask 2D data.
 
@@ -267,7 +264,6 @@ def cube_noise(datacube, header, freqArr_Hz, cutoff=-1, threshold=3):
 
 
 def channel_noise(chan, datacube, header, cutoff, threshold, nBits):
-
     dtFloat = "float" + str(nBits)
 
     mask_channel = np.zeros((header["NAXIS2"], header["NAXIS1"]), dtype=dtFloat)
@@ -300,7 +296,6 @@ def channel_noise(chan, datacube, header, cutoff, threshold, nBits):
 
 
 def savefits_mask(data, header, outDir, prefixOut):
-
     headMask = strip_fits_dims(header=header, minDim=2)
     headMask["DATAMAX"] = 1
     headMask["DATAMIN"] = 0
@@ -313,7 +308,6 @@ def savefits_mask(data, header, outDir, prefixOut):
 
 
 def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
-
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
 
@@ -326,7 +320,6 @@ def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
 
 
 def savefits_model_I(data, header, outDir, prefixOut):
-
     nDim = data.ndim
     nBits = np.abs(header["BITPIX"])
 
@@ -355,7 +348,6 @@ def savefits_model_I(data, header, outDir, prefixOut):
 def fit_spectra_I(
     xy, datacube, freqArr_Hz, rms_Arr, polyOrd, fit_function, nDetectPix, verbose=True
 ):
-
     i, x, y = xy
 
     Ispectrum = datacube[:, x, y]
@@ -397,7 +389,6 @@ def make_model_I(
     outDir=None,
     prefixOut=None,
 ):
-
     """
     Estimates Stokes I model data by fitting polynomial function and predicting I
     using the derived coeffiencients.

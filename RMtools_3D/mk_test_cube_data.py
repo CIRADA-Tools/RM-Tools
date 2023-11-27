@@ -97,6 +97,7 @@ from RMutils.util_misc import (
 
 C = 2.99792458e8
 
+
 # -----------------------------------------------------------------------------#
 def main():
     """
@@ -374,7 +375,6 @@ def create_IQU_cube_data(
 
         # Type 1 = multiple Burn depolarisation affected components
         if modelType == 1:
-
             # Parse the parameters of multiple components
             preLst, parmArr = split_repeat_lst(e[1:], 7, 4)
 
@@ -393,7 +393,6 @@ def create_IQU_cube_data(
 
         # Type 2 = multiple internal depolarisation affected components
         elif modelType == 2:
-
             # Parse the parameters of multiple components
             preLst, parmArr = split_repeat_lst(e[1:], 7, 3)
 

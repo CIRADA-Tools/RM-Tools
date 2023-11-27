@@ -97,7 +97,6 @@ def label_format_hms(deg, pos):
 
 # -----------------------------------------------------------------------------#
 def label_format_deg(deg, pos):
-
     return "%.3f" % deg
 
 
@@ -120,7 +119,6 @@ def plot_fits_map(
     dpi=100,
     doColbar=True,
 ):
-
     """
     Plot a colourscale image of a FITS map.
 

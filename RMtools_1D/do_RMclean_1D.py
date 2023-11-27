@@ -47,6 +47,8 @@ from matplotlib.pyplot import savefig
 from RMutils.util_RM import do_rmclean_hogbom, measure_fdf_complexity, measure_FDF_parms
 
 C = 2.997924538e8  # Speed of light [m/s]
+
+
 # -----------------------------------------------------------------------------#
 def run_rmclean(
     mDict,

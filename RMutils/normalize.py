@@ -62,7 +62,6 @@ class APLpyNormalize(Normalize):
             self.midpoint = (vmid - vmin) / (vmax - vmin)
 
     def __call__(self, value, clip=None):
-
         # read in parameters
         method = self.stretch
         exponent = self.exponent
@@ -95,31 +94,25 @@ class APLpyNormalize(Normalize):
             # CUSTOM APLPY CODE
 
             if self.stretch == "linear":
-
                 pass
 
             elif self.stretch == "log":
-
                 result = ma.log10((result / self.midpoint) + 1.0) / ma.log10(
                     (1.0 / self.midpoint) + 1.0
                 )
 
             elif self.stretch == "sqrt":
-
                 result = ma.sqrt(result)
 
             elif self.stretch == "arcsinh":
-
                 result = ma.arcsinh(result / self.midpoint) / ma.arcsinh(
                     1.0 / self.midpoint
                 )
 
             elif self.stretch == "power":
-
                 result = ma.power(result, exponent)
 
             else:
-
                 raise Exception("Unknown stretch in APLpyNormalize: %s" % self.stretch)
 
         if vtype == "scalar":
@@ -128,7 +121,6 @@ class APLpyNormalize(Normalize):
         return result
 
     def inverse(self, value):
-
         # ORIGINAL MATPLOTLIB CODE
 
         if not self.scaled():
@@ -144,29 +136,23 @@ class APLpyNormalize(Normalize):
             val = value
 
         if self.stretch == "linear":
-
             pass
 
         elif self.stretch == "log":
-
             val = self.midpoint * (
                 ma.power(10.0, (val * ma.log10(1.0 / self.midpoint + 1.0))) - 1.0
             )
 
         elif self.stretch == "sqrt":
-
             val = val * val
 
         elif self.stretch == "arcsinh":
-
             val = self.midpoint * ma.sinh(val * ma.arcsinh(1.0 / self.midpoint))
 
         elif self.stretch == "power":
-
             val = ma.power(val, (1.0 / self.exponent))
 
         else:
-
             raise Exception("Unknown stretch in APLpyNormalize: %s" % self.stretch)
 
         return vmin + val * (vmax - vmin)
