@@ -526,7 +526,7 @@ def plot_pqu_vs_lamsq_ax(
     ax.errorbar(x=lamSqArr_m2, y=qArr, yerr=dqArr, mec='tab:blue', mfc='tab:red', ms=2,
                 fmt='D', ecolor='tab:blue', elinewidth=1.0, capsize=2,
                 label='Stokes q')
-    
+
     ax.errorbar(x=lamSqArr_m2, y=uArr, yerr=duArr, mec='tab:red', mfc='tab:blue', ms=2,
                 fmt='D', ecolor='tab:red', elinewidth=1.0, capsize=2,
                 label='Stokes u')

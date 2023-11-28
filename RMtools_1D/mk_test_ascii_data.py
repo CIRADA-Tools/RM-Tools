@@ -79,7 +79,7 @@ def main():
     one source.
 
     The spectra are populated with polarised sources whose properties are given
-    in an external CSV-format catalogue file. Two types of model may be 
+    in an external CSV-format catalogue file. Two types of model may be
     specified in the file, assuming a total flux & spectral index:
 
         # MODEL TYPE 1: One or more components affected by Burn depolarisation.
@@ -113,7 +113,7 @@ def main():
         #
         # Column  |  Description
         #---------------------------------------------------
-        # [0]     |  Model type [2]      
+        # [0]     |  Model type [2]
         # [1]     |  X coordinate (deg)    ... dummy value
         # [2]     |  Y coordinate (deg)    ... dummy value
         # [3]     |  Major axis (arcsec)   ... dummy value
@@ -144,7 +144,7 @@ def main():
 
     ./mk_test_ascii_data.py catalogue.csv -f 1.10e9,1.20e9,1.60e9,1.65e9
 
-    ./mk_test_ascii_data.py catalogue.csv -n NOISE.TXT 
+    ./mk_test_ascii_data.py catalogue.csv -n NOISE.TXT
 
     """
 
