@@ -96,7 +96,7 @@ def main():
     import argparse
 
     descStr = """
-    Generate Stokes QU model based on clean components and (optional) 
+    Generate Stokes QU model based on clean components and (optional)
     Stokes I model. Requires inputs to rmsynth1D and outputs of rmsynth1d and
     rmclean1d. Saves ASCII file containing arrays of IQU for each channel.
     """

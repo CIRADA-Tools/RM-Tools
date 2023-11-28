@@ -90,4 +90,4 @@ ENV/
 .ropeproject
 
 # Bytecompiled python
-*.pyc 
+*.pyc

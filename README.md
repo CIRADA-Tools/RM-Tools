@@ -6,44 +6,44 @@ RM-synthesis, RM-clean and QU-fitting on polarised radio spectra
  polarised radio spectra.
 
 
- Initial version by Cormac R. Purcell  
+ Initial version by Cormac R. Purcell
  Currently hosted by CIRADA and maintained by Cameron Van Eck
 
 Version 1.2 is now released! Check the wiki for new functionality.
 
 Installation, usage instructions and detailed algorithm information can be found in the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
 
-Structure:  
-RMtools_1D  ... Toolkit to produce Faraday spectra of single pixels.  
-RMtools_3D  ... Toolkit to produce Faraday depth cubes.  
-RMutils     ... Utilities for interacting with polarized data and Faraday depth 
+Structure:
+RMtools_1D  ... Toolkit to produce Faraday spectra of single pixels.
+RMtools_3D  ... Toolkit to produce Faraday depth cubes.
+RMutils     ... Utilities for interacting with polarized data and Faraday depth
 
 This will make the following modules importable in Python: RMtools_1D, RMtools_3D, RMutil
 
 ![RM-Tools component diagram](https://github.com/CIRADA-Tools/RM-Tools/wiki/diagram.png)
 
-Five terminal commands are added to invoke the main tools:  
-rmsynth1d  
-rmclean1d  
-rmsynth3d  
-rmclean3d  
+Five terminal commands are added to invoke the main tools:
+rmsynth1d
+rmclean1d
+rmsynth3d
+rmclean3d
 qufit
 
 Use these commands with a -h flag to get information on the usage of each. Full documentation is on the [wiki](https://github.com/CIRADA-Tools/RM-Tools/wiki).
 
-The following terminal commands are available to access the [additional tools](https://github.com/CIRADA-Tools/RM-Tools/wiki/Tools):  
-rmtools_freqfile  
-rmtools_calcRMSF  
-rmtools_testdata1D  
-rmtools_createchunks  
-rmtools_assemblechunks  
-rmtools_fitIcube  
-rmtools_peakfitcube  
-rmtools_testdata3D  
+The following terminal commands are available to access the [additional tools](https://github.com/CIRADA-Tools/RM-Tools/wiki/Tools):
+rmtools_freqfile
+rmtools_calcRMSF
+rmtools_testdata1D
+rmtools_createchunks
+rmtools_assemblechunks
+rmtools_fitIcube
+rmtools_peakfitcube
+rmtools_testdata3D
 rmtools_extractregion
 
 
-If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being.  
+If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being.
 A paper with a full description of the package is being prepared but is not available yet.
 
 Questions, bug reports, and feature requests can be posted to the GitHub issues page or sent to Cameron Van Eck, cameron.vaneck (at) anu.edu.au.

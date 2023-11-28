@@ -33,9 +33,9 @@ def main():
     xmin xmax ymin ymax.
     Pixel selection is inclusive: all corner pixels will be present in output.
     Pixel counting starts at 1 (FITS convention).
-    Sky coordinates not guaranteed to give correct size box in if projection is 
+    Sky coordinates not guaranteed to give correct size box in if projection is
     highly nonlinear.
-    If a third non-generate axis is present (as either axis 3 or 4), the 
+    If a third non-generate axis is present (as either axis 3 or 4), the
     -z flag will allow selection of subranges along this axis."""
 
     parser = argparse.ArgumentParser(

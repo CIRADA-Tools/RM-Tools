@@ -11,14 +11,14 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 	 craigm@lheamail.gsfc.nasa.gov
 	 UPDATED VERSIONs can be found on my WEB PAGE:
 		http://cow.physics.wisc.edu/~craigm/idl/idl.html
-	
+
   Mark Rivers created this Python version from Craig's IDL version.
 	Mark Rivers, University of Chicago
 	Building 434A, Argonne National Laboratory
 	9700 South Cass Avenue, Argonne, IL 60439
 	rivers@cars.uchicago.edu
 	Updated versions can be found at http://cars.uchicago.edu/software
- 
+
  Sergey Koposov converted the Mark's Python version from Numeric to numpy
 	Sergey Koposov, University of Cambridge, Institute of Astronomy,
 	Madingley road, CB3 0HA, Cambridge, UK
@@ -267,7 +267,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  fields within the PARINFO structure, and they will be ignored.
 
  PARINFO Example:
- parinfo = [{'value':0., 'fixed':0, 'limited':[0,0], 'limits':[0.,0.]} 
+ parinfo = [{'value':0., 'fixed':0, 'limited':[0,0], 'limits':[0.,0.]}
  												for i in range(5)]
  parinfo[0]['fixed'] = 1
  parinfo[4]['limited'][0] = 1
@@ -1407,7 +1407,7 @@ class mpfit:
                 if ~numpy.all(
                     numpy.isfinite(wa1) & numpy.isfinite(wa2) & numpy.isfinite(x)
                 ) or ~numpy.isfinite(ratio):
-                    errmsg = """ERROR: parameter or function value(s) have become 
+                    errmsg = """ERROR: parameter or function value(s) have become
 						'infinite; check model function for over- 'and underflow"""
                     self.status = -16
                     break
