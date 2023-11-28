@@ -14,7 +14,7 @@ repos:
     rev: 5.12.0
     hooks:
     -   id: isort
-        args: ["--profile=black"] # <-- this one
+        args: ["--profile=black"]
 ci:
     autofix_commit_msg: |
         [pre-commit.ci] auto fixes from pre-commit.com hooks
