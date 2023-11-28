@@ -31,19 +31,19 @@ def model(pDict, lamSqArr_m2):
 # -----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.001, maximum=1.0, name="fracPol", latex_label="$p$"
+        minimum=0.001, maximum=1.0, name="fracPol", latex_label=r"$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,
         maximum=180.0,
         name="psi0_deg",
-        latex_label="$\psi_0$ (deg)",
+        latex_label=r"$\psi_0$ (deg)",
         boundary="periodic",
     ),
     "RM_radm2": bilby.prior.Uniform(
         minimum=-1100.0,
         maximum=1100.0,
         name="RM_radm2",
-        latex_label="RM (rad m$^{-2}$)",
+        latex_label=r"RM (rad m$^{-2}$)",
     ),
 }

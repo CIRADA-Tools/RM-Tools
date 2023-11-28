@@ -220,7 +220,7 @@ def plot_adjoint_info(mylist, units="Jy/beam"):
         phiArr_radm2,
         adjoint_sens / adjoint_noise * np.max(adjoint_noise),
     )
-    ax[1].set_xlabel("$\phi$ (rad m$^{-2}$)")
+    ax[1].set_xlabel(r"$\phi$ (rad m$^{-2}$)")
     ax[1].set_ylabel("S:N multiplier")
     ax[1].set_title("Theoretical S:N after bandwidth depolarization")
     # plot 2
@@ -228,7 +228,7 @@ def plot_adjoint_info(mylist, units="Jy/beam"):
         phiArr_radm2,
         adjoint_sens,
     )
-    ax[0].set_xlabel("$\phi$ (rad m$^{-2}$)")
+    ax[0].set_xlabel(r"$\phi$ (rad m$^{-2}$)")
     ax[0].set_ylabel("Sensitivity")
     ax[0].set_title("Theoretical Sensitivity after bandwidth depolarization")
     return
@@ -436,7 +436,7 @@ def bwdepol_plot_RMSF_ax(
     xRange = np.nanmax(phiArr) - np.nanmin(phiArr)
     ax.set_xlim(np.nanmin(phiArr) - xRange * 0.01, np.nanmax(phiArr) + xRange * 0.01)
     ax.set_ylabel("Normalised Units")
-    ax.set_xlabel("$\phi$ rad m$^{-2}$")
+    ax.set_xlabel(r"$\phi$ rad m$^{-2}$")
     ax.axhline(0, color="grey")
 
     # Format tweaks
@@ -1125,7 +1125,7 @@ def run_adjoint_rmsynth(
                 np.min(freqArr_Hz) / 1e9 - xRange * 0.05,
                 np.max(freqArr_Hz) / 1e9 + xRange * 0.05,
             )
-            ax.set_xlabel("$\\nu$ (GHz)")
+            ax.set_xlabel(r"$\nu$ (GHz)")
             ax.set_ylabel("RMS " + units)
             ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
 

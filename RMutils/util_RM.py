@@ -1887,7 +1887,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
     ax2.axhline(0, color="grey")
     ax2.yaxis.set_major_locator(MaxNLocator(4))
     ax2.xaxis.set_major_locator(MaxNLocator(4))
-    ax2.set_xlabel("$\\lambda^2$ (m$^2$)")
+    ax2.set_xlabel(r"$\lambda^2$ (m$^2$)")
     # ax2.set_ylabel('Residual ($\sigma$)')
     ax2.set_ylabel("Residual (fractional polarisation)")
 
@@ -1921,7 +1921,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
     g = gauss1D(amp=H, mean=0.0, fwhm=FWHM)(x)
     ax3.plot(x, g, color="k", linewidth=2, linestyle="--", zorder=1)
     ax3.set_ylabel("Normalised Units")
-    ax3.set_xlabel("Residual ($\sigma$)")
+    ax3.set_xlabel(r"Residual ($\sigma$)")
 
     # Plot the cumulative distribution function
     N = len(qResidNorm)
@@ -1934,7 +1934,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
     x, y = norm_cdf(mean=0.0, std=1.0, N=1000)
     ax4.step(x, y, color="k", linewidth=2, linestyle="--", zorder=1)
     ax4.set_ylabel("CDF")
-    ax4.set_xlabel("Residual ($\sigma$)")
+    ax4.set_xlabel(r"Residual ($\sigma$)")
 
     return fig
 

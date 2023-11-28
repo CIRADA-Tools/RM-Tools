@@ -493,8 +493,8 @@ def plot_clean_spec(
         ax2.axhline(window, color="r", ls=":", label="Window cutoff")
     ax2.set_ylim(0, max(cutoff * 3.0, window * 3.0))
     ax2.yaxis.set_major_locator(MaxNLocator(4))
-    ax2.set_ylabel("Flux Density (" + units + ")")
-    ax2.set_xlabel("$\phi$ rad m$^{-2}$")
+    ax2.set_ylabel(rf"Flux Density ({units})")
+    ax2.set_xlabel(r"$\phi$ rad m$^{-2}$")
     leg = ax2.legend(
         numpoints=1,
         loc="upper right",

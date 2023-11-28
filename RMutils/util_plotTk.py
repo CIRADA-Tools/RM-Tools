@@ -283,7 +283,7 @@ def plot_I_vs_nu_ax(
         np.nanmin(freqArr_Hz) / 1e9 - xRange * 0.05,
         np.nanmax(freqArr_Hz) / 1e9 + xRange * 0.05,
     )
-    ax.set_xlabel("$\\nu$ (GHz)")
+    ax.set_xlabel(r"$\nu$ (GHz)")
     ax.set_ylabel("Flux Density (" + units + ")")
     ax.minorticks_on()
 
@@ -385,7 +385,7 @@ def plot_PQU_vs_nu_ax(
         np.nanmin(freqArr_Hz) / 1e9 - xRange * 0.05,
         np.nanmax(freqArr_Hz) / 1e9 + xRange * 0.05,
     )
-    ax.set_xlabel("$\\nu$ (GHz)")
+    ax.set_xlabel(r"$\nu$ (GHz)")
     ax.set_ylabel("Flux Density")
     ax.axhline(0, color="grey")
 
@@ -426,7 +426,7 @@ def plot_rmsIQU_vs_nu_ax(
         np.nanmin(freqArr_Hz) / 1e9 - xRange * 0.05,
         np.nanmax(freqArr_Hz) / 1e9 + xRange * 0.05,
     )
-    ax.set_xlabel("$\\nu$ (GHz)")
+    ax.set_xlabel(r"$\nu$ (GHz)")
     ax.set_ylabel("Flux Density")
 
     # Format tweaks
@@ -589,7 +589,7 @@ def plot_pqu_vs_lamsq_ax(
         yDataMin - 2 * medErrBar - yRange * 0.05,
         yDataMax + 2 * medErrBar + yRange * 0.1,
     )
-    ax.set_xlabel("$\\lambda^2$ (m$^2$)")
+    ax.set_xlabel(r"$\lambda^2$ (m$^2$)")
     ax.set_ylabel("Fractional Polarisation")
     ax.axhline(0, linestyle="--", color="grey")
     ax.minorticks_on()
@@ -656,7 +656,7 @@ def plot_psi_vs_lamsq_ax(
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees(np.arctan2(uModArr, qModArr) / 2.0)
         ax.plot(
-            lamSqHirArr_m2, psiHirArr_deg, color="tab:red", lw=0.1, label="Model $\psi$"
+            lamSqHirArr_m2, psiHirArr_deg, color="tab:red", lw=0.1, label=r"Model $\psi$"
         )
     if model_dict is not None:
         errDict = {}
@@ -687,8 +687,8 @@ def plot_psi_vs_lamsq_ax(
         np.nanmin(lamSqArr_m2) - xRange * 0.05, np.nanmax(lamSqArr_m2) + xRange * 0.05
     )
     ax.set_ylim(-99.9, 99.9)
-    ax.set_xlabel("$\\lambda^2$ (m$^2$)")
-    ax.set_ylabel("$\psi$ (degrees)")
+    ax.set_xlabel(r"$\lambda^2$ (m$^2$)")
+    ax.set_ylabel(r"$\psi$ (degrees)")
     ax.axhline(0, linestyle="--", color="grey")
     ax.minorticks_on()
 
@@ -834,7 +834,7 @@ def plot_RMSF_ax(
     xRange = np.nanmax(phiArr) - np.nanmin(phiArr)
     ax.set_xlim(np.nanmin(phiArr) - xRange * 0.01, np.nanmax(phiArr) + xRange * 0.01)
     ax.set_ylabel("Normalised Units")
-    ax.set_xlabel("$\phi$ rad m$^{-2}$")
+    ax.set_xlabel(r"$\phi$ rad m$^{-2}$")
     ax.axhline(0, color="grey")
 
     # Format tweaks
@@ -922,7 +922,7 @@ def plot_dirtyFDF_ax(
     xRange = np.nanmax(phiArr) - np.nanmin(phiArr)
     ax.set_xlim(np.nanmin(phiArr) - xRange * 0.01, np.nanmax(phiArr) + xRange * 0.01)
     ax.set_ylabel("Flux Density (" + units + ")")
-    ax.set_xlabel("$\phi$ (rad m$^{-2}$)")
+    ax.set_xlabel(r"$\phi$ (rad m$^{-2}$)")
     ax.axhline(0, color="grey")
 
     # Format tweaks
@@ -1020,7 +1020,7 @@ def plot_cleanFDF_ax(
     xRange = np.nanmax(phiArr) - np.nanmin(phiArr)
     ax.set_xlim(np.nanmin(phiArr) - xRange * 0.01, np.nanmax(phiArr) + xRange * 0.01)
     ax.set_ylabel("Flux Density (" + units + ")")
-    ax.set_xlabel("$\phi$ (rad m$^{-2}$)")
+    ax.set_xlabel(r"$\phi$ (rad m$^{-2}$)")
     ax.axhline(0, color="grey")
 
     # Format tweaks
