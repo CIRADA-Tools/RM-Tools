@@ -64,27 +64,27 @@ priors["fracPol1"] = bilby.prior.Uniform(
     minimum=0.001,
     maximum=1.0,
     name="fracPol1",
-    latex_label="$p_1$",
+    latex_label=r"$p_1$",
 )
 priors["fracPol2"] = bilby.prior.Uniform(
     minimum=0.001,
     maximum=1.0,
     name="fracPol2",
-    latex_label="$p_2$",
+    latex_label=r"$p_2$",
 )
 
 priors["psi01_deg"] = bilby.prior.Uniform(
     minimum=0,
     maximum=180.0,
     name="psi01_deg",
-    latex_label="$\psi_{0,1}$ (deg)",
+    latex_label=r"$\psi_{0,1}$ (deg)",
     boundary="periodic",
 )
 priors["psi02_deg"] = bilby.prior.Uniform(
     minimum=0,
     maximum=180.0,
     name="psi02_deg",
-    latex_label="$\psi_{0,2}$ (deg)",
+    latex_label=r"$\psi_{0,2}$ (deg)",
     boundary="periodic",
 )
 
@@ -92,23 +92,23 @@ priors["RM1_radm2"] = bilby.prior.Uniform(
     minimum=-1100.0,
     maximum=1100.0,
     name="RM1_radm2",
-    latex_label="$\phi_1$ (rad m$^{-2}$)",
+    latex_label=r"$\phi_1$ (rad m$^{-2}$)",
 )
 priors["RM2_radm2"] = bilby.prior.Uniform(
     minimum=-1100.0,
     maximum=1100.0,
     name="RM2_radm2",
-    latex_label="$\phi_2$ (rad m$^{-2}$)",
+    latex_label=r"$\phi_2$ (rad m$^{-2}$)",
 )
 priors["delta_RM1_RM2_radm2"] = Constraint(
     minimum=0,
     maximum=2200.0,
     name="delta_RM1_RM2_radm2",
-    latex_label="$\Delta\phi_{1,2}$ (rad m$^{-2}$)",
+    latex_label=r"$\Delta\phi_{1,2}$ (rad m$^{-2}$)",
 )
 priors["sum_p1_p2"] = Constraint(
     minimum=0.001,
     maximum=1,
     name="sum_p1_p2",
-    latex_label="$p_1+p_2$)",
+    latex_label=r"$p_1+p_2$)",
 )

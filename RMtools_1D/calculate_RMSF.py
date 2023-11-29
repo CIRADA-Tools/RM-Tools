@@ -239,7 +239,7 @@ def determine_RMSF_parameters(
     plt.plot(phi2Arr, np.imag(RMSFcube), "r--", label="Stokes U")
     plt.plot(phi2Arr, np.abs(RMSFcube), "k-", label="Amplitude")
     plt.legend()
-    plt.xlabel("Faraday depth (rad m$^{-2}$)")
+    plt.xlabel(r"Faraday depth (rad m$^{-2}$)")
     plt.ylabel("RMSF (unitless)")
     plt.subplot(212)
     ax = plt.gca()
