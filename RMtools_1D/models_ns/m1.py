@@ -1,16 +1,17 @@
 # =============================================================================#
 #                          MODEL DEFINITION FILE                              #
 # =============================================================================#
-import numpy as np
 import bilby
+import numpy as np
 
-#-----------------------------------------------------------------------------#
+
+# -----------------------------------------------------------------------------#
 # Function defining the model.                                                #
 #                                                                             #
 #  pDict       = Dictionary of parameters, created by parsing inParms, below. #
 #  lamSqArr_m2 = Array of lambda-squared values                               #
 #  quArr       = Complex array containing the Re and Im spectra.              #
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
     """Simple Faraday thin source."""
 
@@ -23,17 +24,14 @@ def model(pDict, lamSqArr_m2):
     return quArr
 
 
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 # Priors for the above model.                                                 #
 # See https://lscsoft.docs.ligo.org/bilby/prior.html for details.             #
 #                                                                             #
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.001, 
-        maximum=1.0, 
-        name="fracPol", 
-        latex_label="$p$"
+        minimum=0.001, maximum=1.0, name="fracPol", latex_label="$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,

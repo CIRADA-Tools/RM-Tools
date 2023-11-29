@@ -8,16 +8,15 @@ Goodman & Weare, Ensemble Samplers With Affine Invariance
 
 """
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ["EnsembleSampler"]
 
 import numpy as np
 
 from . import autocorr
-from .sampler import Sampler
 from .interruptible_pool import InterruptiblePool
+from .sampler import Sampler
 
 
 class EnsembleSampler(Sampler):
@@ -77,9 +76,21 @@ class EnsembleSampler(Sampler):
         :ref:`loadbalance` for more information.
 
     """
-    def __init__(self, nwalkers, dim, lnpostfn, a=2.0, args=[], kwargs={},
-                 postargs=None, threads=1, pool=None, live_dangerously=False,
-                 runtime_sortingfn=None):
+
+    def __init__(
+        self,
+        nwalkers,
+        dim,
+        lnpostfn,
+        a=2.0,
+        args=[],
+        kwargs={},
+        postargs=None,
+        threads=1,
+        pool=None,
+        live_dangerously=False,
+        runtime_sortingfn=None,
+    ):
         self.k = nwalkers
         self.a = a
         self.threads = threads
@@ -88,20 +99,19 @@ class EnsembleSampler(Sampler):
 
         if postargs is not None:
             args = postargs
-        super(EnsembleSampler, self).__init__(dim, lnpostfn, args=args,
-                                              kwargs=kwargs)
+        super(EnsembleSampler, self).__init__(dim, lnpostfn, args=args, kwargs=kwargs)
 
         # Do a little bit of _magic_ to make the likelihood call with
         # ``args`` and ``kwargs`` pickleable.
-        self.lnprobfn = _function_wrapper(self.lnprobfn, self.args,
-                                          self.kwargs)
+        self.lnprobfn = _function_wrapper(self.lnprobfn, self.args, self.kwargs)
 
         assert self.k % 2 == 0, "The number of walkers must be even."
         if not live_dangerously:
             assert self.k >= 2 * self.dim, (
                 "The number of walkers needs to be more than twice the "
                 "dimension of your parameter space... unless you're "
-                "crazy!")
+                "crazy!"
+            )
 
         if self.threads > 1 and self.pool is None:
             self.pool = InterruptiblePool(self.threads)
@@ -127,8 +137,17 @@ class EnsembleSampler(Sampler):
         # Initialize list for storing optional metadata blobs.
         self.clear_blobs()
 
-    def sample(self, p0, lnprob0=None, rstate0=None, blobs0=None,
-               iterations=1, thin=1, storechain=True, mh_proposal=None):
+    def sample(
+        self,
+        p0,
+        lnprob0=None,
+        rstate0=None,
+        blobs0=None,
+        iterations=1,
+        thin=1,
+        storechain=True,
+        mh_proposal=None,
+    ):
         """
         Advance the chain ``iterations`` steps as a generator.
 
@@ -209,11 +228,10 @@ class EnsembleSampler(Sampler):
         # makes a pretty big difference.
         if storechain:
             N = int(iterations / thin)
-            self._chain = np.concatenate((self._chain,
-                                          np.zeros((self.k, N, self.dim))),
-                                         axis=1)
-            self._lnprob = np.concatenate((self._lnprob,
-                                           np.zeros((self.k, N))), axis=1)
+            self._chain = np.concatenate(
+                (self._chain, np.zeros((self.k, N, self.dim))), axis=1
+            )
+            self._lnprob = np.concatenate((self._lnprob, np.zeros((self.k, N))), axis=1)
 
         for i in range(int(iterations)):
             self.iterations += 1
@@ -226,12 +244,13 @@ class EnsembleSampler(Sampler):
                 newlnp, blob = self._get_lnprob(q)
 
                 # Accept if newlnp is better; and ...
-                acc = (newlnp > lnprob)
+                acc = newlnp > lnprob
 
                 # ... sometimes accept for steps that got worse
                 worse = np.flatnonzero(~acc)
-                acc[worse] = ((newlnp[worse] - lnprob[worse]) >
-                              np.log(self._random.rand(len(worse))))
+                acc[worse] = (newlnp[worse] - lnprob[worse]) > np.log(
+                    self._random.rand(len(worse))
+                )
                 del worse
 
                 # Update the accepted walkers.
@@ -243,7 +262,8 @@ class EnsembleSampler(Sampler):
                     assert blobs is not None, (
                         "If you start sampling with a given lnprob, you also "
                         "need to provide the current list of blobs at that "
-                        "position.")
+                        "position."
+                    )
                     ind = np.arange(self.k)[acc]
                     for j in ind:
                         blobs[j] = blob[j]
@@ -255,8 +275,9 @@ class EnsembleSampler(Sampler):
                 # Slices for the first and second halves
                 first, second = slice(halfk), slice(halfk, self.k)
                 for S0, S1 in [(first, second), (second, first)]:
-                    q, newlnp, acc, blob = self._propose_stretch(p[S0], p[S1],
-                                                                 lnprob[S0])
+                    q, newlnp, acc, blob = self._propose_stretch(
+                        p[S0], p[S1], lnprob[S0]
+                    )
                     if np.any(acc):
                         # Update the positions, log probabilities and
                         # acceptance counts.
@@ -268,7 +289,8 @@ class EnsembleSampler(Sampler):
                             assert blobs is not None, (
                                 "If you start sampling with a given lnprob, "
                                 "you also need to provide the current list of "
-                                "blobs at that position.")
+                                "blobs at that position."
+                            )
                             ind = np.arange(len(acc))[acc]
                             indfull = np.arange(self.k)[S0][acc]
                             for j in range(len(ind)):
@@ -324,7 +346,7 @@ class EnsembleSampler(Sampler):
 
         # Generate the vectors of random numbers that will produce the
         # proposal.
-        zz = ((self.a - 1.) * self._random.rand(Ns) + 1) ** 2. / self.a
+        zz = ((self.a - 1.0) * self._random.rand(Ns) + 1) ** 2.0 / self.a
         rint = self._random.randint(Nc, size=(Ns,))
 
         # Calculate the proposed positions and the log-probability there.
@@ -332,8 +354,8 @@ class EnsembleSampler(Sampler):
         newlnprob, blob = self._get_lnprob(q)
 
         # Decide whether or not the proposals should be accepted.
-        lnpdiff = (self.dim - 1.) * np.log(zz) + newlnprob - lnprob0
-        accept = (lnpdiff > np.log(self._random.rand(len(lnpdiff))))
+        lnpdiff = (self.dim - 1.0) * np.log(zz) + newlnprob - lnprob0
+        accept = lnpdiff > np.log(self._random.rand(len(lnpdiff)))
 
         return q, newlnprob, accept, blob
 
@@ -485,8 +507,9 @@ class EnsembleSampler(Sampler):
             maximum number of lags to use. (default: 50)
 
         """
-        return autocorr.integrated_time(np.mean(self.chain, axis=0), axis=0,
-                                        window=window, fast=fast)
+        return autocorr.integrated_time(
+            np.mean(self.chain, axis=0), axis=0, window=window, fast=fast
+        )
 
 
 class _function_wrapper(object):
@@ -495,6 +518,7 @@ class _function_wrapper(object):
     or ``kwargs`` are also included.
 
     """
+
     def __init__(self, f, args, kwargs):
         self.f = f
         self.args = args
@@ -505,6 +529,7 @@ class _function_wrapper(object):
             return self.f(x, *self.args, **self.kwargs)
         except:
             import traceback
+
             print("emcee: Exception while calling your likelihood function:")
             print("  params:", x)
             print("  args:", self.args)

@@ -11,7 +11,7 @@ Github main branch:
 -progress bars updated to use tdqm, which should make them faster.
 -Integrated super-resolution method of Cotton & Rudnick 2023, which creates
   narrower RMSF shapes by setting lambda^2_0 = 0.
--Added options to dofitIcube tool to save more outputs (coefficient maps, 
+-Added options to dofitIcube tool to save more outputs (coefficient maps,
   errors, etc).
 -Made RMSF theoretical width calculations consistent: Dickey et al. 2019
   now used throughout.
@@ -19,10 +19,10 @@ Github main branch:
 1.3.0:
 -merged in bwdepol branch. This does not change any core functionality in the
   existing RM-Tools programs, but adds two new command-line tools: rmtools_bwpredict
-  and rmtools_bwdepol, which predict and correct for bandwidth depolarization 
+  and rmtools_bwdepol, which predict and correct for bandwidth depolarization
   respectively.
 -fixed a bug with JSON outputs not handling numpy variables. This was partially
-  due to a problem with asscalar() in the utils using a depcreciated numpy function, 
+  due to a problem with asscalar() in the utils using a depcreciated numpy function,
   but partially from other causes.
 -an improved version of the Stokes I cube fitting routine has been developed
   by Lerato Sebokolody, which includes parallelization.
@@ -33,7 +33,7 @@ Github main branch:
   when fitting log-polynomials in 32-bits (thanks to Shannon Vanderwoude for
   discovering the problem).
 -added parameter errors of Stokes I fit as output to Stokes I fitDict, to
- RMsynth1D outputs, and QU-fitting outputs. These are the 1-sigma errors 
+ RMsynth1D outputs, and QU-fitting outputs. These are the 1-sigma errors
  computed by the mpfit routine.
 -the renormalize_StokesI_model function is now depreciated, since it cannot
  transform the errors. It is left in for the time being in case it is needed
@@ -62,14 +62,14 @@ Github main branch:
   it occurs in its own function rather than as part of the file writing
   function; this allows it to be run inside a notebook.
 -modified RMpeakfit_3D to be more stable when FDF cubes have NaNs present.
--Stokes I fit coefficients no longer become NaNs when negative Stokes I 
+-Stokes I fit coefficients no longer become NaNs when negative Stokes I
   models are renormalized to a new reference frequency.
 -added test for unreasonably large peak RM (compared to computed range)
   as this can happen when peak is on edge of spectrum. Changes RM to NaN in
   these cases.
 -Fixed crash when sigmaAdd calculations received NaNs in inputs.
--added experimental tool to compute QU models from clean components, 
-  requested by Luke Pratley. This currently has a normalization error of some 
+-added experimental tool to compute QU models from clean components,
+  requested by Luke Pratley. This currently has a normalization error of some
   kind, which I've asked Luke to chase down.
 -dropping support for Python3.5, since the QUfitting code has problems with it
  and it's already end-of-life.
@@ -99,11 +99,11 @@ Github main branch:
     (previously was using old flawed equation fixed in v1.0.2).
 -Fixed problem with handling of degenerate FITS axes in RMclean3D
 -Created new tool: RMpeakfit_3D.py,which applies the 1D peak fitting to
-    each pixel in a 3D FDF cube. Outputs 2D maps for the resulting 
+    each pixel in a 3D FDF cube. Outputs 2D maps for the resulting
     parameters.
--New Stokes I fitting. Two changes: 
+-New Stokes I fitting. Two changes:
     1) Logarithmic polynomial fitting function added. This is essentially
-        a 5-th order polynomial in log-log space, modified into the 
+        a 5-th order polynomial in log-log space, modified into the
         standard power-law with curvature formulation. Added flags to
         RMsynth1D, do_QUfitting, and do_fitIcube to let user select fitting
         function.
@@ -149,9 +149,8 @@ Github main branch:
 -For RMsynth1D, the default Phimax value was previously fixed at 600,
     which was not ideal for high-frequency data. Modified to now be
     dynamic: 10x RMSF FWHM.
--RMclean1D was not using the noise properly when calculating derived 
+-RMclean1D was not using the noise properly when calculating derived
     properties. RMclean1D error bars prior to this verison likely have
     issues.
 
 1.0: Official release (1 May 2020)
-

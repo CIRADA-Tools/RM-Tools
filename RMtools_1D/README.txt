@@ -41,4 +41,3 @@
 ./do_QUfit_1D_mnest.py data/Source1.dat -m 1 -p
 ./do_QUfit_1D_mnest.py data/Source2.dat -m 3 -p
 ./do_QUfit_1D_mnest.py data/Source3.dat -m 3 -p
-

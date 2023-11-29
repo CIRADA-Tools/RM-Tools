@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import (division, print_function, absolute_import,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ["sample_ball", "MH_proposal_axisaligned", "MPIPool"]
 
@@ -21,9 +20,8 @@ def sample_ball(p0, std, size=1):
     :param size: The number of samples to produce.
 
     """
-    assert(len(p0) == len(std))
-    return np.vstack([p0 + std * np.random.normal(size=len(p0))
-                      for i in range(size)])
+    assert len(p0) == len(std)
+    return np.vstack([p0 + std * np.random.normal(size=len(p0)) for i in range(size)])
 
 
 def sample_ellipsoid(p0, covmat, size=1):
@@ -38,9 +36,9 @@ def sample_ellipsoid(p0, covmat, size=1):
     :param size: The number of samples to produce.
 
     """
-    return np.random.multivariate_normal(np.atleast_1d(p0),
-                                         np.atleast_2d(covmat),
-                                         size=size)
+    return np.random.multivariate_normal(
+        np.atleast_1d(p0), np.atleast_2d(covmat), size=size
+    )
 
 
 class MH_proposal_axisaligned(object):
@@ -50,10 +48,11 @@ class MH_proposal_axisaligned(object):
     :func:`EnsembleSampler.sample` .
 
     """
+
     def __init__(self, stdev):
         self.stdev = stdev
 
     def __call__(self, X):
         (nw, npar) = X.shape
-        assert(len(self.stdev) == npar)
+        assert len(self.stdev) == npar
         return X + self.stdev * np.random.normal(size=X.shape)
