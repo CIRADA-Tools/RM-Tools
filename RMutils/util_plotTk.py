@@ -656,7 +656,11 @@ def plot_psi_vs_lamsq_ax(
     if qModArr is not None and uModArr is not None:
         psiHirArr_deg = np.degrees(np.arctan2(uModArr, qModArr) / 2.0)
         ax.plot(
-            lamSqHirArr_m2, psiHirArr_deg, color="tab:red", lw=0.1, label=r"Model $\psi$"
+            lamSqHirArr_m2,
+            psiHirArr_deg,
+            color="tab:red",
+            lw=0.1,
+            label=r"Model $\psi$",
         )
     if model_dict is not None:
         errDict = {}
