@@ -260,7 +260,7 @@ def run_rmsynth(
             np.min(freqArr_Hz) / 1e9 - xRange * 0.05,
             np.max(freqArr_Hz) / 1e9 + xRange * 0.05,
         )
-        ax.set_xlabel("$\\nu$ (GHz)")
+        ax.set_xlabel(r"$\nu$ (GHz)")
         ax.set_ylabel("RMS " + units)
         ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
     #            rmsFig.show()
