@@ -62,7 +62,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from RMtools_1D.do_RMsynth_1D import readFile
-from RMutils import corner
 from RMutils.util_misc import calculate_StokesI_model, create_frac_spectra, toscalar
 from RMutils.util_plotTk import CustomNavbar, plot_Ipqu_spectra_fig
 
