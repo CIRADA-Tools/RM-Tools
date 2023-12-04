@@ -538,6 +538,20 @@ def run_qufit(
     #     del(labels[i])
     #     del(p[i])
 
+    # Tricky to get correct PA on the corner plot because of PA wrap!
+    # Solution: Shift PA back to original, and ignore limit of [0, 180]
+
+    for i in range(nDim):
+        if parNames[i] in rotated_parNames:
+            # Rotate back by the 90 deg
+            result.samples[:,i] -= 90.
+            if p[i] > 135.:
+                # In case the PA shown would be << 0 deg
+                result.samples[:,i] += 180.
+
+    # Resampling to make sure the results show
+    result.samples_to_posterior()
+
     cornerFig = result.plot_corner()
 
     # Save the posterior chains to ASCII file
