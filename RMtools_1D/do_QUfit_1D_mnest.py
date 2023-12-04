@@ -550,7 +550,8 @@ def run_qufit(
                 result.samples[:,i] += 180.
 
     # Resampling to make sure the results show
-    result.samples_to_posterior()
+    if len(rotated_parNames) > 0:
+        result.samples_to_posterior()
 
     cornerFig = result.plot_corner()
 
