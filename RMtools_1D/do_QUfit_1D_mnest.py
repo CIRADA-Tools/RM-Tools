@@ -413,7 +413,7 @@ def run_qufit(
         if parNames[i][-3:] == 'deg' and bounds[i][0] == 0. and bounds[i][1] == 180. and wraps[i] == 'periodic':
             # Only try to do it if the units is in deg, bounded within [0., 180.], and is a periodic variable
             summary_tmp = result.get_one_dimensional_median_and_error_bar(parNames[i])
-            if summary.median < 45. or summary.median >= 135.:
+            if summary_tmp.median < 45. or summary_tmp.median >= 135.:
                 # Shift PA by 90 deg
                 result.samples[:,i] += 90.
                 # Keep all values within [0, 180)
