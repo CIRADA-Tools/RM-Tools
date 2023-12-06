@@ -10,7 +10,7 @@ class test_imports(unittest.TestCase):
         # have not worked before.
         modules = [
             "RMtools_1D.calculate_RMSF",
-            # 'RMtools_1D.do_QUfit_1D_mnest',
+            "RMtools_1D.do_QUfit_1D_mnest",
             "RMtools_1D.do_RMclean_1D",
             "RMtools_1D.do_RMsynth_1D_fromFITS",
             "RMtools_1D.do_RMsynth_1D",
@@ -23,9 +23,7 @@ class test_imports(unittest.TestCase):
             "RMtools_3D.do_RMsynth_3D",
             "RMtools_3D.extract_region",
             "RMtools_3D.mk_test_cube_data",
-            "RMutils.corner",
             "RMutils.mpfit",
-            "RMutils.nestle",
             "RMutils.normalize",
             "RMutils.util_FITS",
             "RMutils.util_misc",

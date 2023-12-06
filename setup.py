@@ -19,7 +19,7 @@ REQUIRED = ["numpy<2", "scipy", "matplotlib>=3.4.0", "astropy", "tdqm", "depreca
 
 # Using AT's fork for now - includes tiny bug fix for bilby
 extras_require = {
-    "QUfitting": ["bilby>=1.1.5"],
+    "QUfitting": ["bilby>=1.1.5", "emcee", "nestle", "corner"],
     "parallel": ["schwimmbad"],
     "dev": ["pre-commit", "black", "isort", "pytest"],
 }
