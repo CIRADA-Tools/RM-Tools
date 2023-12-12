@@ -6,6 +6,17 @@ Github main branch:
 -relaxed numpy version restriction, since the numpy-astropy version conflict
  has been resolved.
 -added tqdm as install dependency.
+-removed internal copies of external packages (corner, emcee, nestle) used by QU-fitting
+-added pre-commit auto-formatting system
+-escaped all LaTeX characters
+-implemented auto-formatting, using black, and updated all existing code to that standard.
+-removed RMS noise estimate for FDF -- it was inacurrate and misleading
+-fixed corMAD noise estimate for FDF -- it was estimating MAD of PI rather than Q and U,
+  and thus was biased low. Now uses Q and U of FDF, and reproduces correct value in
+  signal-free and RM-cleaned simulations. Still biased high in dirty spectra; no fixing that.
+-old versions of core rmsynth and RMSF calculation functions are now officially deprecated
+-fixed crashing when trying to generate RMsynth1d plots for source with negative Stokes I model
+
 
 1.3.1:
 -progress bars updated to use tdqm, which should make them faster.

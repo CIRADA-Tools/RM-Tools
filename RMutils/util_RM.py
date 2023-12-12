@@ -924,13 +924,13 @@ def measure_FDF_parms(
     fwhmRMSF_chan = np.ceil(fwhmRMSF / dPhi)
     iL = int(max(0, indxPeakPIchan - fwhmRMSF_chan * 2))
     iR = int(min(len(absFDF), indxPeakPIchan + fwhmRMSF_chan * 2))
-    absFDFmsked = absFDF.copy()
-    absFDFmsked[iL:iR] = np.nan
-    absFDFmsked = absFDFmsked[np.where(absFDFmsked == absFDFmsked)]
-    if float(len(absFDFmsked)) / len(absFDF) < 0.3:
-        dFDFcorMAD = MAD(absFDF)
+    FDFmsked = FDF.copy()
+    FDFmsked[iL:iR] = np.nan
+    FDFmsked = FDFmsked[np.where(FDFmsked == FDFmsked)]
+    if float(len(FDFmsked)) / len(FDF) < 0.3:
+        dFDFcorMAD = MAD(np.concatenate((np.real(FDF), np.imag(FDF))))
     else:
-        dFDFcorMAD = MAD(absFDFmsked)
+        dFDFcorMAD = MAD(np.concatenate((np.real(FDFmsked), np.imag(FDFmsked))))
 
     # Default to using the measured FDF if a noise value has not been provided
     if dFDF is None:
