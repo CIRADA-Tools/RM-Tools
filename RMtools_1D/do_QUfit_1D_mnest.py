@@ -404,6 +404,31 @@ def run_qufit(
 
     # Do the post-processing on one processor
     endTime = time.time()
+
+    # Shift the angles by 90 deg, if necessary
+    # This is to get around the angle wrap issue
+    rotated_parNames = []  ## Store parameters that have been rotated
+    for i in range(nDim):
+        if (
+            parNames[i][-3:] == "deg"
+            and bounds[i][0] == 0.0
+            and bounds[i][1] == 180.0
+            and wraps[i] == "periodic"
+        ):
+            # Only try to do it if the units is in deg, bounded within [0., 180.], and is a periodic variable
+            summary_tmp = result.get_one_dimensional_median_and_error_bar(parNames[i])
+            if summary_tmp.median < 45.0 or summary_tmp.median >= 135.0:
+                # Shift PA by 90 deg
+                result.samples[:, i] += 90.0
+                # Keep all values within [0, 180)
+                result.samples[:, i] -= (result.samples[:, i] >= 180.0) * 180.0
+                # Keep track of which parameters have been rotated
+                rotated_parNames.append(parNames[i])
+
+    # Update the posterior values
+    if len(rotated_parNames) > 0:
+        result.samples_to_posterior()
+
     # Best guess here - taking the maximum likelihood value
     lnLike = np.max(result.log_likelihood_evaluations)
     lnEvidence = result.log_evidence
@@ -418,10 +443,15 @@ def run_qufit(
     for i in range(nDim):
         summary = result.get_one_dimensional_median_and_error_bar(parNames[i])
         # Get stats around modal value
+        # Shift back by 90 deg if necessary
+        median_val = summary.median - 90.0 * (parNames[i] in rotated_parNames)
+        median_val += 180.0 * (median_val < 0.0) * (parNames[i] in rotated_parNames)
+        plus_val = summary.plus
+        minus_val = summary.minus
         p[i], errPlus[i], errMinus[i] = (
-            summary.median,
-            summary.plus,
-            summary.minus,
+            median_val,
+            plus_val,
+            minus_val,
         )
 
     # Calculate goodness-of-fit parameters
@@ -511,6 +541,21 @@ def run_qufit(
     # for i in sorted(iFixed, reverse=True):
     #     del(labels[i])
     #     del(p[i])
+
+    # Tricky to get correct PA on the corner plot because of PA wrap!
+    # Solution: Shift PA back to original, and ignore limit of [0, 180]
+
+    for i in range(nDim):
+        if parNames[i] in rotated_parNames:
+            # Rotate back by the 90 deg
+            result.samples[:, i] -= 90.0
+            if p[i] > 135.0:
+                # In case the PA shown would be << 0 deg
+                result.samples[:, i] += 180.0
+
+    # Resampling to make sure the results show
+    if len(rotated_parNames) > 0:
+        result.samples_to_posterior()
 
     cornerFig = result.plot_corner()
 
