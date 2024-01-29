@@ -557,9 +557,9 @@ def make_model_I(
 
     header["HISTORY"] = "Stokes I model fitted by RM-Tools"
     if polyOrd < 0:
-        header[
-            "HISTORY"
-        ] = f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
+        header["HISTORY"] = (
+            f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
+        )
     else:
         header["HISTORY"] = f"Fit model is {polyOrd}-order {fit_function}-polynomial"
 

@@ -477,10 +477,7 @@ def renormalize_StokesI_model(fitDict, new_reference_frequency):
             10 * a * lnx**2 + 4 * b * lnx + c,
             10 * a * lnx**3 + 6 * b * lnx**2 + 3 * c * lnx + d,
             5 * a * lnx**4 + 4 * b * lnx**3 + 3 * c * lnx**2 + 2 * d * lnx + f,
-            g
-            * np.exp(
-                a * lnx**5 + b * lnx**4 + c * lnx**3 + d * lnx**2 + f * lnx
-            ),
+            g * np.exp(a * lnx**5 + b * lnx**4 + c * lnx**3 + d * lnx**2 + f * lnx),
         ]
     newDict["p"] = new_parms
     newDict["reference_frequency_Hz"] = new_reference_frequency
