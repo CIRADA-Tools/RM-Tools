@@ -60,6 +60,7 @@
 #                                                                             #
 # =============================================================================#
 
+import gc
 import math as m
 import sys
 
@@ -76,8 +77,6 @@ from RMutils.util_misc import (
     create_pqu_spectra_burn,
     toscalar,
 )
-
-import gc
 
 from . import __version__
 
@@ -187,7 +186,7 @@ def do_rmsynth_planes(
         KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
         KArr[KArr == np.inf] = 0
         KArr = np.nan_to_num(KArr)
-    
+
     # Clean up one cube worth of memory
     del weightCube
     gc.collect()

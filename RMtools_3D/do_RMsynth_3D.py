@@ -34,6 +34,7 @@
 #                                                                             #
 # =============================================================================#
 
+import gc
 import math as m
 import os
 import sys
@@ -45,8 +46,6 @@ import numpy as np
 
 from RMutils.util_misc import interp_images
 from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes
-
-import gc
 
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
@@ -94,7 +93,7 @@ def run_rmsynth(
         fitRMSF (bool): Fit a Gaussian to the RMSF?
         nBits (int): Precision of floating point numbers.
         verbose (bool): Verbosity.
-        not_rmsynth (bool): Just do RMSF and ignore RM synthesis? 
+        not_rmsynth (bool): Just do RMSF and ignore RM synthesis?
         not_rmsf (bool): Just do RM synthesis and ignore RMSF? -- one of these must be False
         log (function): Which logging function to use.
 
@@ -209,7 +208,7 @@ def run_rmsynth(
         )
     else:
         # need lambda0 for RMSF calculation
-        lam0Sq_m2=0 if super_resolution else None
+        lam0Sq_m2 = 0 if super_resolution else None
 
     # Calculate the Rotation Measure Spread Function cube
     if not_rmsf is False:
@@ -254,11 +253,11 @@ def run_rmsynth(
         # Multiply the dirty FDF by Ifreq0 to recover the PI
         FDFcube *= Ifreq0Arr
 
-    if not_rmsf: # only RMsynth
+    if not_rmsf:  # only RMsynth
         dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
-    elif not_rmsynth: # only RMSF
+    elif not_rmsynth:  # only RMSF
         dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2]
-    else: # both have been computed
+    else:  # both have been computed
         dataArr = [
             FDFcube,
             phiArr_radm2,
@@ -306,7 +305,7 @@ def writefits(
         outDir (str): Directory to save files.
         write_seperate_FDF (bool): Write Q, U, and PI separately?
         verbose (bool): Verbosity.
-        not_rmsynth (bool): Just do RMSF and ignore RM synthesis? 
+        not_rmsynth (bool): Just do RMSF and ignore RM synthesis?
         not_rmsf (bool): Just do RM synthesis and ignore RMSF? -- one of these must be False
         do_peakmaps (bool): Compute and write peak RM and peak intensity?
         log (function): Which logging function to use.
@@ -341,13 +340,14 @@ def writefits(
         )
         sys.exit()
 
-
     if not_rmsf:
         FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2 = dataArr
-        if verbose: log("Saving the dirty FDF and ancillary FITS files.")
+        if verbose:
+            log("Saving the dirty FDF and ancillary FITS files.")
     elif not_rmsynth:
         RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = dataArr
-        if verbose: log("Saving the RMSF and ancillary FITS files.")
+        if verbose:
+            log("Saving the RMSF and ancillary FITS files.")
     else:
         (
             FDFcube,
@@ -359,7 +359,8 @@ def writefits(
             lam0Sq_m2,
             lambdaSqArr_m2,
         ) = dataArr
-        if verbose: log("Saving the dirty FDF, RMSF and ancillary FITS files.") 
+        if verbose:
+            log("Saving the dirty FDF, RMSF and ancillary FITS files.")
 
     # Default data typess
     dtFloat = "float" + str(nBits)
@@ -419,20 +420,19 @@ def writefits(
             "[rad/m^2] Coordinate value at reference point",
         )
 
-
         # Put frequency axis first, and reshape to add degenerate axes:
         FDFcube = np.reshape(FDFcube, [FDFcube.shape[0]] + output_axes)
         # Move Faraday depth axis to appropriate position to match header.
         FDFcube = np.moveaxis(FDFcube, 0, Ndim - freq_axis)
 
-        if write_seperate_FDF: # more memory efficient as well
+        if write_seperate_FDF:  # more memory efficient as well
             header = _setStokes(header, "Q")
             hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
             fitsFileOut = outDir + "/" + prefixOut + "FDF_real_dirty.fits"
             if verbose:
                 log("> %s" % fitsFileOut)
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-            del hdu0 
+            del hdu0
             gc.collect()
 
             header = _setStokes(header, "U")
@@ -508,7 +508,7 @@ def writefits(
             "Axis left in to avoid FITS errors",
         )
         rmheader["CUNIT" + str(freq_axis)] = ""
-        rmheader["CRVAL" + str(freq_axis)] = 0 # doesnt mean anything
+        rmheader["CRVAL" + str(freq_axis)] = 0  # doesnt mean anything
         stokes_axis = None
         for axis in range(1, rmheader["NAXIS"] + 1):
             if "STOKES" in rmheader[f"CTYPE{axis}"]:
@@ -519,7 +519,7 @@ def writefits(
                 "Axis left in to avoid FITS errors",
             )
 
-        if write_seperate_FDF: # more memory efficient as well
+        if write_seperate_FDF:  # more memory efficient as well
             header = _setStokes(header, "Q")
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
@@ -528,7 +528,6 @@ def writefits(
             hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             del hdu0
             gc.collect()
-
 
             header = _setStokes(header, "U")
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
@@ -548,7 +547,7 @@ def writefits(
             if verbose:
                 log("> %s" % fitsFileOut)
             hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-            del hdu2 
+            del hdu2
             gc.collect()
 
             hdu3 = pf.PrimaryHDU(
