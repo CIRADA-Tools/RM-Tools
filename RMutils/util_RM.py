@@ -77,6 +77,8 @@ from RMutils.util_misc import (
     toscalar,
 )
 
+import gc
+
 from . import __version__
 
 # Constants
@@ -185,6 +187,10 @@ def do_rmsynth_planes(
         KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
         KArr[KArr == np.inf] = 0
         KArr = np.nan_to_num(KArr)
+    
+    # Clean up one cube worth of memory
+    del weightCube
+    gc.collect()
 
     # Do the RM-synthesis on each plane
     a = lambdaSqArr_m2 - lam0Sq_m2
@@ -368,6 +374,10 @@ def get_rmsf_planes(
             arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
             RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
 
+        # Clean up one cube worth of memory
+        del weightCube
+        gc.collect()
+
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
         statArr = np.ones((nY, nX), dtype="int") * (-1)
@@ -394,7 +404,7 @@ def get_rmsf_planes(
     fwhmRMSFArr = np.squeeze(fwhmRMSFArr)
     statArr = np.squeeze(statArr)
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr
+    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr, lam0Sq_m2
 
 
 # -----------------------------------------------------------------------------#
