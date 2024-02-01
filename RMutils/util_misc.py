@@ -804,12 +804,7 @@ def toscalar(a):
     Returns a scalar version of a Numpy object.
     """
     try:
-        if a.mask.all():
-            # Check if the input array is completely masked
-            # This can happen when, e.g., passing an array full of NaNs through MAD(), and performing toscalar() for this case would return 0.0
-            return np.nan
-        else:
-            return a.item()
+        return a.item()
     except Exception:
         return a
 
