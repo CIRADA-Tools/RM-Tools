@@ -419,13 +419,13 @@ def fit_spectra_I(
 
     outs = dict()
 
-    outs["I"] = pixImodel.astype('float32')
-    outs["coeffs"] = pixFitDict["p"].astype('float32')
-    outs["coeffs_err"] = pixFitDict["perror"].astype('float32')
-    outs["chiSq"] = pixFitDict["chiSq"].astype('float32')
-    outs["chiSqRed"] = pixFitDict["chiSqRed"].astype('float32')
+    outs["I"] = pixImodel.astype("float32")
+    outs["coeffs"] = pixFitDict["p"].astype("float32")
+    outs["coeffs_err"] = pixFitDict["perror"].astype("float32")
+    outs["chiSq"] = pixFitDict["chiSq"].astype("float32")
+    outs["chiSqRed"] = pixFitDict["chiSqRed"].astype("float32")
     outs["nIter"] = pixFitDict["nIter"]
-    outs["AIC"] = pixFitDict["AIC"].astype('float32')
+    outs["AIC"] = pixFitDict["AIC"].astype("float32")
 
     return outs
 
