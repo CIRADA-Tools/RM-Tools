@@ -195,6 +195,13 @@ def do_rmsynth_planes(
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
 
+    # Check for pixels that have Re(FDF)=Im(FDF)=0. across ALL Faraday depths
+    # These pixels will be changed to NaN in the output
+    zeromap = np.all(FDFcube == 0., axis=0)
+    zeropxlist = np.where(zeromap)
+    if np.shape(zeropxlist)[1] != 0:
+        FDFcube[:, zeropxlist[0], zeropxlist[1]] = np.nan+1.j*np.nan
+
     return FDFcube, lam0Sq_m2
 
 
