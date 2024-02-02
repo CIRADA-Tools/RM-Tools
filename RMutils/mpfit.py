@@ -1479,7 +1479,7 @@ class mpfit:
             "debug": self.debug,
             "errmsg": self.errmsg,
             "nfev": self.nfev,
-            "damp": self.damp
+            "damp": self.damp,
             # ,'machar':self.machar
         }.__str__()
 
