@@ -63,6 +63,7 @@
 import math as m
 import sys
 
+import finufft
 import numpy as np
 from deprecation import deprecated
 from scipy.stats import anderson, kstest, kurtosis, kurtosistest, norm, skew, skewtest
@@ -84,7 +85,7 @@ C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
-def do_rmsynth_planes(
+def do_rmsynth_planes_bak(
     dataQ,
     dataU,
     lambdaSqArr_m2,
@@ -198,6 +199,133 @@ def do_rmsynth_planes(
     zeropxlist = np.where(zeromap)
     if np.shape(zeropxlist)[1] != 0:
         FDFcube[:, zeropxlist[0], zeropxlist[1]] = np.nan + 1.0j * np.nan
+
+    # Remove redundant dimensions in the FDF array
+    FDFcube = np.squeeze(FDFcube)
+
+    return FDFcube, lam0Sq_m2
+
+
+def do_rmsynth_planes(
+    dataQ,
+    dataU,
+    lambdaSqArr_m2,
+    phiArr_radm2,
+    weightArr=None,
+    lam0Sq_m2=None,
+    nBits=32,
+    verbose=False,
+    log=print,
+):
+    """Perform RM-synthesis on Stokes Q and U cubes (1,2 or 3D). This version
+    of the routine loops through spectral planes and is faster than the pixel-
+    by-pixel code. This version also correctly deals with isolated clumps of
+    NaN-flagged voxels within the data-cube (unlikely in interferometric cubes,
+    but possible in single-dish cubes). Input data must be in standard python
+    [z,y,x] order, where z is the frequency axis in ascending order.
+
+    dataQ           ... 1, 2 or 3D Stokes Q data array
+    dataU           ... 1, 2 or 3D Stokes U data array
+    lambdaSqArr_m2  ... vector of wavelength^2 values (assending freq order)
+    phiArr_radm2    ... vector of trial Faraday depth values
+    weightArr       ... vector of weights, default [None] is Uniform (all 1s)
+    nBits           ... precision of data arrays [32]
+    verbose         ... print feedback during calculation [False]
+    log             ... function to be used to output messages [print]
+
+    """
+
+    # Default data types
+    dtFloat = "float" + str(nBits)
+    dtComplex = "complex" + str(2 * nBits)
+
+    # Set the weight array
+    if weightArr is None:
+        weightArr = np.ones(lambdaSqArr_m2.shape, dtype=dtFloat)
+    weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+
+    # Sanity check on array sizes
+    if not weightArr.shape == lambdaSqArr_m2.shape:
+        log("Err: Lambda^2 and weight arrays must be the same shape.")
+        return None, None
+    if not dataQ.shape == dataU.shape:
+        log("Err: Stokes Q and U data arrays must be the same shape.")
+        return None, None
+    nDims = len(dataQ.shape)
+    if not nDims <= 3:
+        log("Err: data dimensions must be <= 3.")
+        return None, None
+    if not dataQ.shape[0] == lambdaSqArr_m2.shape[0]:
+        log(
+            "Err: Data depth does not match lambda^2 vector ({} vs {}).".format(
+                dataQ.shape[0], lambdaSqArr_m2.shape[0]
+            ),
+            end=" ",
+        )
+        log("     Check that data is in [z, y, x] order.")
+        return None, None
+
+    # Reshape the data arrays to 2 dimensions
+    if nDims == 1:
+        dataQ = np.reshape(dataQ, (dataQ.shape[0], 1))
+        dataU = np.reshape(dataU, (dataU.shape[0], 1))
+    elif nDims == 3:
+        old_data_shape = dataQ.shape
+        dataQ = np.reshape(dataQ, (dataQ.shape[0], dataQ.shape[1] * dataQ.shape[2]))
+        dataU = np.reshape(dataU, (dataU.shape[0], dataU.shape[1] * dataU.shape[2]))
+
+    # Create a complex polarised cube, B&dB Eqns. (8) and (14)
+    # Array has dimensions [nFreq, nY * nX]
+    pCube = (dataQ + 1j * dataU) * weightArr[:, np.newaxis]
+
+    # Check for NaNs (flagged data) in the cube & set to zero
+    mskCube = np.isnan(pCube)
+    pCube = np.nan_to_num(pCube)
+
+    # If full planes are flagged then set corresponding weights to zero
+    mskPlanes = np.sum(~mskCube, axis=1)
+    mskPlanes = np.where(mskPlanes == 0, 0, 1)
+    weightArr *= mskPlanes
+
+    # lam0Sq_m2 is the weighted mean of lambda^2 distribution (B&dB Eqn. 32)
+    # Calculate a global lam0Sq_m2 value, ignoring isolated flagged voxels
+    K = 1.0 / np.sum(weightArr)
+    if lam0Sq_m2 is None:
+        lam0Sq_m2 = K * np.sum(weightArr * lambdaSqArr_m2)
+    if not np.isfinite(lam0Sq_m2):  # Can happen if all channels are NaNs/zeros
+        lam0Sq_m2 = 0.0
+
+    # The K value used to scale each FDF spectrum must take into account
+    # flagged voxels data in the datacube and can be position dependent
+    weightCube = np.invert(mskCube) * weightArr[:, np.newaxis]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
+        KArr[KArr == np.inf] = 0
+        KArr = np.nan_to_num(KArr)
+
+    # Do the RM-synthesis on each plane
+    FDFcube = (
+        finufft.nufft1d3(
+            x=lambdaSqArr_m2 - lam0Sq_m2,
+            c=np.ascontiguousarray(pCube.T),
+            s=(phiArr_radm2[::-1] * 2),
+            eps=1e-8,
+        )
+        * KArr[..., None]
+    ).T
+
+    # Check for pixels that have Re(FDF)=Im(FDF)=0. across ALL Faraday depths
+    # These pixels will be changed to NaN in the output
+    zeromap = np.all(FDFcube == 0.0, axis=0)
+    zeropxlist = np.where(zeromap)
+    if np.shape(zeropxlist)[1] != 0:
+        FDFcube[:, zeropxlist[0], zeropxlist[1]] = np.nan + 1.0j * np.nan
+
+    # Restore if 3D shape
+    if nDims == 3:
+        FDFcube = np.reshape(
+            FDFcube, (FDFcube.shape[0], old_data_shape[1], old_data_shape[2])
+        )
 
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
