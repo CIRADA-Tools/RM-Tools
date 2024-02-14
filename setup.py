@@ -15,7 +15,15 @@ DOWNLOAD_URL = (
     "https://github.com/CIRADA-Tools/RM-Tools/archive/v" + VERSION + ".tar.gz"
 )
 
-REQUIRED = ["numpy<2", "scipy", "matplotlib>=3.4.0", "astropy", "tdqm", "deprecation"]
+REQUIRED = [
+    "numpy<2",
+    "scipy",
+    "matplotlib>=3.4.0",
+    "astropy",
+    "tdqm",
+    "deprecation",
+    "finufft",
+]
 
 # Using AT's fork for now - includes tiny bug fix for bilby
 extras_require = {
