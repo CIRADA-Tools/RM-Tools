@@ -183,11 +183,12 @@ def do_rmsynth_planes(
         KArr = np.nan_to_num(KArr)
 
     # Do the RM-synthesis on each plane
+    a = lambdaSqArr_m2 - lam0Sq_m2
     FDFcube = (
         finufft.nufft1d3(
-            x=lambdaSqArr_m2 - lam0Sq_m2,
+            x=a,
             c=np.ascontiguousarray(pCube.T),
-            s=(phiArr_radm2[::-1] * 2),
+            s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
             eps=1e-8,
         )
         * KArr[..., None]
@@ -299,13 +300,7 @@ def get_rmsf_planes(
         mskArr = np.reshape(
             mskArr, (mskArr.shape[0], mskArr.shape[1] * mskArr.shape[2])
         )
-
-    # Create a unit cube for use in RMSF calculation (negative of mask)
-    # CVE: unit cube removed: it wasn't accurate for non-uniform weights, and was no longer used
-
-    # Initialise the complex RM Spread Function cube
     nPix = mskArr.shape[-1]
-    nPhi = phi2Arr.shape[0]
 
     # If full planes are flagged then set corresponding weights to zero
     xySum = np.sum(mskArr, axis=1)
@@ -374,11 +369,12 @@ def get_rmsf_planes(
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
+        a = lambdaSqArr_m2 - lam0Sq_m2
         RMSFcube = (
             finufft.nufft1d3(
-                x=lambdaSqArr_m2 - lam0Sq_m2,
+                x=a,
                 c=np.ascontiguousarray(weightCube.T),
-                s=(phiArr_radm2[::-1] * 2),
+                s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
                 eps=1e-8,
             )
             * KArr[..., None]
