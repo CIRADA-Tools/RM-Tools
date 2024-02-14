@@ -287,16 +287,16 @@ class test_RMtools(unittest.TestCase):
     def test_f1_QUfitting(self):
         if not (ONED_PATH / "simsource.dat").exists():
             create_1D_data(self.freq_arr)
-        if not (TEST_PATH / "models_ns").exists():
-            shutil.copytree(
-                TEST_PATH / ".." / "RMtools_1D" / "models_ns", TEST_PATH / "models_ns"
-            )
+
+        local_models = Path("models_ns")
+        if not local_models.exists():
+            shutil.copytree(TEST_PATH / ".." / "RMtools_1D" / "models_ns", local_models)
         returncode = subprocess.call(
             f"qufit '{(ONED_PATH/'simsource.dat').as_posix()}' --sampler nestle",
             shell=True,
         )
         self.assertEqual(returncode, 0, "QU fitting failed to run.")
-        shutil.rmtree("models_ns")
+        shutil.rmtree(local_models)
 
     def test_f2_QUfit_values(self):
         mDict = json.load(open(ONED_PATH / "simsource_m1_nestle.json", "r"))
