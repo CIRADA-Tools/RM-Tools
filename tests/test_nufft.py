@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for the NUFFT sections"""
+
 import logging
 from time import time
 from typing import NamedTuple
