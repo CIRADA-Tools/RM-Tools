@@ -422,7 +422,7 @@ def get_rmsf_planes(
         fwhmRMSFArr = np.reshape(fwhmRMSFArr, (old_data_shape[1], old_data_shape[2]))
         statArr = np.reshape(statArr, (old_data_shape[1], old_data_shape[2]))
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr
+    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr, lam0Sq_m2
 
 
 # -----------------------------------------------------------------------------#
