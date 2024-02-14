@@ -2150,12 +2150,7 @@ def threeDnoise_get_rmsf_planes(
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
     nDims = weightArr.ndim
 
-    # Set the mask array (default to 1D, no masked channels)
-
     # Sanity checks on array sizes
-    #    if not weightArr.shape  == lambdaSqArr_m2.shape:
-    #        print("Err: wavelength^2 and weight arrays must be the same shape.")
-    #        return None, None, None, None
     if not nDims <= 3:
         log("Err: mask dimensions must be <= 3.")
         return None, None, None, None

@@ -195,7 +195,7 @@ def run_rmsynth(
         uArr = dataU
 
     # Perform RM-synthesis on the cube
-    if not_rmsynth is False:
+    if not not_rmsynth:
         FDFcube, lam0Sq_m2 = do_rmsynth_planes(
             dataQ=qArr,
             dataU=uArr,
@@ -211,7 +211,7 @@ def run_rmsynth(
         lam0Sq_m2 = 0 if super_resolution else None
 
     # Calculate the Rotation Measure Spread Function cube
-    if not_rmsf is False:
+    if not not_rmsf:
         RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = get_rmsf_planes(
             lambdaSqArr_m2=lambdaSqArr_m2,
             phiArr_radm2=phiArr_radm2,
@@ -408,7 +408,7 @@ def writefits(
         header["BUNIT"] = header["BUNIT"] + "/RMSF"
 
     # Save the FDF
-    if not_rmsynth is False:
+    if not not_rmsynth:
         header["NAXIS" + str(freq_axis)] = phiArr_radm2.size
         header["CDELT" + str(freq_axis)] = (
             np.diff(phiArr_radm2)[0],
@@ -476,7 +476,7 @@ def writefits(
             hduLst.close()
 
     # Save the RMSF
-    if not_rmsf is False:
+    if not not_rmsf:
         # Put frequency axis first, and reshape to add degenerate axes:
         RMSFcube = np.reshape(RMSFcube, [RMSFcube.shape[0]] + output_axes)
         # Move Faraday depth axis to appropriate position to match header.
@@ -579,7 +579,7 @@ def writefits(
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             hduLst.close()
 
-    if not_rmsynth is False and do_peakmaps:
+    if not not_rmsynth and do_peakmaps:
         ## Note that peaks are computed from the sampled functions
         ## might be better to fit the FDF and compute the peak.
         ## See RMpeakfit_3D.py
