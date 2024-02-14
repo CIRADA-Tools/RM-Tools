@@ -291,24 +291,24 @@ def get_rmsf_planes(
         log("     Check that the mask is in [z, y, x] order.")
         return None, None, None, None
 
-    # Reshape the mask array to 3 dimensions
+    # Reshape the mask array to 2 dimensions
     if nDims == 1:
-        mskArr = np.reshape(mskArr, (mskArr.shape[0], 1, 1))
-    elif nDims == 2:
-        mskArr = np.reshape(mskArr, (mskArr.shape[0], mskArr.shape[1], 1))
+        mskArr = np.reshape(mskArr, (mskArr.shape[0], 1))
+    elif nDims == 3:
+        old_data_shape = mskArr.shape
+        mskArr = np.reshape(
+            mskArr, (mskArr.shape[0], mskArr.shape[1] * mskArr.shape[2])
+        )
 
     # Create a unit cube for use in RMSF calculation (negative of mask)
     # CVE: unit cube removed: it wasn't accurate for non-uniform weights, and was no longer used
 
     # Initialise the complex RM Spread Function cube
-    nX = mskArr.shape[-1]
-    nY = mskArr.shape[-2]
-    nPix = nX * nY
+    nPix = mskArr.shape[-1]
     nPhi = phi2Arr.shape[0]
-    RMSFcube = np.ones((nPhi, nY, nX), dtype=dtComplex)
 
     # If full planes are flagged then set corresponding weights to zero
-    xySum = np.sum(np.sum(mskArr, axis=1), axis=1)
+    xySum = np.sum(mskArr, axis=1)
     mskPlanes = np.where(xySum == nPix, 0, 1)
     weightArr *= mskPlanes
 
@@ -359,32 +359,34 @@ def get_rmsf_planes(
                 fitStatus = mp.status
 
         # Replicate along X and Y axes
-        RMSFcube = np.tile(RMSFArr[:, np.newaxis, np.newaxis], (1, nY, nX))
-        fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
-        statArr = np.ones((nY, nX), dtype="int") * fitStatus
+        RMSFcube = np.tile(RMSFArr[:, np.newaxis], (1, nPix))
+        fwhmRMSFArr = np.ones((nPix), dtype=dtFloat) * fwhmRMSF
+        statArr = np.ones((nPix), dtype="int") * fitStatus
 
     # Calculate the RMSF at each pixel
     else:
-        if verbose:
-            log()
-
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
-        weightCube = np.invert(mskArr) * weightArr[:, np.newaxis, np.newaxis]
+        weightCube = np.invert(mskArr) * weightArr[:, np.newaxis]
         with np.errstate(divide="ignore", invalid="ignore"):
             KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
             KArr[KArr == np.inf] = 0
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        a = lambdaSqArr_m2 - lam0Sq_m2
-        for i in trange(nPhi, desc="Calculating RMSF by channel", disable=not verbose):
-            arg = np.exp(-2.0j * phi2Arr[i] * a)[:, np.newaxis, np.newaxis]
-            RMSFcube[i, :, :] = KArr * np.sum(weightCube * arg, axis=0)
+        RMSFcube = (
+            finufft.nufft1d3(
+                x=lambdaSqArr_m2 - lam0Sq_m2,
+                c=np.ascontiguousarray(weightCube.T),
+                s=(phiArr_radm2[::-1] * 2),
+                eps=1e-8,
+            )
+            * KArr[..., None]
+        ).T
 
         # Default to the analytical RMSF
-        fwhmRMSFArr = np.ones((nY, nX), dtype=dtFloat) * fwhmRMSF
-        statArr = np.ones((nY, nX), dtype="int") * (-1)
+        fwhmRMSFArr = np.ones((nPix), dtype=dtFloat) * fwhmRMSF
+        statArr = np.ones((nPix), dtype="int") * (-1)
 
         # Fit the RMSF main lobe
         if fitRMSF:
@@ -392,21 +394,28 @@ def get_rmsf_planes(
                 log("Fitting main lobe in each RMSF spectrum.")
                 log("> This may take some time!")
             k = 0
-            for i in trange(nX, desc="Fitting RMSF by pixel", disable=not verbose):
-                for j in range(nY):
-                    k += 1
-                    if fitRMSFreal:
-                        mp = fit_rmsf(phi2Arr, RMSFcube[:, j, i].real)
-                    else:
-                        mp = fit_rmsf(phi2Arr, np.abs(RMSFcube[:, j, i]))
-                    if not (mp is None or mp.status < 1):
-                        fwhmRMSFArr[j, i] = mp.params[2]
-                        statArr[j, i] = mp.status
+            for i in trange(nPix, desc="Fitting RMSF by pixel", disable=not verbose):
+                k += 1
+                if fitRMSFreal:
+                    mp = fit_rmsf(phi2Arr, RMSFcube[:, i].real)
+                else:
+                    mp = fit_rmsf(phi2Arr, np.abs(RMSFcube[:, i]))
+                if not (mp is None or mp.status < 1):
+                    fwhmRMSFArr[i] = mp.params[2]
+                    statArr[i] = mp.status
 
     # Remove redundant dimensions
     RMSFcube = np.squeeze(RMSFcube)
     fwhmRMSFArr = np.squeeze(fwhmRMSFArr)
     statArr = np.squeeze(statArr)
+
+    # Restore if 3D shape
+    if nDims == 3:
+        RMSFcube = np.reshape(
+            RMSFcube, (RMSFcube.shape[0], old_data_shape[1], old_data_shape[2])
+        )
+        fwhmRMSFArr = np.reshape(fwhmRMSFArr, (old_data_shape[1], old_data_shape[2]))
+        statArr = np.reshape(statArr, (old_data_shape[1], old_data_shape[2]))
 
     return RMSFcube, phi2Arr, fwhmRMSFArr, statArr
 
