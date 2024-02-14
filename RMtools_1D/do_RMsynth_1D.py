@@ -369,8 +369,7 @@ def run_rmsynth(
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
     dFDFth = np.abs(Ifreq0) * np.sqrt(
-        np.nansum(weightArr**2 * np.nan_to_num(dquArr) ** 2)
-        / (np.sum(weightArr)) ** 2
+        np.nansum(weightArr**2 * np.nan_to_num(dquArr) ** 2) / (np.sum(weightArr)) ** 2
     )
 
     # Measure the parameters of the dirty FDF

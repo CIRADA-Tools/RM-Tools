@@ -419,13 +419,13 @@ def fit_spectra_I(
 
     outs = dict()
 
-    outs["I"] = pixImodel
-    outs["coeffs"] = pixFitDict["p"]
-    outs["coeffs_err"] = pixFitDict["perror"]
-    outs["chiSq"] = pixFitDict["chiSq"]
-    outs["chiSqRed"] = pixFitDict["chiSqRed"]
+    outs["I"] = pixImodel.astype("float32")
+    outs["coeffs"] = pixFitDict["p"].astype("float32")
+    outs["coeffs_err"] = pixFitDict["perror"].astype("float32")
+    outs["chiSq"] = pixFitDict["chiSq"].astype("float32")
+    outs["chiSqRed"] = pixFitDict["chiSqRed"].astype("float32")
     outs["nIter"] = pixFitDict["nIter"]
-    outs["AIC"] = pixFitDict["AIC"]
+    outs["AIC"] = pixFitDict["AIC"].astype("float32")
 
     return outs
 
@@ -557,9 +557,9 @@ def make_model_I(
 
     header["HISTORY"] = "Stokes I model fitted by RM-Tools"
     if polyOrd < 0:
-        header[
-            "HISTORY"
-        ] = f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
+        header["HISTORY"] = (
+            f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
+        )
     else:
         header["HISTORY"] = f"Fit model is {polyOrd}-order {fit_function}-polynomial"
 

@@ -698,6 +698,12 @@ def create_peak_maps(FDFcube, phiArr_radm2, phi_axis=0):
     maxPI = np.max(np.abs(FDFcube), axis=phi_axis)
     peakRM_indices = np.argmax(np.abs(FDFcube), axis=phi_axis)
     peakRM = phiArr_radm2[peakRM_indices]
+    # Check for pixels with all NaNs across FD
+    # Write peakRM as NaN (otherwise it takes the first entry in phiArr)
+    nanmap = np.all(np.isnan(FDFcube), axis=0)[0]
+    nanpxlist = np.where(nanmap)
+    if np.shape(nanpxlist)[1] != 0:
+        peakRM[:, nanpxlist[0], nanpxlist[1]] = np.nan
 
     return maxPI, peakRM
 
