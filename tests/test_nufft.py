@@ -417,7 +417,7 @@ def test_rmsf():
     """Test the NUFFT RMSF routine agaist DFT."""
     fake_data = make_fake_data()
     tick = time()
-    RMSFcube, phi2Arr, fwhmRMSFArr, statArr = get_rmsf_planes(
+    RMSFcube, phi2Arr, fwhmRMSFArr, statArr, _ = get_rmsf_planes(
         lambdaSqArr_m2=fake_data.lsq,
         phiArr_radm2=fake_data.phis,
         weightArr=fake_data.weights,
