@@ -549,7 +549,8 @@ def writefits(
 
     maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
     # Save a maximum polarised intensity map
-    header["BUNIT"] = headtemplate["BUNIT"]
+    if "BUNIT" in headtemplate:
+        header["BUNIT"] = headtemplate["BUNIT"]
     header["NAXIS" + str(freq_axis)] = 1
     header["CTYPE" + str(freq_axis)] = (
         "DEGENERATE",
@@ -647,10 +648,8 @@ def create_peak_maps(FDFcube, phiArr_radm2, phi_axis=0):
     peakRM = phiArr_radm2[peakRM_indices]
     # Check for pixels with all NaNs across FD
     # Write peakRM as NaN (otherwise it takes the first entry in phiArr)
-    nanmap = np.all(np.isnan(FDFcube), axis=0)[0]
-    nanpxlist = np.where(nanmap)
-    if np.shape(nanpxlist)[1] != 0:
-        peakRM[:, nanpxlist[0], nanpxlist[1]] = np.nan
+    nan_mask = np.all(np.isnan(FDFcube), axis=phi_axis)
+    peakRM[nan_mask] = np.nan
 
     return maxPI, peakRM
 
