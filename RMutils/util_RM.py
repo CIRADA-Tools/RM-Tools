@@ -202,9 +202,7 @@ def do_rmsynth_planes(
     # Check for pixels that have Re(FDF)=Im(FDF)=0. across ALL Faraday depths
     # These pixels will be changed to NaN in the output
     zeromap = np.all(FDFcube == 0.0, axis=0)
-    zeropxlist = np.where(zeromap)
-    if np.shape(zeropxlist)[1] != 0:
-        FDFcube[:, zeropxlist[0], zeropxlist[1]] = np.nan + 1.0j * np.nan
+    FDFcube[..., zeromap] = np.nan + 1.0j * np.nan
 
     # Restore if 3D shape
     if nDims == 3:
