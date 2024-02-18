@@ -324,7 +324,7 @@ def run_rmsynth(
     )
 
     # Calculate the Rotation Measure Spread Function
-    RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = get_rmsf_planes(
+    RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr, _ = get_rmsf_planes(
         lambdaSqArr_m2=lambdaSqArr_m2,
         phiArr_radm2=phiArr_radm2,
         weightArr=weightArr,

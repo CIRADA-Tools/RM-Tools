@@ -34,6 +34,7 @@
 #                                                                             #
 # =============================================================================#
 
+import gc
 import math as m
 import os
 import sys
@@ -68,6 +69,7 @@ def run_rmsynth(
     fitRMSF=False,
     nBits=32,
     verbose=True,
+    not_rmsynth=False,
     not_rmsf=False,
     log=print,
     super_resolution=False,
@@ -91,7 +93,8 @@ def run_rmsynth(
         fitRMSF (bool): Fit a Gaussian to the RMSF?
         nBits (int): Precision of floating point numbers.
         verbose (bool): Verbosity.
-        not_rmsf (bool): Just do RM synthesis and ignore RMSF?
+        not_rmsynth (bool): Just do RMSF and ignore RM synthesis?
+        not_rmsf (bool): Just do RM synthesis and ignore RMSF? -- one of these must be False
         log (function): Which logging function to use.
 
     Returns:
@@ -104,6 +107,13 @@ def run_rmsynth(
 
 
     """
+    if not_rmsynth and not_rmsf:
+        log(
+            "Err: both RM synthesis and RMSF computation not requested?\n"
+            + "Please make sure either not_rmsynth or not_rmsf is False"
+        )
+        sys.exit()
+
     # Sanity check on header dimensions
 
     if not str(dataQ.shape) == str(dataU.shape):
@@ -185,19 +195,24 @@ def run_rmsynth(
         uArr = dataU
 
     # Perform RM-synthesis on the cube
-    FDFcube, lam0Sq_m2 = do_rmsynth_planes(
-        dataQ=qArr,
-        dataU=uArr,
-        lambdaSqArr_m2=lambdaSqArr_m2,
-        phiArr_radm2=phiArr_radm2,
-        weightArr=weightArr,
-        nBits=32,
-        verbose=verbose,
-        lam0Sq_m2=0 if super_resolution else None,
-    )
+    if not not_rmsynth:
+        FDFcube, lam0Sq_m2 = do_rmsynth_planes(
+            dataQ=qArr,
+            dataU=uArr,
+            lambdaSqArr_m2=lambdaSqArr_m2,
+            phiArr_radm2=phiArr_radm2,
+            weightArr=weightArr,
+            nBits=32,
+            verbose=verbose,
+            lam0Sq_m2=0 if super_resolution else None,
+        )
+    else:
+        # need lambda0 for RMSF calculation
+        lam0Sq_m2 = 0 if super_resolution else None
+
     # Calculate the Rotation Measure Spread Function cube
-    if not_rmsf is not True:
-        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr = get_rmsf_planes(
+    if not not_rmsf:
+        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = get_rmsf_planes(
             lambdaSqArr_m2=lambdaSqArr_m2,
             phiArr_radm2=phiArr_radm2,
             weightArr=weightArr,
@@ -238,10 +253,11 @@ def run_rmsynth(
         # Multiply the dirty FDF by Ifreq0 to recover the PI
         FDFcube *= Ifreq0Arr
 
-    if not_rmsf:
+    if not_rmsf:  # only RMsynth
         dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
-
-    else:
+    elif not_rmsynth:  # only RMSF
+        dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2]
+    else:  # both have been computed
         dataArr = [
             FDFcube,
             phiArr_radm2,
@@ -264,17 +280,21 @@ def writefits(
     outDir="",
     nBits=32,
     write_seperate_FDF=True,
+    not_rmsynth=False,
     not_rmsf=False,
+    do_peakmaps=True,
     verbose=False,
     log=print,
 ):
     """Write data to disk in FITS
 
     Args:
-      dataArr (list): FDF and RMSF information
-        if not_rmsf:
+      dataArr (list): FDF and/or RMSF information
+        if not_rmsf: # only RMsynth
             dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
-        else:
+        elif not_rmsynth: # only RMSF
+            dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2]
+        else: # both
             dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
 
         headtemplate: FITS header template
@@ -285,7 +305,9 @@ def writefits(
         outDir (str): Directory to save files.
         write_seperate_FDF (bool): Write Q, U, and PI separately?
         verbose (bool): Verbosity.
-        not_rmsf (bool): Just do RM synthesis and ignore RMSF?
+        not_rmsynth (bool): Just do RMSF and ignore RM synthesis?
+        not_rmsf (bool): Just do RM synthesis and ignore RMSF? -- one of these must be False
+        do_peakmaps (bool): Compute and write peak RM and peak intensity?
         log (function): Which logging function to use.
 
 
@@ -311,9 +333,21 @@ def writefits(
 
 
     """
+    if not_rmsynth and not_rmsf:
+        log(
+            "Err: both RM synthesis and RMSF computation not done?\n"
+            + "Please make sure either not_rmsynth or not_rmsf is False"
+        )
+        sys.exit()
+
     if not_rmsf:
         FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2 = dataArr
-
+        if verbose:
+            log("Saving the dirty FDF and ancillary FITS files.")
+    elif not_rmsynth:
+        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = dataArr
+        if verbose:
+            log("Saving the RMSF and ancillary FITS files.")
     else:
         (
             FDFcube,
@@ -325,13 +359,13 @@ def writefits(
             lam0Sq_m2,
             lambdaSqArr_m2,
         ) = dataArr
+        if verbose:
+            log("Saving the dirty FDF, RMSF and ancillary FITS files.")
 
     # Default data typess
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
 
-    if verbose:
-        log("Saving the dirty FDF, RMSF and ancillary FITS files.")
     # Make a copy of the Q header and alter frequency-axis as Faraday depth
     header = headtemplate.copy()
     Ndim = header["NAXIS"]
@@ -347,17 +381,7 @@ def writefits(
             pass  # The try statement is needed for if the FITS header does not
             # have CTYPE keywords.
 
-    header["NAXIS" + str(freq_axis)] = phiArr_radm2.size
     header["CTYPE" + str(freq_axis)] = ("FDEP", "Faraday depth (linear)")
-    header["CDELT" + str(freq_axis)] = (
-        np.diff(phiArr_radm2)[0],
-        "[rad/m^2] Coordinate increment at reference point",
-    )
-    header["CRPIX" + str(freq_axis)] = phiArr_radm2.size // 2 + 1
-    header["CRVAL" + str(freq_axis)] = (
-        phiArr_radm2[phiArr_radm2.size // 2],
-        "[rad/m^2] Coordinate value at reference point",
-    )
     header["CUNIT" + str(freq_axis)] = "rad/m^2"
     if not np.isfinite(lam0Sq_m2):
         lam0Sq_m2 = 0.0
@@ -379,68 +403,86 @@ def writefits(
         freq_axis - 1
     ]  # Remove frequency axis (since it's first in the array)
     output_axes.reverse()  # To get into numpy order.
-    # Put frequency axis first, and reshape to add degenerate axes:
-    FDFcube = np.reshape(FDFcube, [FDFcube.shape[0]] + output_axes)
-    if not_rmsf is not True:
-        RMSFcube = np.reshape(RMSFcube, [RMSFcube.shape[0]] + output_axes)
-
-    # Move Faraday depth axis to appropriate position to match header.
-    FDFcube = np.moveaxis(FDFcube, 0, Ndim - freq_axis)
-    if not_rmsf is not True:
-        RMSFcube = np.moveaxis(RMSFcube, 0, Ndim - freq_axis)
 
     if "BUNIT" in header:
         header["BUNIT"] = header["BUNIT"] + "/RMSF"
 
-    if write_seperate_FDF:
-        header = _setStokes(header, "Q")
-        hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
-        header = _setStokes(header, "U")
-        hdu1 = pf.PrimaryHDU(FDFcube.imag.astype(dtFloat), header)
-        header = _setStokes(
-            header, "PI"
-        )  # Sets Stokes axis to zero, which is a non-standard value.
-        del header["STOKES"]
-        hdu2 = pf.PrimaryHDU(np.abs(FDFcube).astype(dtFloat), header)
+    # Save the FDF
+    if not not_rmsynth:
+        header["NAXIS" + str(freq_axis)] = phiArr_radm2.size
+        header["CDELT" + str(freq_axis)] = (
+            np.diff(phiArr_radm2)[0],
+            "[rad/m^2] Coordinate increment at reference point",
+        )
+        header["CRPIX" + str(freq_axis)] = phiArr_radm2.size // 2 + 1
+        header["CRVAL" + str(freq_axis)] = (
+            phiArr_radm2[phiArr_radm2.size // 2],
+            "[rad/m^2] Coordinate value at reference point",
+        )
 
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_real_dirty.fits"
-        if verbose:
-            log("> %s" % fitsFileOut)
-        hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        # Put frequency axis first, and reshape to add degenerate axes:
+        FDFcube = np.reshape(FDFcube, [FDFcube.shape[0]] + output_axes)
+        # Move Faraday depth axis to appropriate position to match header.
+        FDFcube = np.moveaxis(FDFcube, 0, Ndim - freq_axis)
 
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_im_dirty.fits"
-        if verbose:
-            log("> %s" % fitsFileOut)
-        hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+        if write_seperate_FDF:  # more memory efficient as well
+            header = _setStokes(header, "Q")
+            hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "FDF_real_dirty.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu0
+            gc.collect()
 
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_tot_dirty.fits"
-        if verbose:
-            log("> %s" % fitsFileOut)
-        hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            header = _setStokes(header, "U")
+            hdu1 = pf.PrimaryHDU(FDFcube.imag.astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "FDF_im_dirty.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu1
+            gc.collect()
 
-    else:
-        header = _setStokes(header, "Q")
-        hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
-        header = _setStokes(header, "U")
-        hdu1 = pf.ImageHDU(FDFcube.imag.astype(dtFloat), header)
-        header = _setStokes(
-            header, "PI"
-        )  # Sets Stokes axis to zero, which is a non-standard value.
-        del header["STOKES"]
-        hdu2 = pf.ImageHDU(np.abs(FDFcube).astype(dtFloat), header)
+            header = _setStokes(
+                header, "PI"
+            )  # Sets Stokes axis to zero, which is a non-standard value.
+            del header["STOKES"]
+            hdu2 = pf.PrimaryHDU(np.abs(FDFcube).astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "FDF_tot_dirty.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu2
+            gc.collect()
 
-        # Save the dirty FDF
-        fitsFileOut = outDir + "/" + prefixOut + "FDF_dirty.fits"
-        if verbose:
-            log("> %s" % fitsFileOut)
-        hduLst = pf.HDUList([hdu0, hdu1, hdu2])
-        hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-        hduLst.close()
+        else:
+            header = _setStokes(header, "Q")
+            hdu0 = pf.PrimaryHDU(FDFcube.real.astype(dtFloat), header)
+            header = _setStokes(header, "U")
+            hdu1 = pf.ImageHDU(FDFcube.imag.astype(dtFloat), header)
+            header = _setStokes(
+                header, "PI"
+            )  # Sets Stokes axis to zero, which is a non-standard value.
+            del header["STOKES"]
+            hdu2 = pf.ImageHDU(np.abs(FDFcube).astype(dtFloat), header)
 
-    # Header for outputs that are RM maps (peakRM, RMSF_FWHM)
+            # Save the dirty FDF
+            fitsFileOut = outDir + "/" + prefixOut + "FDF_dirty.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hduLst = pf.HDUList([hdu0, hdu1, hdu2])
+            hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            hduLst.close()
 
     # Save the RMSF
-    if not_rmsf is not True:
+    if not not_rmsf:
+        # Put frequency axis first, and reshape to add degenerate axes:
+        RMSFcube = np.reshape(RMSFcube, [RMSFcube.shape[0]] + output_axes)
+        # Move Faraday depth axis to appropriate position to match header.
+        RMSFcube = np.moveaxis(RMSFcube, 0, Ndim - freq_axis)
+
+        # Header for outputs that are RMSF
         header["NAXIS" + str(freq_axis)] = phi2Arr_radm2.size
         header["CDELT" + str(freq_axis)] = (
             np.diff(phi2Arr_radm2)[0],
@@ -466,7 +508,7 @@ def writefits(
             "Axis left in to avoid FITS errors",
         )
         rmheader["CUNIT" + str(freq_axis)] = ""
-        rmheader["CRVAL" + str(freq_axis)] = phiArr_radm2[0]
+        rmheader["CRVAL" + str(freq_axis)] = 0  # doesnt mean anything
         stokes_axis = None
         for axis in range(1, rmheader["NAXIS"] + 1):
             if "STOKES" in rmheader[f"CTYPE{axis}"]:
@@ -477,35 +519,40 @@ def writefits(
                 "Axis left in to avoid FITS errors",
             )
 
-        if write_seperate_FDF:
+        if write_seperate_FDF:  # more memory efficient as well
             header = _setStokes(header, "Q")
             hdu0 = pf.PrimaryHDU(RMSFcube.real.astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu0
+            gc.collect()
+
             header = _setStokes(header, "U")
             hdu1 = pf.PrimaryHDU(RMSFcube.imag.astype(dtFloat), header)
+            fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
+            if verbose:
+                log("> %s" % fitsFileOut)
+            hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu1
+            gc.collect()
+
             header = _setStokes(
                 header, "PI"
             )  # Sets Stokes axis to zero, which is a non-standard value.
             del header["STOKES"]
             hdu2 = pf.PrimaryHDU(np.abs(RMSFcube).astype(dtFloat), header)
-            hdu3 = pf.PrimaryHDU(
-                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmheader
-            )
-
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF_real.fits"
-            if verbose:
-                log("> %s" % fitsFileOut)
-            hdu0.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-
-            fitsFileOut = outDir + "/" + prefixOut + "RMSF_im.fits"
-            if verbose:
-                log("> %s" % fitsFileOut)
-            hdu1.writeto(fitsFileOut, output_verify="fix", overwrite=True)
-
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_tot.fits"
             if verbose:
                 log("> %s" % fitsFileOut)
             hdu2.writeto(fitsFileOut, output_verify="fix", overwrite=True)
+            del hdu2
+            gc.collect()
 
+            hdu3 = pf.PrimaryHDU(
+                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmheader
+            )
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if verbose:
                 log("> %s" % fitsFileOut)
@@ -532,77 +579,94 @@ def writefits(
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             hduLst.close()
 
-    # Because there can be problems with different axes having different FITS keywords,
-    # don't try to remove the FD axis, but just make it degenerate.
-    # Also requires np.expand_dims to set the correct NAXIS.
-    header["NAXIS" + str(freq_axis)] = 1
-    header["CRVAL" + str(freq_axis)] = (
-        phiArr_radm2[0],
-        "[rad/m^2] Coordinate value at reference point",
-    )
-    if "DATAMAX" in header:
-        del header["DATAMAX"]
-    if "DATAMIN" in header:
-        del header["DATAMIN"]
+    if not not_rmsynth and do_peakmaps:
+        ## Note that peaks are computed from the sampled functions
+        ## might be better to fit the FDF and compute the peak.
+        ## See RMpeakfit_3D.py
 
-    # Generate peak maps:
+        # Because there can be problems with different axes having different FITS keywords,
+        # don't try to remove the FD axis, but just make it degenerate.
+        # Also requires np.expand_dims to set the correct NAXIS.
+        # Generate peak maps:
 
-    maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
-    # Save a maximum polarised intensity map
-    if "BUNIT" in headtemplate:
-        header["BUNIT"] = headtemplate["BUNIT"]
-    header["NAXIS" + str(freq_axis)] = 1
-    header["CTYPE" + str(freq_axis)] = (
-        "DEGENERATE",
-        "Axis left in to avoid FITS errors",
-    )
-    header["CUNIT" + str(freq_axis)] = ""
-
-    stokes_axis = None
-    for axis in range(1, header["NAXIS"] + 1):
-        if "STOKES" in header[f"CTYPE{axis}"]:
-            stokes_axis = axis
-    if stokes_axis is not None:
-        header[f"CTYPE{stokes_axis}"] = (
+        maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
+        # Save a maximum polarised intensity map
+        if "BUNIT" in headtemplate:
+            header["BUNIT"] = headtemplate["BUNIT"]
+        header["NAXIS" + str(freq_axis)] = 1
+        header["CTYPE" + str(freq_axis)] = (
             "DEGENERATE",
             "Axis left in to avoid FITS errors",
         )
+        header["CUNIT" + str(freq_axis)] = ""
 
-    fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
-    if verbose:
-        log("> %s" % fitsFileOut)
-    pf.writeto(
-        fitsFileOut,
-        np.expand_dims(maxPI.astype(dtFloat), axis=0),
-        header,
-        overwrite=True,
-        output_verify="fix",
-    )
-    # Save a peak RM map
-    fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
-    header["BUNIT"] = "rad/m^2"
-    header["BTYPE"] = "FDEP"
-    if verbose:
-        log("> %s" % fitsFileOut)
-    pf.writeto(
-        fitsFileOut,
-        np.expand_dims(peakRM, axis=0),
-        header,
-        overwrite=True,
-        output_verify="fix",
-    )
+        # Header for output that are RM maps (peakRM, RMSF_FWHM, maxPI)
+        header["NAXIS" + str(freq_axis)] = 1
+        header["CRVAL" + str(freq_axis)] = (
+            phiArr_radm2[0],
+            "[rad/m^2] Coordinate value at reference point",
+        )
+        if "DATAMAX" in header:
+            del header["DATAMAX"]
+        if "DATAMIN" in header:
+            del header["DATAMIN"]
 
+        # Generate peak maps:
 
-#   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
-#    # Save an RM moment-1 map
-#    fitsFileOut = outDir + "/" + prefixOut + "FDF_mom1.fits"
-#    header["BUNIT"] = "rad/m^2"
-#    mom1FDFmap = (np.nansum(np.moveaxis(np.abs(FDFcube),FDFcube.ndim-freq_axis,FDFcube.ndim-1) * phiArr_radm2, FDFcube.ndim-1)
-#                  /np.nansum(np.abs(FDFcube), FDFcube.ndim-freq_axis))
-#    mom1FDFmap = mom1FDFmap.astype(dtFloat)
-#    if(verbose): log("> %s" % fitsFileOut)
-#    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
-#               output_verify="fix")
+        maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
+        # Save a maximum polarised intensity map
+        header["BUNIT"] = headtemplate["BUNIT"]
+        header["NAXIS" + str(freq_axis)] = 1
+        header["CTYPE" + str(freq_axis)] = (
+            "DEGENERATE",
+            "Axis left in to avoid FITS errors",
+        )
+        header["CUNIT" + str(freq_axis)] = ""
+
+        stokes_axis = None
+        for axis in range(1, header["NAXIS"] + 1):
+            if "STOKES" in header[f"CTYPE{axis}"]:
+                stokes_axis = axis
+        if stokes_axis is not None:
+            header[f"CTYPE{stokes_axis}"] = (
+                "DEGENERATE",
+                "Axis left in to avoid FITS errors",
+            )
+
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_maxPI.fits"
+        if verbose:
+            log("> %s" % fitsFileOut)
+        pf.writeto(
+            fitsFileOut,
+            np.expand_dims(maxPI.astype(dtFloat), axis=0),
+            header,
+            overwrite=True,
+            output_verify="fix",
+        )
+        # Save a peak RM map
+        fitsFileOut = outDir + "/" + prefixOut + "FDF_peakRM.fits"
+        header["BUNIT"] = "rad/m^2"
+        header["BTYPE"] = "FDEP"
+        if verbose:
+            log("> %s" % fitsFileOut)
+        pf.writeto(
+            fitsFileOut,
+            np.expand_dims(peakRM, axis=0),
+            header,
+            overwrite=True,
+            output_verify="fix",
+        )
+
+    #   #Cameron: I've removed the moment 1 map for now because I don't think it's properly/robustly defined.
+    #    # Save an RM moment-1 map
+    #    fitsFileOut = outDir + "/" + prefixOut + "FDF_mom1.fits"
+    #    header["BUNIT"] = "rad/m^2"
+    #    mom1FDFmap = (np.nansum(np.moveaxis(np.abs(FDFcube),FDFcube.ndim-freq_axis,FDFcube.ndim-1) * phiArr_radm2, FDFcube.ndim-1)
+    #                  /np.nansum(np.abs(FDFcube), FDFcube.ndim-freq_axis))
+    #    mom1FDFmap = mom1FDFmap.astype(dtFloat)
+    #    if(verbose): log("> %s" % fitsFileOut)
+    #    pf.writeto(fitsFileOut, mom1FDFmap, header, overwrite=True,
+    #               output_verify="fix")
 
 
 def _setStokes(header, stokes):

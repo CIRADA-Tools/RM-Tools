@@ -60,6 +60,7 @@
 #                                                                             #
 # =============================================================================#
 
+import gc
 import math as m
 import sys
 
@@ -181,6 +182,10 @@ def do_rmsynth_planes(
         KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
         KArr[KArr == np.inf] = 0
         KArr = np.nan_to_num(KArr)
+
+    # Clean up one cube worth of memory
+    del weightCube
+    gc.collect()
 
     # Do the RM-synthesis on each plane
     a = lambdaSqArr_m2 - lam0Sq_m2
@@ -378,6 +383,10 @@ def get_rmsf_planes(
             * KArr[..., None]
         ).T
 
+        # Clean up one cube worth of memory
+        del weightCube
+        gc.collect()
+
         # Default to the analytical RMSF
         fwhmRMSFArr = np.ones((nPix), dtype=dtFloat) * fwhmRMSF
         statArr = np.ones((nPix), dtype="int") * (-1)
@@ -411,7 +420,7 @@ def get_rmsf_planes(
         fwhmRMSFArr = np.reshape(fwhmRMSFArr, (old_data_shape[1], old_data_shape[2]))
         statArr = np.reshape(statArr, (old_data_shape[1], old_data_shape[2]))
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr
+    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr, lam0Sq_m2
 
 
 # -----------------------------------------------------------------------------#
@@ -2139,12 +2148,7 @@ def threeDnoise_get_rmsf_planes(
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
     nDims = weightArr.ndim
 
-    # Set the mask array (default to 1D, no masked channels)
-
     # Sanity checks on array sizes
-    #    if not weightArr.shape  == lambdaSqArr_m2.shape:
-    #        print("Err: wavelength^2 and weight arrays must be the same shape.")
-    #        return None, None, None, None
     if not nDims <= 3:
         log("Err: mask dimensions must be <= 3.")
         return None, None, None, None
