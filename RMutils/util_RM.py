@@ -188,7 +188,8 @@ def do_rmsynth_planes(
     gc.collect()
 
     # Do the RM-synthesis on each plane
-    a = lambdaSqArr_m2 - lam0Sq_m2
+    # finufft must have matching dtypes, so complex64 matches float32
+    a = (lambdaSqArr_m2 - lam0Sq_m2).astype(f'float{pCube.itemsize*8/2:.0f}')
     FDFcube = (
         finufft.nufft1d3(
             x=a,
@@ -365,14 +366,14 @@ def get_rmsf_planes(
     else:
         # The K value used to scale each RMSF must take into account
         # isolated flagged voxels data in the datacube
-        weightCube = np.invert(mskArr) * weightArr[:, np.newaxis]
+        weightCube = (np.invert(mskArr) * weightArr[:, np.newaxis]).astype(dtComplex)
         with np.errstate(divide="ignore", invalid="ignore"):
             KArr = np.true_divide(1.0, np.sum(weightCube, axis=0))
             KArr[KArr == np.inf] = 0
             KArr = np.nan_to_num(KArr)
 
         # Calculate the RMSF for each plane
-        a = lambdaSqArr_m2 - lam0Sq_m2
+        a = (lambdaSqArr_m2 - lam0Sq_m2).astype(dtFloat)
         RMSFcube = (
             finufft.nufft1d3(
                 x=a,
