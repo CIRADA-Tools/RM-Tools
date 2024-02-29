@@ -189,7 +189,7 @@ def do_rmsynth_planes(
 
     # Do the RM-synthesis on each plane
     # finufft must have matching dtypes, so complex64 matches float32
-    a = (lambdaSqArr_m2 - lam0Sq_m2).astype(f'float{pCube.itemsize*8/2:.0f}')
+    a = (lambdaSqArr_m2 - lam0Sq_m2).astype(f"float{pCube.itemsize*8/2:.0f}")
     FDFcube = (
         finufft.nufft1d3(
             x=a,
