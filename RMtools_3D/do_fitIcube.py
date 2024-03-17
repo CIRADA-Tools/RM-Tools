@@ -329,7 +329,8 @@ def savefits_mask(data, header, outDir, prefixOut):
     headMask = strip_fits_dims(header=header, minDim=2)
     headMask["DATAMAX"] = 1
     headMask["DATAMIN"] = 0
-    del headMask["BUNIT"]
+    if "BUNIT" in headMask:
+        del headMask["BUNIT"]
 
     mskArr = np.where(data > 0, 1.0, np.nan)
     MaskfitsFile = os.path.join(outDir, prefixOut + "mask.fits")
@@ -348,17 +349,16 @@ def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
     prefixOut: prefix to use on the output name
     """
 
-    headcoeff = strip_fits_dims(header=header, minDim=2)
-    headcoeff["BUNIT"] = ""
-    if "BTYPE" in headcoeff:
-        del headcoeff["BTYPE"]
+    header["BUNIT"] = ""
+    if "BTYPE" in header:
+        del header["BTYPE"]
 
     for i in range(np.abs(polyOrd) + 1):
         outname = os.path.join(outDir, prefixOut + "coeff" + str(i) + ".fits")
-        pf.writeto(outname, data[i], headcoeff, overwrite=True)
+        pf.writeto(outname, data[i], header, overwrite=True)
 
         outname = os.path.join(outDir, prefixOut + "coeff" + str(i) + "err.fits")
-        pf.writeto(outname, dataerr[i], headcoeff, overwrite=True)
+        pf.writeto(outname, dataerr[i], header, overwrite=True)
 
 
 def savefits_model_I(data, header, outDir, prefixOut):
@@ -422,10 +422,11 @@ def fit_spectra_I(
     outs["I"] = pixImodel.astype("float32")
     outs["coeffs"] = pixFitDict["p"].astype("float32")
     outs["coeffs_err"] = pixFitDict["perror"].astype("float32")
-    outs["chiSq"] = pixFitDict["chiSq"].astype("float32")
-    outs["chiSqRed"] = pixFitDict["chiSqRed"].astype("float32")
+    outs["chiSq"] = pixFitDict["chiSq"]
+    outs["chiSqRed"] = pixFitDict["chiSqRed"]
     outs["nIter"] = pixFitDict["nIter"]
-    outs["AIC"] = pixFitDict["AIC"].astype("float32")
+    outs["AIC"] = pixFitDict["AIC"]
+    outs["reference_frequency_Hz"] = pixFitDict["reference_frequency_Hz"]
 
     return outs
 
@@ -501,6 +502,7 @@ def make_model_I(
 
     coeffs = np.array([mskArr] * 6)
     coeffs_error = np.array([mskArr] * 6)
+    reffreq = np.squeeze(np.array([mskArr]))
     datacube = np.squeeze(datacube)
     # Select only the spectra with emission
     srcData = np.rot90(datacube[:, mskSrc > 0])
@@ -547,36 +549,48 @@ def make_model_I(
     for _, an in enumerate(xy):
         i, x, y = an
 
-        modelIcube[:, x, y] = results[_]["I"]
+        modelIcube[:, x, y] = results[i]["I"]
+        reffreq[x, y] = results[i]["reference_frequency_Hz"]
 
         for k, j, l in zip(
-            range(len(coeffs)), results[_]["coeffs"], results[_]["coeffs_err"]
+            range(len(coeffs)), results[i]["coeffs"], results[i]["coeffs_err"]
         ):
             coeffs[5 - k, x, y] = j
             coeffs_error[5 - k, x, y] = l
 
-    header["HISTORY"] = "Stokes I model fitted by RM-Tools"
+    headcoeff["HISTORY"] = "Stokes I model fitted by RM-Tools"
     if polyOrd < 0:
-        header["HISTORY"] = (
+        headcoeff["HISTORY"] = (
             f"Fit model is dynamic order {fit_function}-polynomial, max order {-polyOrd}"
         )
     else:
-        header["HISTORY"] = f"Fit model is {polyOrd}-order {fit_function}-polynomial"
+        headcoeff["HISTORY"] = f"Fit model is {polyOrd}-order {fit_function}-polynomial"
 
-    print("Saving mask image.")
-    savefits_mask(data=mskSrc, header=header, outDir=outDir, prefixOut=prefixOut)
+    if verbose:
+        print("Saving mask image.")
+    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut)
 
-    print("Saving model I coefficients.")
+    if verbose:
+        print("Saving model I coefficients.")
     savefits_Coeffs(
         data=coeffs,
         dataerr=coeffs_error,
-        header=header,
+        header=headcoeff,
         polyOrd=polyOrd,
         outDir=outDir,
         prefixOut=prefixOut,
     )
 
-    print("Saving model I cube image. ")
+    head_freq = headcoeff.copy()
+    head_freq["BUNIT"] = "Hz"
+    if "BTYPE" in headcoeff:
+        del headcoeff["BTYPE"]
+
+    outname = os.path.join(outDir, prefixOut + "reffreq.fits")
+    pf.writeto(outname, reffreq, head_freq, overwrite=True)
+
+    if verbose:
+        print("Saving model I cube image. ")
     savefits_model_I(data=modelIcube, header=header, outDir=outDir, prefixOut=prefixOut)
 
     np.savetxt(os.path.join(outDir, prefixOut + "noise.dat"), rms_Arr)
