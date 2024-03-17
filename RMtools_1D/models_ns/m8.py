@@ -31,7 +31,7 @@ def model(pDict, lamSqArr_m2):
                                   (0.5*pDict["deltaRM_radm2"] +
                                    pDict["RM_radm2"]) * lamSqArr_m2))
              * np.sin(pDict["deltaRM_radm2"] * lamSqArr_m2) /
-               (pDict["deltaRM_radm2"] * lamSqArr_m2) 
+               (pDict["deltaRM_radm2"] * lamSqArr_m2)
              * np.exp(-2.0 * pDict["sigmaRM_radm2"] ** 2.0 * lamSqArr_m2**2.0))
     # fmt: on
 
@@ -66,7 +66,6 @@ priors = {
         name="deltaRM_radm2",
         latex_label=r"$\Delta{RM}$ (rad m$^{-2}$)",
     ),
-
     "sigmaRM_radm2": bilby.prior.Uniform(
         minimum=0.0,
         maximum=100.0,
