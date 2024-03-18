@@ -371,7 +371,9 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log"):
     # The fitting code is susceptible to numeric overflows because the frequencies are large.
     # To prevent this, normalize by a reasonable characteristic frequency in order
     # to make all the numbers close to 1:
-    fitDict["reference_frequency_Hz"] = nanmean(freqArr[goodchan])
+    # The reference frequency is the frequency corresponding to the mean of lambda^2
+    # since this should be close to the polarization reference frequency.
+    fitDict["reference_frequency_Hz"] = 1 / np.sqrt(nanmean(1 / freqArr[goodchan] ** 2))
 
     # negative orders indicate that the code should dynamically increase
     # order of polynomial so long as it improves the fit
