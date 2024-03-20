@@ -35,7 +35,6 @@
 # =============================================================================#
 
 import argparse
-import multiprocessing as mp
 import os
 import sys
 import time
@@ -43,7 +42,6 @@ from functools import partial
 
 import astropy.io.fits as pf
 import numpy as np
-from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube
@@ -426,6 +424,7 @@ def fit_spectra_I(
     outs["chiSqRed"] = pixFitDict["chiSqRed"]
     outs["nIter"] = pixFitDict["nIter"]
     outs["AIC"] = pixFitDict["AIC"]
+    outs["covar"] = pixFitDict["pcov"]
     outs["reference_frequency_Hz"] = pixFitDict["reference_frequency_Hz"]
 
     return outs
@@ -503,7 +502,10 @@ def make_model_I(
     coeffs = np.array([mskArr] * 6)
     coeffs_error = np.array([mskArr] * 6)
     reffreq = np.squeeze(np.array([mskArr]))
+
+    covars = np.array([[mskArr] * 6] * 6)
     datacube = np.squeeze(datacube)
+
     # Select only the spectra with emission
     srcData = np.rot90(datacube[:, mskSrc > 0])
 
@@ -551,6 +553,7 @@ def make_model_I(
 
         modelIcube[:, x, y] = results[i]["I"]
         reffreq[x, y] = results[i]["reference_frequency_Hz"]
+        covars[:, :, x, y] = results[i]["covar"]
 
         for k, j, l in zip(
             range(len(coeffs)), results[i]["coeffs"], results[i]["coeffs_err"]
@@ -581,6 +584,7 @@ def make_model_I(
         prefixOut=prefixOut,
     )
 
+    # Save frequency map
     head_freq = headcoeff.copy()
     head_freq["BUNIT"] = "Hz"
     if "BTYPE" in headcoeff:
@@ -588,6 +592,28 @@ def make_model_I(
 
     outname = os.path.join(outDir, prefixOut + "reffreq.fits")
     pf.writeto(outname, reffreq, head_freq, overwrite=True)
+
+    # Save covariance maps -- these are necessary if/when converting the model
+    # reference frequency.
+    # Structure will be a single file as a 4D cube, with the 3rd and 4th dimensions
+    # iterating over the two axes of the covariance matrix.
+    head_covar = headcoeff.copy()
+    head_covar["NAXIS"] = 4
+    head_covar["NAXIS3"] = 6
+    head_covar["NAXIS4"] = 6
+    head_covar["CTYPE3"] = "INDEX"
+    head_covar["CTYPE4"] = "INDEX"
+    head_covar["CRVAL3"] = 0
+    head_covar["CRVAL4"] = 0
+    head_covar["CDELT3"] = 1
+    head_covar["CDELT4"] = 1
+    head_covar["CRPIX3"] = 1
+    head_covar["CRPIX4"] = 1
+    head_covar["CUNIT3"] = ""
+    head_covar["CUNIT4"] = ""
+
+    outname = os.path.join(outDir, prefixOut + "covariance.fits")
+    pf.writeto(outname, covars, head_covar, overwrite=True)
 
     if verbose:
         print("Saving model I cube image. ")
