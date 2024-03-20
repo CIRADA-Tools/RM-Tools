@@ -72,6 +72,7 @@ import math as m
 import re
 import sys
 import traceback
+import warnings
 
 import numpy as np
 import numpy.ma as ma
@@ -464,6 +465,14 @@ def renormalize_StokesI_model(fitDict, new_reference_frequency):
     """
     # Renormalization ratio:
     x = new_reference_frequency / fitDict["reference_frequency_Hz"]
+
+    # Check if ratio is within zone of probable accuracy (approx. 10%, from empirical tests)
+    if (x < 0.9) or (x > 1.1):
+        warnings.warn(
+            "New Stokes I reference frequency more than 10% different than original, uncertainties may be unreliable",
+            UserWarning,
+        )
+
     (a, b, c, d, f, g) = fitDict["p"]
     newDict = fitDict.copy()
 
