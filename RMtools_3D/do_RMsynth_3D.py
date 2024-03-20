@@ -615,7 +615,8 @@ def writefits(
 
         maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
         # Save a maximum polarised intensity map
-        header["BUNIT"] = headtemplate["BUNIT"]
+        if "BUNIT" in headtemplate:
+            header["BUNIT"] = headtemplate["BUNIT"]
         header["NAXIS" + str(freq_axis)] = 1
         header["CTYPE" + str(freq_axis)] = (
             "DEGENERATE",
