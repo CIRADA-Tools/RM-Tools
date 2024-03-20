@@ -223,7 +223,7 @@ def load_model(modelNum, verbose=False):
             spec.loader.exec_module(mod)
         except:
             print(
-                "Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/RMtools_1D/models_ns/".format(
+                "Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/models_ns/".format(
                     os.getcwd(), RMtools_dir
                 )
             )
