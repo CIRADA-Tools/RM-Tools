@@ -385,59 +385,72 @@ def make_fake_data() -> FakeData:
 def test_rmsynth() -> None:
     """Test the NUFFT RM-synthesis routine agaist DFT."""
     fake_data = make_fake_data()
-    tick = time()
-    FDFcube, lam0Sq_m2 = do_rmsynth_planes(
-        dataQ=fake_data.stokes_q,
-        dataU=fake_data.stokes_u,
-        lambdaSqArr_m2=fake_data.lsq,
-        phiArr_radm2=fake_data.phis,
-        weightArr=fake_data.weights,
-        lam0Sq_m2=fake_data.lsq_0,
-    )
-    tock = time()
-    logger.info(f"Time taken for NUFFT: {(tock - tick)*1000:0.2f} ms")
+    for eps in [1e-4, 1e-5, 1e-6, 1e-8]:
+        tick = time()
+        FDFcube, lam0Sq_m2 = do_rmsynth_planes(
+            dataQ=fake_data.stokes_q,
+            dataU=fake_data.stokes_u,
+            lambdaSqArr_m2=fake_data.lsq,
+            phiArr_radm2=fake_data.phis,
+            weightArr=fake_data.weights,
+            lam0Sq_m2=fake_data.lsq_0,
+            eps=eps,
+        )
+        tock = time()
+        logger.info(f"Time taken for NUFFT: {(tock - tick)*1000:0.2f} ms")
 
-    tick = time()
-    FDFcube_old, lam0Sq_m2_old = do_rmsynth_planes_old(
-        dataQ=fake_data.stokes_q,
-        dataU=fake_data.stokes_u,
-        lambdaSqArr_m2=fake_data.lsq,
-        phiArr_radm2=fake_data.phis,
-        weightArr=fake_data.weights,
-        lam0Sq_m2=fake_data.lsq_0,
-    )
-    tock = time()
-    logger.info(f"Time taken for DFT: {(tock - tick)*1000:0.2f} ms")
+        tick = time()
+        FDFcube_old, lam0Sq_m2_old = do_rmsynth_planes_old(
+            dataQ=fake_data.stokes_q,
+            dataU=fake_data.stokes_u,
+            lambdaSqArr_m2=fake_data.lsq,
+            phiArr_radm2=fake_data.phis,
+            weightArr=fake_data.weights,
+            lam0Sq_m2=fake_data.lsq_0,
+        )
+        tock = time()
+        logger.info(f"Time taken for DFT: {(tock - tick)*1000:0.2f} ms")
 
-    assert np.allclose(FDFcube, FDFcube_old, rtol=1e-6, atol=1e-6)
-    assert np.allclose(lam0Sq_m2, lam0Sq_m2_old, rtol=1e-6, atol=1e-6)
+        # fiNUFFT can't go below 1e-8 in precision!
+        if eps == 1e-8:
+            assert np.allclose(FDFcube, FDFcube_old, rtol=eps * 10, atol=eps * 10)
+            assert np.allclose(lam0Sq_m2, lam0Sq_m2_old, rtol=eps * 10, atol=eps * 10)
+        else:
+            assert np.allclose(FDFcube, FDFcube_old, rtol=eps, atol=eps)
+            assert np.allclose(lam0Sq_m2, lam0Sq_m2_old, rtol=eps, atol=eps)
 
 
 def test_rmsf():
     """Test the NUFFT RMSF routine agaist DFT."""
     fake_data = make_fake_data()
-    tick = time()
-    RMSFcube, phi2Arr, fwhmRMSFArr, statArr, _ = get_rmsf_planes(
-        lambdaSqArr_m2=fake_data.lsq,
-        phiArr_radm2=fake_data.phis,
-        weightArr=fake_data.weights,
-        lam0Sq_m2=fake_data.lsq_0,
-    )
-    tock = time()
-    logger.info(f"Time taken for NUFFT: {(tock - tick)*1000:0.2f} ms")
+    for eps in [1e-4, 1e-5, 1e-6, 1e-8]:
+        tick = time()
+        RMSFcube, phi2Arr, fwhmRMSFArr, statArr, _ = get_rmsf_planes(
+            lambdaSqArr_m2=fake_data.lsq,
+            phiArr_radm2=fake_data.phis,
+            weightArr=fake_data.weights,
+            lam0Sq_m2=fake_data.lsq_0,
+            eps=eps,
+        )
+        tock = time()
+        logger.info(f"Time taken for NUFFT: {(tock - tick)*1000:0.2f} ms")
 
-    tick = time()
-    RMSFcube_old, phi2Arr_old, fwhmRMSFArr_old, statArr_old = get_rmsf_planes_old(
-        lambdaSqArr_m2=fake_data.lsq,
-        phiArr_radm2=fake_data.phis,
-        weightArr=fake_data.weights,
-        lam0Sq_m2=fake_data.lsq_0,
-    )
-    tock = time()
-    logger.info(f"Time taken for DFT: {(tock - tick)*1000:0.2f} ms")
+        tick = time()
+        RMSFcube_old, phi2Arr_old, fwhmRMSFArr_old, statArr_old = get_rmsf_planes_old(
+            lambdaSqArr_m2=fake_data.lsq,
+            phiArr_radm2=fake_data.phis,
+            weightArr=fake_data.weights,
+            lam0Sq_m2=fake_data.lsq_0,
+        )
+        tock = time()
+        logger.info(f"Time taken for DFT: {(tock - tick)*1000:0.2f} ms")
 
-    for new, old in zip(
-        [RMSFcube, phi2Arr, fwhmRMSFArr, statArr],
-        [RMSFcube_old, phi2Arr_old, fwhmRMSFArr_old, statArr_old],
-    ):
-        assert np.allclose(new, old, rtol=1e-6, atol=1e-6)
+        # fiNUFFT can't go below 1e-8 in precision!
+        for new, old in zip(
+            [RMSFcube, phi2Arr, fwhmRMSFArr, statArr],
+            [RMSFcube_old, phi2Arr_old, fwhmRMSFArr_old, statArr_old],
+        ):
+            if eps == 1e-8:
+                assert np.allclose(new, old, rtol=eps * 10, atol=eps * 10)
+            else:
+                assert np.allclose(new, old, rtol=eps, atol=eps)

@@ -203,7 +203,6 @@ def run_rmsynth(
             phiArr_radm2=phiArr_radm2,
             weightArr=weightArr,
             nBits=32,
-            verbose=verbose,
             lam0Sq_m2=0 if super_resolution else None,
         )
     else:
