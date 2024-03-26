@@ -351,20 +351,26 @@ def run_rmsynth(
     if verbose:
         log("> RM-synthesis completed in %.2f seconds." % cputime)
 
-    # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
-    # This will break if lam0Sq_m2==0. Using the mean frequency in this case.
+    # Convert Stokes I model to polarization reference frequency. If lambda^2_0 is
+    # non-zero, use that as polarization reference frequency and adapt Stokes I model.
+    # If lambda^2_0 is zero, make polarization reference frequency equal to
+    # Stokes I reference frequency.
+
+    if lam0Sq_m2 == 0:  # Rudnick-Cotton adapatation
+        freq0_Hz = fitDict["reference_frequency_Hz"]
+    else:  # standard RM-synthesis
+        freq0_Hz = C / m.sqrt(lam0Sq_m2)
+        fitDict = renormalize_StokesI_model(fitDict, freq0_Hz)
+
+    # Set Ifreq0 (Stokes I at reference frequency) from either supplied model
+    # (interpolated as required) or fit model, as appropriate.
     # Multiply the dirty FDF by Ifreq0 to recover the PI
-    freq0_Hz = C / m.sqrt(lam0Sq_m2) if lam0Sq_m2 > 0 else np.nanmean(freqArr_Hz)
     if modStokesI is None:
         Ifreq0 = calculate_StokesI_model(fitDict, freq0_Hz)
     elif modStokesI is not None:
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
         Ifreq0 = modStokesI_interp(freq0_Hz)
     dirtyFDF *= Ifreq0  # FDF is in fracpol units initially, convert back to flux
-
-    # if modStokesI is None:
-    #     #Need to renormalize the Stokes I parameters here to the actual reference frequency.
-    #     fitDict=renormalize_StokesI_model(fitDict,freq0_Hz)
 
     # Calculate the theoretical noise in the FDF !!Old formula only works for wariance weights!
     weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
@@ -387,7 +393,6 @@ def run_rmsynth(
     mDict["polyCoefferr"] = ",".join(
         [str(x.astype(np.float32)) for x in fitDict["perror"]]
     )
-    mDict["poly_reffreq"] = fitDict["reference_frequency_Hz"]
     mDict["polyOrd"] = fitDict["polyOrd"]
     mDict["IfitStat"] = fitDict["fitStatus"]
     mDict["IfitChiSqRed"] = fitDict["chiSqRed"]

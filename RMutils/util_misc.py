@@ -72,6 +72,7 @@ import math as m
 import re
 import sys
 import traceback
+import warnings
 
 import numpy as np
 import numpy.ma as ma
@@ -346,6 +347,7 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log"):
             'nIter': Number of iterations used by fitter.
             'reference_frequency_Hz': reference frequency for polynomial.
             'dof': degrees of freedom in the fit.
+            'pcov': covariance matrix of fit parameters
 
     """
     # Frequency axis must be in GHz to avoid overflow errors
@@ -361,6 +363,7 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log"):
         "AIC": 0,
         "reference_frequency_Hz": 1,
         "perror": None,
+        "pcov": None,
     }
 
     goodchan = np.logical_and(
@@ -369,7 +372,9 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log"):
     # The fitting code is susceptible to numeric overflows because the frequencies are large.
     # To prevent this, normalize by a reasonable characteristic frequency in order
     # to make all the numbers close to 1:
-    fitDict["reference_frequency_Hz"] = nanmean(freqArr[goodchan])
+    # The reference frequency is the frequency corresponding to the mean of lambda^2
+    # since this should be close to the polarization reference frequency.
+    fitDict["reference_frequency_Hz"] = 1 / np.sqrt(nanmean(1 / freqArr[goodchan] ** 2))
 
     # negative orders indicate that the code should dynamically increase
     # order of polynomial so long as it improves the fit
@@ -421,6 +426,7 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log"):
     fitDict["chiSqRed"] = mp.fnorm / fitDict["dof"]
     fitDict["nIter"] = mp.niter
     fitDict["perror"] = mp.perror
+    fitDict["pcov"] = mp.covar
     if mp.perror is None:
         fitDict["perror"] = np.zeros_like(fitDict["p"])
 
@@ -444,12 +450,6 @@ def calculate_StokesI_model(fitDict, freqArr_Hz):
     return IModArr
 
 
-@deprecated(
-    deprecated_in="1.3",
-    removed_in="2.0",
-    current_version=__version__,
-    details="This function cannot current propagate errors. It may be reactivated if someone works through how to do that.",
-)
 def renormalize_StokesI_model(fitDict, new_reference_frequency):
     """This functions adjusts the reference frequency for the Stokes I model
     and fixes the fit parameters such that the the model is the same. This is
@@ -457,30 +457,133 @@ def renormalize_StokesI_model(fitDict, new_reference_frequency):
     reference frequency, and it may be desirable for users to know the exact
     reference frequency of the model.
 
-    This function is depreciated because it can't propagate the errors in
-    the fit parameters."""
-    print(
-        "The renormalize_StokesI_model function is depreciated because it can't propagate errors.\n"
-        "If this message appears, it's been invoked (perhaps by legacy code?)"
-    )
+    This function now includes the ability to transform the model parameter
+    errors to the new reference frequency. This feature uses a first order
+    approximation, that scales with the ratio of new to old reference frequencies.
+    Large changes in reference frequency may be outside the linear valid regime
+    of the first order approximation, and thus should be avoided.
+    """
     # Renormalization ratio:
     x = new_reference_frequency / fitDict["reference_frequency_Hz"]
+
+    # Check if ratio is within zone of probable accuracy (approx. 10%, from empirical tests)
+    if (x < 0.9) or (x > 1.1):
+        warnings.warn(
+            "New Stokes I reference frequency more than 10% different than original, uncertainties may be unreliable",
+            UserWarning,
+        )
+
     (a, b, c, d, f, g) = fitDict["p"]
     newDict = fitDict.copy()
+
+    # Modify fit parameters to new reference frequency.
+    # I have derived all these conversion equations analytically for the
+    # linear- and log-polynomial models.
     if fitDict["fit_function"] == "linear":
         new_parms = [a * x**5, b * x**4, c * x**3, d * x**2, f * x, g]
     elif fitDict["fit_function"] == "log":
-        lnx = np.log(x)
+        lnx = np.log10(x)
         new_parms = [
             a,
             5 * a * lnx + b,
             10 * a * lnx**2 + 4 * b * lnx + c,
             10 * a * lnx**3 + 6 * b * lnx**2 + 3 * c * lnx + d,
             5 * a * lnx**4 + 4 * b * lnx**3 + 3 * c * lnx**2 + 2 * d * lnx + f,
-            g * np.exp(a * lnx**5 + b * lnx**4 + c * lnx**3 + d * lnx**2 + f * lnx),
+            g
+            * np.power(10, a * lnx**5 + b * lnx**4 + c * lnx**3 + d * lnx**2 + f * lnx),
         ]
+
+    # Modify fit parameter errors to new reference frequency.
+    # Note this implicitly makes a first-order approximation in the correletion
+    # structure between uncertainties
+    # The general equation for the transformation of uncertainties is:
+    #   var(p) = sum_i,j((\partial p / \partial a_i) * (\partial p / \partial a_j) * cov(a_i,a_j))
+    # where a_i are the initial parameters, p is a final parameter,
+    # and the partial derivatives are evaluated at the fit parameter values (and frequency ratio).
+    # The partial derivatives all come from the parameter conversion equations above.
+
+    cov = fitDict["pcov"]
+    if fitDict["fit_function"] == "linear":
+        new_errors = [
+            np.sqrt(x**10 * cov[0, 0]),
+            np.sqrt(x**8 * cov[1, 1]),
+            np.sqrt(x**6 * cov[2, 2]),
+            np.sqrt(x**4 * cov[3, 3]),
+            np.sqrt(x**2 * cov[4, 4]),
+            np.sqrt(cov[5, 5]),
+        ]
+    elif fitDict["fit_function"] == "log":
+        g2 = new_parms[5]  # Convenient shorthand for new value of g variable.
+        new_errors = [
+            np.sqrt(cov[0, 0]),
+            np.sqrt(25 * lnx**2 * cov[0, 0] + 10 * lnx * cov[0, 1] + cov[1, 1]),
+            np.sqrt(
+                100 * lnx**4 * cov[0, 0]
+                + 80 * lnx**3 * cov[0, 1]
+                + 20 * lnx**2 * cov[0, 2]
+                + 16 * lnx**2 * cov[1, 1]
+                + 8 * lnx * cov[1, 2]
+                + cov[2, 2]
+            ),
+            np.sqrt(
+                100 * lnx**6 * cov[0, 0]
+                + 120 * lnx**5 * cov[0, 1]
+                + 60 * lnx**4 * cov[0, 2]
+                + 20 * lnx**3 * cov[0, 3]
+                + 36 * lnx**4 * cov[1, 1]
+                + 36 * lnx**3 * cov[1, 2]
+                + 12 * lnx**2 * cov[1, 3]
+                + 9 * lnx**2 * cov[2, 2]
+                + 6 * lnx * cov[2, 3]
+                + cov[3, 3]
+            ),
+            np.sqrt(
+                25 * lnx**8 * cov[0, 0]
+                + 40 * lnx**7 * cov[0, 1]
+                + 30 * lnx**6 * cov[0, 2]
+                + 20 * lnx**5 * cov[0, 3]
+                + 10 * lnx**4 * cov[0, 4]
+                + 16 * lnx**6 * cov[0, 5]
+                + 24 * lnx**5 * cov[1, 2]
+                + 16 * lnx**4 * cov[1, 3]
+                + 8 * lnx**3 * cov[1, 4]
+                + 9 * lnx**4 * cov[2, 2]
+                + 12 * lnx**3 * cov[2, 3]
+                + 6 * lnx**2 * cov[2, 4]
+                + 4 * lnx**2 * cov[3, 3]
+                + 4 * lnx * cov[3, 4]
+                + cov[4, 4]
+            ),
+            g2
+            * np.sqrt(
+                lnx**10 * cov[0, 0]
+                + 2 * lnx**9 * cov[0, 1]
+                + 2 * lnx**8 * cov[0, 2]
+                + 2 * lnx**7 * cov[0, 3]
+                + 2 * lnx**6 * cov[0, 4]
+                + 2 * lnx**5 / g * np.log(10) * cov[0, 5]
+                + lnx**8 * cov[1, 1]
+                + 2 * lnx**7 * cov[1, 2]
+                + 2 * lnx**6 * cov[1, 3]
+                + 2 * lnx**5 * cov[1, 4]
+                + 2 * lnx**4 / g * np.log(10) * cov[1, 5]
+                + lnx**6 * cov[2, 2]
+                + 2 * lnx**5 * cov[2, 3]
+                + 2 * lnx**4 * cov[2, 4]
+                + 2 * lnx**3 / g * np.log(10) * cov[2, 5]
+                + lnx**4 * cov[3, 3]
+                + 2 * lnx**3 * cov[3, 4]
+                + 2 * lnx**2 / g * np.log(10) * cov[3, 5]
+                + lnx**2 * cov[4, 4]
+                + 2 * lnx / g * np.log(10) * cov[4, 5]
+                + 1 / g**2 * cov[5, 5]
+            ),
+        ]
+
     newDict["p"] = new_parms
     newDict["reference_frequency_Hz"] = new_reference_frequency
+    newDict["perror"] = new_errors
+
     return newDict
 
 
