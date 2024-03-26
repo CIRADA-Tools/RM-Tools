@@ -94,7 +94,7 @@ def do_rmsynth_planes(
     weightArr=None,
     lam0Sq_m2=None,
     nBits=32,
-    verbose=False,
+    eps=1e-6,
     log=print,
 ):
     """Perform RM-synthesis on Stokes Q and U cubes (1,2 or 3D). This version
@@ -109,15 +109,15 @@ def do_rmsynth_planes(
     lambdaSqArr_m2  ... vector of wavelength^2 values (assending freq order)
     phiArr_radm2    ... vector of trial Faraday depth values
     weightArr       ... vector of weights, default [None] is Uniform (all 1s)
+    lam0Sq_m2       ... force a reference lambda^2 value [None, calculated]
     nBits           ... precision of data arrays [32]
-    verbose         ... print feedback during calculation [False]
+    eps             ... NUFFT tolerance [1e-6] (see https://finufft.readthedocs.io/en/latest/python.html#module-finufft)
     log             ... function to be used to output messages [print]
 
     """
 
     # Default data types
     dtFloat = "float" + str(nBits)
-    dtComplex = "complex" + str(2 * nBits)
 
     # Set the weight array
     if weightArr is None:
@@ -195,7 +195,7 @@ def do_rmsynth_planes(
             x=a,
             c=np.ascontiguousarray(pCube.T),
             s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
-            eps=1e-8,
+            eps=eps,
         )
         * KArr[..., None]
     ).T
@@ -228,6 +228,7 @@ def get_rmsf_planes(
     fitRMSF=False,
     fitRMSFreal=False,
     nBits=32,
+    eps=1e-6,
     verbose=False,
     log=print,
 ):
@@ -250,6 +251,7 @@ def get_rmsf_planes(
     fitRMSF         ... fit the main lobe of the RMSF with a Gaussian [False]
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
+    eps             ... NUFFT tolerance [1e-6] (see https://finufft.readthedocs.io/en/latest/python.html#module-finufft)
     verbose         ... print feedback during calculation [False]
     log             ... function to be used to output messages [print]
 
@@ -379,7 +381,7 @@ def get_rmsf_planes(
                 x=a,
                 c=np.ascontiguousarray(weightCube.T),
                 s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
-                eps=1e-8,
+                eps=eps,
             )
             * KArr[..., None]
         ).T
