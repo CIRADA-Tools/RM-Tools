@@ -189,7 +189,7 @@ def run_rmsynth(
     dQUArr = (dQArr + dUArr) / 2.0
 
     # Fit the Stokes I spectrum and create the fractional spectra
-    IModArr, qArr, uArr, dqArr, duArr, fitDict = create_frac_spectra(
+    IModArr, qArr, uArr, dqArr, duArr, fit_result = create_frac_spectra(
         freqArr=freqArr_Hz,
         IArr=IArr,
         QArr=QArr,
@@ -212,7 +212,7 @@ def run_rmsynth(
         log("Plotting the input data and spectral index fit.")
     freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
     if modStokesI is None:
-        IModHirArr = calculate_StokesI_model(fitDict, freqHirArr_Hz)
+        IModHirArr = calculate_StokesI_model(fit_result, freqHirArr_Hz)
     elif modStokesI is not None:
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
         IModHirArr = modStokesI_interp(freqHirArr_Hz)
@@ -356,16 +356,19 @@ def run_rmsynth(
     # Stokes I reference frequency.
 
     if lam0Sq_m2 == 0:  # Rudnick-Cotton adapatation
-        freq0_Hz = fitDict["reference_frequency_Hz"]
+        freq0_Hz = fit_result.reference_frequency_Hz
     else:  # standard RM-synthesis
         freq0_Hz = C / m.sqrt(lam0Sq_m2)
-        fitDict = renormalize_StokesI_model(fitDict, freq0_Hz)
+        if modStokesI is None:
+            fit_result = renormalize_StokesI_model(fit_result, freq0_Hz)
+        else:
+            fit_result = fit_result.with_options(reference_frequency_Hz=freq0_Hz)
 
     # Set Ifreq0 (Stokes I at reference frequency) from either supplied model
     # (interpolated as required) or fit model, as appropriate.
     # Multiply the dirty FDF by Ifreq0 to recover the PI
     if modStokesI is None:
-        Ifreq0 = calculate_StokesI_model(fitDict, freq0_Hz)
+        Ifreq0 = calculate_StokesI_model(fit_result, freq0_Hz)
     elif modStokesI is not None:
         modStokesI_interp = interp1d(freqArr_Hz, modStokesI)
         Ifreq0 = modStokesI_interp(freq0_Hz)
@@ -388,13 +391,15 @@ def run_rmsynth(
         lam0Sq=lam0Sq_m2,
     )
     mDict["Ifreq0"] = toscalar(Ifreq0)
-    mDict["polyCoeffs"] = ",".join([str(x.astype(np.float32)) for x in fitDict["p"]])
-    mDict["polyCoefferr"] = ",".join(
-        [str(x.astype(np.float32)) for x in fitDict["perror"]]
+    mDict["polyCoeffs"] = ",".join(
+        [str(x.astype(np.float32)) for x in fit_result.params]
     )
-    mDict["polyOrd"] = fitDict["polyOrd"]
-    mDict["IfitStat"] = fitDict["fitStatus"]
-    mDict["IfitChiSqRed"] = fitDict["chiSqRed"]
+    mDict["polyCoefferr"] = ",".join(
+        [str(x.astype(np.float32)) for x in fit_result.perror]
+    )
+    mDict["polyOrd"] = fit_result.polyOrd
+    mDict["IfitStat"] = fit_result.fitStatus
+    mDict["IfitChiSqRed"] = fit_result.chiSqRed
     mDict["fit_function"] = fit_function
     mDict["lam0Sq_m2"] = toscalar(lam0Sq_m2)
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
@@ -403,9 +408,9 @@ def run_rmsynth(
     mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
 
-    if (fitDict["fitStatus"] >= 128) and verbose:
+    if (fit_result.fitStatus >= 128) and verbose:
         log("WARNING: Stokes I model contains negative values!")
-    elif (fitDict["fitStatus"] >= 64) and verbose:
+    elif (fit_result.fitStatus >= 64) and verbose:
         log("Caution: Stokes I model has low signal-to-noise.")
 
     # Add information on nature of channels:
@@ -519,16 +524,6 @@ def run_rmsynth(
             fig=fdfFig,
             units=units,
         )
-
-        # Use the custom navigation toolbar
-    #        try:
-    #            fdfFig.canvas.toolbar.pack_forget()
-    #            CustomNavbar(fdfFig.canvas, fdfFig.canvas.toolbar.window)
-    #        except Exception:
-    #            pass
-
-    # Display the figure
-    #        fdfFig.show()
 
     # Pause if plotting enabled
     if showPlots:
