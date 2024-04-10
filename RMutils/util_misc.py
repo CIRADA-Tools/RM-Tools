@@ -462,8 +462,8 @@ def calculate_StokesI_model(
             freqArr_Hz / fit_result.reference_frequency_Hz
         )
     elif fit_result.fit_function == "log":
-        IModArr = powerlaw_poly5(
-            fit_result.params(freqArr_Hz / fit_result.reference_frequency_Hz)
+        IModArr = powerlaw_poly5(fit_result.params)(
+            freqArr_Hz / fit_result.reference_frequency_Hz
         )
     return IModArr
 
