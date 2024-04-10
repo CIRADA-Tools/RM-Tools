@@ -328,7 +328,7 @@ class FitResult(NamedTuple):
     Results of a polynomial fit.
     """
 
-    params: Optional[np.ndarray]
+    params: np.ndarray
     """array of polynomial parameters (highest to lowest order)"""
     fitStatus: int
     """exit status of fitter."""
@@ -346,9 +346,9 @@ class FitResult(NamedTuple):
     """reference frequency for polynomial."""
     dof: int
     """degrees of freedom in the fit."""
-    pcov: Optional[np.ndarray]
+    pcov: np.ndarray
     """covariance matrix of fit parameters"""
-    perror: Optional[np.ndarray]
+    perror: np.ndarray
     """parameter errors"""
     fit_function: str
     """fit function used"""
@@ -374,7 +374,7 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log") -> FitR
         fit_function (str): 'linear' or 'log' to fit the corresponding function.
 
     Returns:
-        fit_StokesI_model: Model information.
+        FitResult: Model information.
     """
     # Frequency axis must be in GHz to avoid overflow errors
     goodchan = np.logical_and(
@@ -431,8 +431,8 @@ def fit_StokesI_model(freqArr, IArr, dIArr, polyOrd, fit_function="log") -> FitR
         aic = 2 * (polyOrd + 1) + mp.fnorm
 
     dof = len(freqArr) - polyOrd - 1
-    return fit_StokesI_model(
-        p=mp.params,
+    return FitResult(
+        params=mp.params,
         fitStatus=int(np.abs(mp.status)),
         chiSq=mp.fnorm,
         chiSqRed=mp.fnorm / dof,
@@ -704,8 +704,8 @@ def create_frac_spectra(
                 nIter=0,
                 reference_frequency_Hz=1,
                 dof=len(freqArr) - polyOrd - 1,
-                pcov=None,
-                perror=None,
+                pcov=np.zeros((6, 6)),
+                perror=np.zeros(6),
                 fit_function=fit_function,
             )
             IModArr = np.ones_like(IArr)
@@ -722,8 +722,8 @@ def create_frac_spectra(
             nIter=0,
             reference_frequency_Hz=1,
             dof=len(freqArr) - polyOrd - 1,
-            pcov=None,
-            perror=None,
+            pcov=np.zeros((6, 6)),
+            perror=np.zeros(6),
             fit_function=fit_function,
         )
         if verbose:
