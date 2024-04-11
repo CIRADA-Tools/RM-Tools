@@ -27,7 +27,20 @@ def model(pDict, lamSqArr_m2):
 
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
-    quArr = (pArr * np.exp(2j * (np.radians(pDict["psi0_deg"]) + (0.5*pDict["RM_src_radm2"] * lamSqArr_m2))) * (np.sin(pDict["RM_src_radm2"] * lamSqArr_m2) / (pDict["RM_src_radm2"] * lamSqArr_m2)) )   
+    quArr = (
+        pArr
+        * np.exp(
+            2j
+            * (
+                np.radians(pDict["psi0_deg"])
+                + (0.5 * pDict["RM_src_radm2"] * lamSqArr_m2)
+            )
+        )
+        * (
+            np.sin(pDict["RM_src_radm2"] * lamSqArr_m2)
+            / (pDict["RM_src_radm2"] * lamSqArr_m2)
+        )
+    )
     return quArr
 
 
@@ -38,10 +51,7 @@ def model(pDict, lamSqArr_m2):
 # -----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.0, 
-        maximum=1.0, 
-        name="fracPol", 
-        latex_label="$p$"
+        minimum=0.0, maximum=1.0, name="fracPol", latex_label="$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,
@@ -51,22 +61,21 @@ priors = {
         boundary="periodic",
     ),
     "RM_src_radm2": bilby.prior.Uniform(
-        minimum= 0.0,
+        minimum=0.0,
         maximum=100.0,
         name="RM_radm2",
         latex_label="$RM_{src}$ (rad m$^{-2}$)",
     ),
     "RM_screen_radm2": bilby.prior.Uniform(
-        minimum= -1100.0,
+        minimum=-1100.0,
         maximum=1100.0,
         name="RM_screen_radm2",
         latex_label="$RM_{scr}$ (rad m$^{-2}$)",
     ),
-     "sigma_RM_2": bilby.prior.Uniform(
+    "sigma_RM_2": bilby.prior.Uniform(
         minimum=0.0,
         maximum=100.0,
         name="sigma_RM_radm2",
         latex_label="sigma_RM (rad m$^{-2}$)",
     ),
 }
-
