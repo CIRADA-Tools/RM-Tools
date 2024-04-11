@@ -409,23 +409,23 @@ def fit_spectra_I(
     nDetectPix:  the total number of pixels to be fit.
     """
 
-    pixFitDict = fit_StokesI_model(
+    pix_fit_result = fit_StokesI_model(
         freqArr_Hz, Ispectrum, rms_Arr, polyOrd=polyOrd, fit_function=fit_function
     )
 
-    pixImodel = calculate_StokesI_model(pixFitDict, freqArr_Hz)
+    pixImodel = calculate_StokesI_model(pix_fit_result, freqArr_Hz)
 
     outs = dict()
 
     outs["I"] = pixImodel.astype("float32")
-    outs["coeffs"] = pixFitDict["p"].astype("float32")
-    outs["coeffs_err"] = pixFitDict["perror"].astype("float32")
-    outs["chiSq"] = pixFitDict["chiSq"]
-    outs["chiSqRed"] = pixFitDict["chiSqRed"]
-    outs["nIter"] = pixFitDict["nIter"]
-    outs["AIC"] = pixFitDict["AIC"]
-    outs["covar"] = pixFitDict["pcov"]
-    outs["reference_frequency_Hz"] = pixFitDict["reference_frequency_Hz"]
+    outs["coeffs"] = pix_fit_result.params.astype("float32")
+    outs["coeffs_err"] = pix_fit_result.perror.astype("float32")
+    outs["chiSq"] = pix_fit_result.chiSq
+    outs["chiSqRed"] = pix_fit_result.chiSqRed
+    outs["nIter"] = pix_fit_result.nIter
+    outs["AIC"] = pix_fit_result.AIC
+    outs["covar"] = pix_fit_result.pcov
+    outs["reference_frequency_Hz"] = pix_fit_result.reference_frequency_Hz
 
     return outs
 
