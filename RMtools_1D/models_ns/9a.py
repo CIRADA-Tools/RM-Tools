@@ -58,7 +58,7 @@ priors = {
         latex_label=r"$\sigma_{SB,RM}$ (rad m$^{-2}$)",
     ),
     "RM_screen_radm2": bilby.prior.Uniform(
-        minimum= -1100.0,
+        minimum=-1100.0,
         maximum=1100.0,
         name="RM_screen_radm2",
         latex_label="$RM_{scr}$ (rad m$^{-2}$)",
