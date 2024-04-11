@@ -15,21 +15,25 @@ import numpy as np
 def model(pDict, lamSqArr_m2):
     """
 
-    Simple Faraday thin source
+    Single Faraday component with differential Faraday rotation
+    "Burn slab"
 
     Ref:
-    Sokoloff et al. (1998) Eq 2
-    O'Sullivan et al. (2012) Eq 8
-    Ma et al. (2019a) Eq 10
+    Burn (1966) Eq 18; with N >> (H_r/2H_z^0)^2
+    Sokoloff et al. (1998) Eq 3
+    O'Sullivan et al. (2012) Eq 9
+    Ma et al. (2019a) Eq 12
 
     """
 
     # Calculate the complex fractional q and u spectra
     # fmt: off
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
-    quArr = pArr * np.exp(
-        2j * (np.radians(pDict["psi0_deg"]) + pDict["RM_radm2"] * lamSqArr_m2)
-    )
+    quArr = (pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
+                                  (0.5*pDict["deltaRM_radm2"] +
+                                   pDict["RM_radm2"]) * lamSqArr_m2))
+             * np.sin(pDict["deltaRM_radm2"] * lamSqArr_m2) /
+               (pDict["deltaRM_radm2"] * lamSqArr_m2))
     # fmt: on
 
     return quArr
@@ -56,5 +60,11 @@ priors = {
         maximum=1100.0,
         name="RM_radm2",
         latex_label=r"RM (rad m$^{-2}$)",
+    ),
+    "deltaRM_radm2": bilby.prior.Uniform(
+        minimum=0.0,
+        maximum=100.0,
+        name="deltaRM_radm2",
+        latex_label=r"$\Delta{RM}$ (rad m$^{-2}$)",
     ),
 }

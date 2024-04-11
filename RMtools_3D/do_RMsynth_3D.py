@@ -203,7 +203,6 @@ def run_rmsynth(
             phiArr_radm2=phiArr_radm2,
             weightArr=weightArr,
             nBits=32,
-            verbose=verbose,
             lam0Sq_m2=0 if super_resolution else None,
         )
     else:
@@ -615,7 +614,8 @@ def writefits(
 
         maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
         # Save a maximum polarised intensity map
-        header["BUNIT"] = headtemplate["BUNIT"]
+        if "BUNIT" in headtemplate:
+            header["BUNIT"] = headtemplate["BUNIT"]
         header["NAXIS" + str(freq_axis)] = 1
         header["CTYPE" + str(freq_axis)] = (
             "DEGENERATE",

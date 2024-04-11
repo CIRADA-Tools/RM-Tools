@@ -1068,7 +1068,7 @@ def run_adjoint_rmsynth(
     dQUArr = (dQArr + dUArr) / 2.0
 
     # Fit the Stokes I spectrum and create the fractional spectra
-    IModArr, qArr, uArr, dqArr, duArr, fitDict = create_frac_spectra(
+    IModArr, qArr, uArr, dqArr, duArr, fit_result = create_frac_spectra(
         freqArr=freqArr_GHz,
         IArr=IArr,
         QArr=QArr,
@@ -1086,7 +1086,7 @@ def run_adjoint_rmsynth(
         if verbose:
             log("Plotting the input data and spectral index fit.")
         freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr = poly5(fitDict["p"])(freqHirArr_Hz / 1e9)
+        IModHirArr = poly5(fit_result.params)(freqHirArr_Hz / 1e9)
         specFig = plt.figure(figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(
             freqArr_Hz=freqArr_Hz,
@@ -1215,7 +1215,7 @@ def run_adjoint_rmsynth(
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
     # Multiply the dirty FDF by Ifreq0 to recover the PI
     freq0_Hz = C / m.sqrt(lam0Sq_m2)
-    Ifreq0 = poly5(fitDict["p"])(freq0_Hz / 1e9)
+    Ifreq0 = poly5(fit_result.params)(freq0_Hz / 1e9)
     dirtyFDF *= Ifreq0  # FDF is in fracpol units initially, convert back to flux
 
     # Calculate the theoretical noise in the FDF !!
@@ -1240,9 +1240,9 @@ def run_adjoint_rmsynth(
     )
 
     mDict["Ifreq0"] = toscalar(Ifreq0)
-    mDict["polyCoeffs"] = ",".join([str(x) for x in fitDict["p"]])
-    mDict["IfitStat"] = fitDict["fitStatus"]
-    mDict["IfitChiSqRed"] = fitDict["chiSqRed"]
+    mDict["polyCoeffs"] = ",".join([str(x) for x in fit_result.params])
+    mDict["IfitStat"] = fit_result.fitStatus
+    mDict["IfitChiSqRed"] = fit_result.chiSqRed
     mDict["lam0Sq_m2"] = toscalar(lam0Sq_m2)
     mDict["freq0_Hz"] = toscalar(freq0_Hz)
     mDict["fwhmRMSF"] = toscalar(fwhmRMSF)
@@ -1250,9 +1250,9 @@ def run_adjoint_rmsynth(
     # mDict["dFDFth"] = toscalar(dFDFth)
     mDict["units"] = units
 
-    if fitDict["fitStatus"] >= 128:
+    if fit_result.fitStatus >= 128:
         log("WARNING: Stokes I model contains negative values!")
-    elif fitDict["fitStatus"] >= 64:
+    elif fit_result.fitStatus >= 64:
         log("Caution: Stokes I model has low signal-to-noise.")
 
     # Add information on nature of channels:

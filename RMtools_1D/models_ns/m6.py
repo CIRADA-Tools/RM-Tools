@@ -16,27 +16,33 @@ from bilby.core.prior import Constraint, PriorDict
 def model(pDict, lamSqArr_m2):
     """
 
-    Two separate Faraday thin sources
+    Two separate Faraday components with differential Faraday rotation
+    Double "Burn slab"
     Averaged within the same telescope beam (i.e., unresolved)
 
     Ref (for individual source component):
-    Sokoloff et al. (1998) Eq 2
-    O'Sullivan et al. (2012) Eq 8
-    Ma et al. (2019a) Eq 10
+    Burn (1966) Eq 18; with N >> (H_r/2H_z^0)^2
+    Sokoloff et al. (1998) Eq 3
+    O'Sullivan et al. (2012) Eq 9
+    Ma et al. (2019a) Eq 12
 
     """
 
     # Calculate the complex fractional q and u spectra
     pArr1 = pDict["fracPol1"] * np.ones_like(lamSqArr_m2)
     pArr2 = pDict["fracPol2"] * np.ones_like(lamSqArr_m2)
+
     # fmt: off
-    quArr1 = pArr1 * np.exp(
-        2j * (np.radians(pDict["psi01_deg"]) + pDict["RM1_radm2"] * lamSqArr_m2)
-    )
-    quArr2 = pArr2 * np.exp(
-        2j * (np.radians(pDict["psi02_deg"]) + pDict["RM2_radm2"] * lamSqArr_m2)
-    )
-    quArr = quArr1 + quArr2
+    quArr1 = pArr1 * np.exp( 2j * (np.radians(pDict["psi01_deg"]) +
+                                   (0.5*pDict["deltaRM1_radm2"] +
+                                    pDict["RM1_radm2"]) * lamSqArr_m2))
+    quArr2 = pArr2 * np.exp( 2j * (np.radians(pDict["psi02_deg"]) +
+                                   (0.5*pDict["deltaRM2_radm2"] +
+                                    pDict["RM2_radm2"]) * lamSqArr_m2))
+    quArr = (quArr1 * np.sin(pDict["deltaRM1_radm2"] * lamSqArr_m2) /
+             (pDict["deltaRM1_radm2"] * lamSqArr_m2) +
+             quArr2 * np.sin(pDict["deltaRM2_radm2"] * lamSqArr_m2) /
+             (pDict["deltaRM2_radm2"] * lamSqArr_m2))
     # fmt: on
 
     return quArr
@@ -77,7 +83,6 @@ priors["fracPol1"] = bilby.prior.Uniform(
     name="fracPol1",
     latex_label=r"$p_1$",
 )
-
 priors["fracPol2"] = bilby.prior.Uniform(
     minimum=0.0,
     maximum=1.0,
@@ -104,13 +109,25 @@ priors["RM1_radm2"] = bilby.prior.Uniform(
     minimum=-1100.0,
     maximum=1100.0,
     name="RM1_radm2",
-    latex_label=r"$\phi_1$ (rad m$^{-2}$)",
+    latex_label="$\phi_1$ (rad m$^{-2}$)",
 )
 priors["RM2_radm2"] = bilby.prior.Uniform(
     minimum=-1100.0,
     maximum=1100.0,
     name="RM2_radm2",
     latex_label=r"$\phi_2$ (rad m$^{-2}$)",
+)
+priors["deltaRM1_radm2"] = bilby.prior.Uniform(
+    minimum=0.0,
+    maximum=100.0,
+    name="deltaRM1_radm2",
+    latex_label=r"$\Delta{RM,1}$ (rad m$^{-2}$))",
+)
+priors["deltaRM2_radm2"] = bilby.prior.Uniform(
+    minimum=0.0,
+    maximum=100.0,
+    name="deltaRM2_radm2",
+    latex_label=r"$\Delta{RM,2}$ (rad m$^{-2}$)",
 )
 priors["delta_RM1_RM2_radm2"] = Constraint(
     minimum=0,

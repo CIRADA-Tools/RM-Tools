@@ -223,7 +223,7 @@ def load_model(modelNum, verbose=False):
             spec.loader.exec_module(mod)
         except:
             print(
-                "Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/RMtools_1D/models_ns/".format(
+                "Model could not be found! Please make sure model is present either in {}/models_ns/, or in {}/models_ns/".format(
                     os.getcwd(), RMtools_dir
                 )
             )
@@ -324,12 +324,12 @@ def run_qufit(
         verbose=True,
         fit_function=fit_function,
     )
-    (IModArr, qArr, uArr, dqArr, duArr, IfitDict) = dataArr
+    (IModArr, qArr, uArr, dqArr, duArr, fit_result) = dataArr
 
     # Plot the data and the Stokes I model fit
     print("Plotting the input data and spectral index fit.")
     freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-    IModHirArr = calculate_StokesI_model(IfitDict, freqHirArr_Hz)
+    IModHirArr = calculate_StokesI_model(fit_result, freqHirArr_Hz)
     specFig = plt.figure(facecolor="w", figsize=(10, 6))
     plot_Ipqu_spectra_fig(
         freqArr_Hz=freqArr_Hz,
@@ -487,7 +487,6 @@ def run_qufit(
 
     # Create a save dictionary and store final p in values
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.json"
-    # IfitDict["p"] = toscalar(IfitDict["p"].tolist())
     saveDict = {
         "parNames": toscalar(parNames),
         "labels": toscalar(labels),
@@ -506,14 +505,12 @@ def run_qufit(
         "ln(EVIDENCE) ": toscalar(lnEvidence),
         "dLn(EVIDENCE)": toscalar(dLnEvidence),
         "nFree": toscalar(nFree),
-        "Imodel": ",".join([str(x.astype(np.float32)) for x in IfitDict["p"]]),
-        "Imodel_errs": ",".join(
-            [str(x.astype(np.float32)) for x in IfitDict["perror"]]
-        ),
-        "IfitChiSq": toscalar(IfitDict["chiSq"]),
-        "IfitChiSqRed": toscalar(IfitDict["chiSqRed"]),
-        "IfitPolyOrd": toscalar(IfitDict["polyOrd"]),
-        "Ifitfreq0": toscalar(IfitDict["reference_frequency_Hz"]),
+        "Imodel": ",".join([str(x.astype(np.float32)) for x in fit_result.params]),
+        "Imodel_errs": ",".join([str(x.astype(np.float32)) for x in fit_result.perror]),
+        "IfitChiSq": toscalar(fit_result.chiSq),
+        "IfitChiSqRed": toscalar(fit_result.chiSqRed),
+        "IfitPolyOrd": toscalar(fit_result.polyOrd),
+        "Ifitfreq0": toscalar(fit_result.reference_frequency_Hz),
     }
 
     for k, v in saveDict.items():
@@ -564,7 +561,7 @@ def run_qufit(
     # Plot the data and best-fitting model
     lamSqHirArr_m2 = np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
     freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
-    IModArr = calculate_StokesI_model(IfitDict, freqHirArr_Hz)
+    IModArr = calculate_StokesI_model(fit_result, freqHirArr_Hz)
     pDict = {k: v for k, v in zip(parNames, p)}
     quModArr = model(pDict, lamSqHirArr_m2)
     model_dict = {

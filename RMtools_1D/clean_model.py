@@ -13,7 +13,7 @@ import json
 import numpy as np
 
 from RMtools_1D.do_RMsynth_1D import readFile as read_freqFile
-from RMutils.util_misc import calculate_StokesI_model
+from RMutils.util_misc import FitResult, calculate_StokesI_model
 
 
 def calculate_QU_model(freqArr, phiArr, CCArr, lambdaSq_0, Iparms=None):
@@ -39,15 +39,22 @@ def calculate_QU_model(freqArr, phiArr, CCArr, lambdaSq_0, Iparms=None):
     a = lambdaSqArr_m2 - lambdaSq_0
     quarr = np.sum(CCArr[:, np.newaxis] * np.exp(2.0j * np.outer(phiArr, a)), axis=0)
 
-    fitDict = {}
     # TODO: Pass in fit function, which is currently not output by rmsynth1d
-    fitDict["fit_function"] = "log"
-    if Iparms is not None:
-        fitDict["p"] = Iparms
-    else:
-        fitDict["p"] = [0, 0, 0, 0, 0, 1]
-    fitDict["reference_frequency_Hz"] = C / np.sqrt(lambdaSq_0)
-    StokesI_model = calculate_StokesI_model(fitDict, freqArr)
+    fit_result = FitResult(
+        params=Iparms if Iparms is not None else [0, 0, 0, 0, 0, 1],
+        fitStatus=0,
+        chiSq=0.0,
+        chiSqRed=0.0,
+        AIC=0,
+        polyOrd=0,
+        nIter=0,
+        reference_frequency_Hz=C / np.sqrt(lambdaSq_0),
+        dof=0,
+        pcov=None,
+        perror=None,
+        fit_function="log",
+    )
+    StokesI_model = calculate_StokesI_model(fit_result, freqArr)
 
     QUarr = StokesI_model * quarr
 

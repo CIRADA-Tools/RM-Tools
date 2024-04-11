@@ -13,15 +13,27 @@ import numpy as np
 #  quArr       = Complex array containing the Re and Im spectra.              #
 # -----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
-    """Single Faraday component with Burn depolarisation"""
+    """
+
+    Single Faraday component with external Faraday dispersion
+
+    Ref:
+    Burn (1966) Eq 21
+    Sokoloff et al. (1998) Eq B3
+    O'Sullivan et al. (2012) Eq 11
+    Ma et al. (2019a) Eq 13
+
+    """
 
     # Calculate the complex fractional q and u spectra
+    # fmt: off
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
     quArr = (
         pArr
         * np.exp(2j * (np.radians(pDict["psi0_deg"]) + pDict["RM_radm2"] * lamSqArr_m2))
         * np.exp(-2.0 * pDict["sigmaRM_radm2"] ** 2.0 * lamSqArr_m2**2.0)
     )
+    # fmt: on
 
     return quArr
 
@@ -33,7 +45,7 @@ def model(pDict, lamSqArr_m2):
 # -----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.001, maximum=1.0, name="fracPol", latex_label=r"$p$"
+        minimum=0.0, maximum=1.0, name="fracPol", latex_label=r"$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,
@@ -50,7 +62,7 @@ priors = {
     ),
     "sigmaRM_radm2": bilby.prior.Uniform(
         minimum=0.0,
-        maximum=1000.0,
+        maximum=100.0,
         name="sigmaRM_radm2",
         latex_label=r"$\sigma_{RM}$ (rad m$^{-2}$)",
     ),
