@@ -583,7 +583,7 @@ def renormalize_StokesI_model(
                 + 4 * lnx * cov[3, 4]
                 + cov[4, 4]
             ),
-            g2
+            np.abs(g2)
             * np.sqrt(
                 lnx**10 * cov[0, 0]
                 + 2 * lnx**9 * cov[0, 1]
