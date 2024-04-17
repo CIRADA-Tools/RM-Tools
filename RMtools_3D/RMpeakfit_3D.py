@@ -31,6 +31,7 @@ def pixelwise_peak_fitting(
     product_list,
     noiseArr=None,
     stokesIcube=None,
+    weightType="uniform",
 ):
     """
     Performs the 1D FDF peak fitting used in RMsynth/RMclean_1D, pixelwise on
@@ -91,8 +92,15 @@ def pixelwise_peak_fitting(
 
     # compute weights if needed:
     if noiseArr is not None:
-        weightArr = 1.0 / np.power(noiseArr, 2.0)
-        weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+        if weightType == "variance":
+            weightArr = 1.0 / np.power(noiseArr, 2.0)
+            weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+        elif weightType == "uniform":
+            weightArr = np.ones(lamSqArr_m2.shape, dtype=np.float32)
+            weightArr = np.where(np.isnan(noiseArr), 0.0, weightArr)
+        else:
+            raise Exception("Invalid weight type; must be 'uniform' or 'variance'")
+
         dFDF = Ifreq0Arr * np.sqrt(
             np.sum(weightArr**2 * np.nan_to_num(noiseArr) ** 2)
             / (np.sum(weightArr)) ** 2
@@ -378,6 +386,12 @@ def main():
         default=None,
         help="FITS file or cube containing noise values [None].",
     )
+    parser.add_argument(
+        "-w",
+        dest="weightType",
+        default="uniform",
+        help="weighting ['uniform'] (all 1s) or 'variance' used in rmsynth3d, affects uncertainty estimation.",
+    )
 
     args = parser.parse_args()
 
@@ -474,6 +488,7 @@ def main():
         product_list,
         noiseArr=rmsArr,
         stokesIcube=dataI,
+        weightType=args.weightType,
     )
 
     save_maps(map_dict, args.output_name[0], header)
