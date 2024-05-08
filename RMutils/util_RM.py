@@ -63,6 +63,7 @@
 import gc
 import math as m
 import sys
+from typing import NamedTuple
 
 import finufft
 import numpy as np
@@ -86,6 +87,15 @@ C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
+class RMsynthResults(NamedTuple):
+    """Results of the RM-synthesis calculation"""
+
+    FDFcube: np.ndarray
+    """The Faraday dispersion function cube"""
+    lam0Sq_m2: float
+    """The reference lambda^2 value"""
+
+
 def do_rmsynth_planes(
     dataQ,
     dataU,
@@ -96,7 +106,7 @@ def do_rmsynth_planes(
     nBits=32,
     eps=1e-6,
     log=print,
-):
+) -> RMsynthResults:
     """Perform RM-synthesis on Stokes Q and U cubes (1,2 or 3D). This version
     of the routine loops through spectral planes and is faster than the pixel-
     by-pixel code. This version also correctly deals with isolated clumps of
@@ -214,10 +224,25 @@ def do_rmsynth_planes(
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
 
-    return FDFcube, lam0Sq_m2
+    return RMsynthResults(FDFcube=FDFcube, lam0Sq_m2=lam0Sq_m2)
 
 
 # -----------------------------------------------------------------------------#
+class RMSFResults(NamedTuple):
+    """Results of the RMSF calculation"""
+
+    RMSFcube: np.ndarray
+    """The RMSF cube"""
+    phi2Arr: np.ndarray
+    """The (double length) Faraday depth array"""
+    fwhmRMSFArr: np.ndarray
+    """The FWHM of the RMSF main lobe"""
+    statArr: np.ndarray
+    """The status of the RMSF fit"""
+    lam0Sq_m2: float
+    """The reference lambda^2 value"""
+
+
 def get_rmsf_planes(
     lambdaSqArr_m2,
     phiArr_radm2,
@@ -231,7 +256,7 @@ def get_rmsf_planes(
     eps=1e-6,
     verbose=False,
     log=print,
-):
+) -> RMSFResults:
     """Calculate the Rotation Measure Spread Function from inputs. This version
     returns a cube (1, 2 or 3D) of RMSF spectra based on the shape of a
     boolean mask array, where flagged data are True and unflagged data False.
@@ -423,10 +448,29 @@ def get_rmsf_planes(
         fwhmRMSFArr = np.reshape(fwhmRMSFArr, (old_data_shape[1], old_data_shape[2]))
         statArr = np.reshape(statArr, (old_data_shape[1], old_data_shape[2]))
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr, lam0Sq_m2
+    return RMSFResults(
+        RMSFcube=RMSFcube,
+        phi2Arr=phi2Arr,
+        fwhmRMSFArr=fwhmRMSFArr,
+        statArr=statArr,
+        lam0Sq_m2=lam0Sq_m2,
+    )
 
 
 # -----------------------------------------------------------------------------#
+class RMCleanResults(NamedTuple):
+    """Results of the RM-CLEAN calculation"""
+
+    cleanFDF: np.ndarray
+    """The cleaned Faraday dispersion function cube"""
+    ccArr: np.ndarray
+    """The clean components cube"""
+    iterCountArr: np.ndarray
+    """The number of iterations for each pixel"""
+    residFDF: np.ndarray
+    """The residual Faraday dispersion function cube"""
+
+
 def do_rmclean_hogbom(
     dirtyFDF,
     phiArr_radm2,
@@ -444,7 +488,7 @@ def do_rmclean_hogbom(
     chunksize=None,
     log=print,
     window=0,
-):
+) -> RMCleanResults:
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -593,10 +637,19 @@ def do_rmclean_hogbom(
     iterCountArr = np.squeeze(iterCountArr)
     residFDF = np.squeeze(residFDF)
 
-    return cleanFDF, ccArr, iterCountArr, residFDF
+    return RMCleanResults(cleanFDF, ccArr, iterCountArr, residFDF)
 
 
 # -----------------------------------------------------------------------------#
+class CleanLoopResults(NamedTuple):
+    """Results of the RM-CLEAN loop"""
+
+    cleanFDF: np.ndarray
+    """The cleaned Faraday dispersion function cube"""
+    residFDF: np.ndarray
+    """The residual Faraday dispersion function cube"""
+    ccArr: np.ndarray
+    """The clean components cube"""
 
 
 class RMcleaner:
@@ -630,10 +683,10 @@ class RMcleaner:
         self.nbits = nbits
         self.window = window
 
-    def cleanloop(self, args):
+    def cleanloop(self, args) -> CleanLoopResults:
         return self._cleanloop(*args)
 
-    def _cleanloop(self, yi, xi, dirtyFDF):
+    def _cleanloop(self, yi, xi, dirtyFDF) -> CleanLoopResults:
         dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
@@ -724,7 +777,7 @@ class RMcleaner:
         residFDF = np.squeeze(residFDF)
         ccArr = np.squeeze(ccArr)
 
-        return cleanFDF, residFDF, ccArr
+        return CleanLoopResults(cleanFDF=cleanFDF, residFDF=residFDF, ccArr=ccArr)
 
 
 # -----------------------------------------------------------------------------#
