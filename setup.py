@@ -70,7 +70,7 @@ setup(
             "rmtools_extractregion=RMtools_3D.extract_region:main",
             "rmtools_bwdepol=RMtools_1D.rmtools_bwdepol:main",
             "rmtools_bwpredict=RMtools_1D.rmtools_bwpredict:main",
-            "rmtools_3DIrescale=RMtools_3D.rescale_I_model_3D:main",
+            "rmtools_3DIrescale=RMtools_3D.rescale_I_model_3D:command_line",
         ],
     },
     install_requires=REQUIRED,
