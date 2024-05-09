@@ -48,11 +48,14 @@ import argparse
 import multiprocessing as mp
 import os
 from functools import partial
+from typing import NamedTuple, Optional, Tuple
 
-import astropy.io.fits as pf
 import numpy as np
+from astropy.constants import c as speed_of_light
+from astropy.io import fits
+from e13tools import InputError
 
-from RMutils.util_misc import renormalize_StokesI_model
+from RMutils.util_misc import FitResult, renormalize_StokesI_model
 
 
 def command_line():
@@ -80,6 +83,7 @@ def command_line():
     parser = argparse.ArgumentParser(
         description=descStr, formatter_class=argparse.RawTextHelpFormatter
     )
+    group = parser.add_mutually_exclusive_group()
 
     parser.add_argument(
         "covar_file",
@@ -87,7 +91,7 @@ def command_line():
         help="FITS cube Stokes I fit covariance matrices.",
     )
 
-    parser.add_argument(
+    group.add_argument(
         "-l",
         dest="lambda2_0",
         type=str,
@@ -95,7 +99,7 @@ def command_line():
         help="FDF cube from rmsynth3d. If given, will convert model to frequency matching the polarization products.",
     )
 
-    parser.add_argument(
+    group.add_argument(
         "-f",
         dest="new_reffreq",
         type=float,
@@ -127,37 +131,47 @@ def command_line():
 
     args = parser.parse_args()
 
-    if (args.new_reffreq is not None) and (args.lambda2_0 is not None):
-        raise Exception(
-            "Please do not set both -f and -l flags -- chose one or neither."
-        )
-
     if not os.path.exists(args.covar_file):
-        raise Exception(
+        raise FileNotFoundError(
             f"Cannot find covarance file at {args.covar_file}, please check filename/path."
         )
 
-    if args.covar_file[-15:] != "covariance.fits":
-        raise Exception(
-            "Input covariance file name doesn't end in covariance.fits; this is required."
+    _suffix = "covariance.fits"
+    if not args.covar_file.endwith(_suffix):
+        raise InputError(
+            f"Input covariance file name doesn't end in {_suffix}; this is required."
         )
+    basename = args.covar_file[: -len(_suffix)]
 
-    basename = args.covar_file[:-15]
+    main(
+        basename=basename,
+        outname=basename if args.outname is None else args.outname,
+        lambda2_0=args.lambda2_0,
+        new_reffreq=args.new_reffreq,
+        num_cores=args.num_cores,
+        overwrite=args.overwrite,
+    )
 
-    if args.outname is None:
-        args.outname = basename
 
+def main(
+    basename: str,
+    outname: str,
+    lambda2_0: Optional[str] = None,
+    new_reffreq: Optional[float] = None,
+    num_cores: int = 1,
+    overwrite: bool = False,
+) -> None:
     # Get data:
     covar_map, old_reffreq_map, coeffs, header = read_data(basename)
 
     # Create new frequency map:
-    if args.lambda2_0 is not None:
-        FDF_header = pf.getheader(args.lambda2_0)
+    if lambda2_0 is not None:
+        FDF_header = fits.getheader(lambda2_0)
         lam0Sq_m2 = FDF_header["LAMSQ0"]
-        freq0 = 2.997924538e8 / np.sqrt(lam0Sq_m2)
+        freq0 = speed_of_light.value / np.sqrt(lam0Sq_m2)
         new_freq_map = np.ones_like(old_reffreq_map) * freq0
-    elif args.new_reffreq is not None:
-        new_freq_map = np.ones_like(old_reffreq_map) * args.new_reffreq
+    elif new_reffreq is not None:
+        new_freq_map = np.ones_like(old_reffreq_map) * new_reffreq
     else:
         freq0 = np.nanmean(old_reffreq_map)
         new_freq_map = np.ones_like(old_reffreq_map) * freq0
@@ -173,17 +187,30 @@ def command_line():
         new_freq_map,
         coeffs,
         fit_function,
-        num_cores=args.num_cores,
+        num_cores=num_cores,
     )
 
     write_new_parameters(
         new_freq_map,
         new_coeffs,
         new_errors,
-        args.outname,
+        outname,
         header,
-        overwrite=args.overwrite,
+        overwrite=overwrite,
     )
+
+
+class CovarianceData(NamedTuple):
+    """Coveriance matrix data"""
+
+    covar_map: np.ndarray
+    """ The covariance matrix map """
+    old_reffreq_map: np.ndarray
+    """ The current reference frequency map """
+    coeffs: np.ndarray
+    """ The current coefficient maps """
+    header: fits.Header
+    """ The header of the frequency map """
 
 
 def read_data(basename):
@@ -200,10 +227,10 @@ def read_data(basename):
         raise Exception("Cannot find coeff0 map. At least coeff 0 map must exist.")
 
     covar_file = basename + "covariance.fits"
-    covar_map = pf.getdata(covar_file)
+    covar_map = fits.getdata(covar_file)
 
     freq_file = basename + "reffreq.fits"
-    old_reffreq_map, header = pf.getdata(freq_file, header=True)
+    old_reffreq_map, header = fits.getdata(freq_file, header=True)
     # Grabs header from frequency map -- needed for fit function, and to use for
     # writing out products. Better to have 2D map header to avoid fussing with
     # extra axes.
@@ -213,29 +240,44 @@ def read_data(basename):
     coeffs = np.zeros((6, *old_reffreq_map.shape))
     for i in range(6):
         try:  # Keep trying higher orders
-            data = pf.getdata(basename + f"coeff{i}.fits")
+            data = fits.getdata(basename + f"coeff{i}.fits")
             coeffs[5 - i] = data
         except FileNotFoundError:
             break  # Once it runs out of valid coefficient maps, move on
 
-    return covar_map, old_reffreq_map, coeffs, header
+    return CovarianceData(covar_map, old_reffreq_map, coeffs, header)
 
 
-def rescale_I_pixel(data, fit_function):
+def rescale_I_pixel(
+    data: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], fit_function: str
+) -> Tuple[np.ndarray, np.ndarray]:
     covar, coeff, old_freq, new_freq = data
-    oldDict = {}  # Initialize a fitDict, which contains the relevant fit information
-    oldDict["reference_frequency_Hz"] = old_freq
-    oldDict["p"] = coeff
-    oldDict["pcov"] = covar
-    oldDict["fit_function"] = fit_function
-
-    newDict = renormalize_StokesI_model(oldDict, new_freq)
-    return newDict["p"], newDict["perror"]
+    old_result = FitResult(
+        params=coeff,
+        fitStatus=np.nan,  # Placeholder
+        chiSq=np.nan,  # Placeholder
+        chiSqRed=np.nan,  # Placeholder
+        AIC=np.nan,  # Placeholder
+        polyOrd=len(coeff) - 1,
+        nIter=0,  # Placeholder
+        reference_frequency_Hz=old_freq,
+        dof=np.nan,  # Placeholder
+        pcov=covar,
+        perror=np.zeros_like(coeff),  # Placeholder
+        fit_function=fit_function,
+    )
+    new_fit_result: FitResult = renormalize_StokesI_model(old_result, new_freq)
+    return new_fit_result.params, new_fit_result.perror
 
 
 def rescale_I_model_3D(
-    covar_map, old_reffreq_map, new_freq_map, coeffs, fit_function="log", num_cores=1
-):
+    covar_map: np.ndarray,
+    old_reffreq_map: np.ndarray,
+    new_freq_map: np.ndarray,
+    coeffs: np.ndarray,
+    fit_function: str = "log",
+    num_cores: int = 1,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rescale the Stokes I model parameters to a new reference frequency, for
     an entire image (i.e., 3D pipeline products).
 
@@ -255,7 +297,7 @@ def rescale_I_model_3D(
     # Initialize output arrays:
     new_coeffs = np.zeros_like(coeffs)
     new_errors = np.zeros_like(coeffs)
-    rs = old_reffreq_map.shape[
+    row_length = old_reffreq_map.shape[
         1
     ]  # Get the length of a row, for array indexing later on.
 
@@ -276,9 +318,9 @@ def rescale_I_model_3D(
             partial(rescale_I_pixel, fit_function=fit_function), inputs, chunksize=100
         )
 
-    for i, (p, perror) in enumerate(results):
-        new_coeffs[:, i // rs, i % rs] = p
-        new_errors[:, i // rs, i % rs] = perror
+    for i, (params, perror) in enumerate(results):
+        new_coeffs[:, i // row_length, i % row_length] = params
+        new_errors[:, i // row_length, i % row_length] = perror
 
     return new_freq_map, new_coeffs, new_errors
 
@@ -309,13 +351,13 @@ def write_new_parameters(
     max_order = np.sum(np.any(new_coeffs != 0.0, axis=(1, 2))) - 1
 
     for i in range(max_order + 1):
-        pf.writeto(
+        fits.writeto(
             out_basename + f"newcoeff{i}.fits",
             new_coeffs[5 - i],
             header=out_header,
             overwrite=overwrite,
         )
-        pf.writeto(
+        fits.writeto(
             out_basename + f"newcoeff{i}err.fits",
             new_errors[5 - i],
             header=out_header,
