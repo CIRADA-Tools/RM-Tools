@@ -41,7 +41,6 @@ import sys
 import time
 
 import astropy.io.fits as pf
-import astropy.table as at
 import numpy as np
 from astropy.constants import c as speed_of_light
 
@@ -126,7 +125,7 @@ def run_rmsynth(
         sys.exit()
 
     # Check dimensions of Stokes I cube, if present
-    if not dataI is None:
+    if dataI is not None:
         if not str(dataI.shape) == str(dataQ.shape):
             log(
                 "Err: unequal dimensions: Q = "

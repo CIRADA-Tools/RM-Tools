@@ -14,7 +14,7 @@ import sys
 import astropy.io.fits as pf
 import numpy as np
 from astropy.constants import c as speed_of_light
-from tqdm.auto import tqdm, trange
+from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
 from RMutils.util_misc import interp_images

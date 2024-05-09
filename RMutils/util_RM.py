@@ -1636,7 +1636,7 @@ def do_rmclean(
     # If the RMSF has been passed in then check for correct formatting:
     #  - Twice the number of channels as dirtyFDF
     #  - Must be complex
-    if not RMSFArr is None:
+    if RMSFArr is not None:
         # Check 1D
         if len(RMSFArr.shape) != 1:
             print("Err: input RMSF must be a 1D array.")
@@ -1677,7 +1677,7 @@ def do_rmclean(
             fwhmRMSF = mp.params[2]
 
     # If the weight array has been passed in ...
-    if not weight is None:
+    if weight is not None:
         uniformWt = False
         weightArr = np.array(weight, dtype=dtype)
 

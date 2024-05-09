@@ -82,7 +82,7 @@ import sys
 
 import astropy.wcs.wcs as pw
 import numpy as np
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
 
 from RMutils.util_FITS import create_simple_fits_hdu, strip_fits_dims
 from RMutils.util_misc import (

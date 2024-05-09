@@ -47,15 +47,12 @@
 # =============================================================================#
 
 import argparse
-import copy
 import importlib
 import json
 import os
-import shutil
 import sys
 import time
 import traceback
-from shutil import Error
 
 import bilby
 import matplotlib.pyplot as plt

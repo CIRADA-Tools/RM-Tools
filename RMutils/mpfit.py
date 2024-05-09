@@ -414,8 +414,6 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    Converted from Numeric to numpy (Sergey Koposov, July 2008)
 """
 
-import types
-
 import numpy
 
 try:
