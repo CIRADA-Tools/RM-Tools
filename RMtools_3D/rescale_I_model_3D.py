@@ -213,7 +213,7 @@ class CovarianceData(NamedTuple):
     """ The header of the frequency map """
 
 
-def read_data(basename):
+def read_data(basename: str):
     """Reads the covariance matrix map, (current) reference frequency map, and
     (current) coefficient+error maps.
     Input:
