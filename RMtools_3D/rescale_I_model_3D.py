@@ -52,7 +52,7 @@ from functools import partial
 import astropy.io.fits as pf
 import numpy as np
 
-from RMutils.util_misc import renormalize_StokesI_model
+from RMutils.util_misc import FitResult, renormalize_StokesI_model
 
 
 def command_line():
@@ -229,8 +229,23 @@ def rescale_I_pixel(data, fit_function):
     oldDict["pcov"] = covar
     oldDict["fit_function"] = fit_function
 
-    newDict = renormalize_StokesI_model(oldDict, new_freq)
-    return newDict["p"], newDict["perror"]
+    old_result = FitResult(
+        params=coeff,
+        fitStatus=np.nan,  # Placeholder
+        chiSq=np.nan,  # Placeholder
+        chiSqRed=np.nan,  # Placeholder
+        AIC=np.nan,  # Placeholder
+        polyOrd=len(coeff) - 1,
+        nIter=0,  # Placeholder
+        reference_frequency_Hz=old_freq,
+        dof=np.nan,  # Placeholder
+        pcov=covar,
+        perror=np.zeros_like(coeff),  # Placeholder
+        fit_function=fit_function,
+    )
+
+    new_fit_result = renormalize_StokesI_model(old_result, new_freq)
+    return new_fit_result.params, new_fit_result.perror
 
 
 def rescale_I_model_3D(

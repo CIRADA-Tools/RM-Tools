@@ -10,7 +10,7 @@ NAME = "RM-Tools"
 DESCRIPTION = "RM-synthesis, RM-clean and QU-fitting on polarised radio spectra"
 URL = "https://github.com/CIRADA-Tools/RM-Tools"
 REQUIRES_PYTHON = ">=3.7.0"
-VERSION = "1.4.4"
+VERSION = "1.4.5"
 DOWNLOAD_URL = (
     "https://github.com/CIRADA-Tools/RM-Tools/archive/v" + VERSION + ".tar.gz"
 )
