@@ -67,6 +67,7 @@ from typing import NamedTuple
 
 import finufft
 import numpy as np
+from astropy.constants import c as speed_of_light
 from deprecation import deprecated
 from scipy.stats import anderson, kstest, kurtosis, kurtosistest, norm, skew, skewtest
 from tqdm.auto import tqdm, trange
@@ -81,9 +82,6 @@ from RMutils.util_misc import (
 )
 
 from . import __version__
-
-# Constants
-C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
@@ -1362,7 +1360,7 @@ def measure_qu_complexity(
         psi0Arr_deg=[psi0_deg],
         RMArr_radm2=[RM_radm2],
     )
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     ndata = len(lamSqArr_m2)
 
     # Subtract the RM-thin model to create a residual q & u
@@ -1905,7 +1903,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
 
     from .util_plotTk import plot_pqu_vs_lamsq_ax
 
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Create a RM-thin model to subtract
     pModArr, qModArr, uModArr = create_pqu_spectra_burn(
@@ -1923,7 +1921,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
 
     # High resolution models
     freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
     pModArr, qModArr, uModArr = create_pqu_spectra_burn(
         freqArr_Hz=freqHirArr_Hz,
         fracPolArr=[fracPol],

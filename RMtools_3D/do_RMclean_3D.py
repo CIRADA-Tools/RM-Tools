@@ -51,8 +51,6 @@ except:
 from RMtools_3D.do_RMsynth_3D import _setStokes
 from RMutils.util_RM import do_rmclean_hogbom, fits_make_lin_axis
 
-C = 2.997924538e8  # Speed of light [m/s]
-
 
 # -----------------------------------------------------------------------------#
 def run_rmclean(

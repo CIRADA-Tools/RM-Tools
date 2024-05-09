@@ -74,17 +74,16 @@
 #                                                                             #
 # =============================================================================#
 
-import io
 import math as m
 import os
 import sys
 import tkinter.ttk
 import traceback
 
-import astropy.io.fits as pf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from astropy.constants import c as speed_of_light
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
@@ -113,9 +112,6 @@ try:
         mpl.use("Agg")
 except Exception as e:
     pass
-
-# Constants
-C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
@@ -739,7 +735,7 @@ def plot_q_vs_u_ax(
         capsize=2,
         zorder=1,
     )
-    freqArr_Hz = C / np.sqrt(lamSqArr_m2)
+    freqArr_Hz = speed_of_light.value / np.sqrt(lamSqArr_m2)
     ax.scatter(
         x=qArr,
         y=uArr,
@@ -1477,13 +1473,13 @@ def plotPolang(dataMan, indx, io="fig"):
     uArr = UArr / modIArr
     dqArr = qArr * np.sqrt((rmsQArr / QArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
     duArr = uArr * np.sqrt((rmsUArr / UArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Get the models to overplot
     freqHirArr_Hz, qModArr, uModArr = dataMan.get_thin_qumodel_byindx(
         indx, oversample=True
     )
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
 
     # Setup the figure
     fig = Figure()
@@ -1527,13 +1523,13 @@ def plotFracPol(dataMan, indx, io="fig"):
     uArr = UArr / modIArr
     dqArr = qArr * np.sqrt((rmsQArr / QArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
     duArr = uArr * np.sqrt((rmsUArr / UArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Get the models to overplot
     freqHirArr_Hz, qModArr, uModArr = dataMan.get_thin_qumodel_byindx(
         indx, oversample=True
     )
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
 
     # Setup the figure
     fig = Figure()
@@ -1576,13 +1572,13 @@ def plotFracQvsU(dataMan, indx, io="fig"):
     uArr = UArr / modIArr
     dqArr = qArr * np.sqrt((rmsQArr / QArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
     duArr = uArr * np.sqrt((rmsUArr / UArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Get the models to overplot
     freqHirArr_Hz, qModArr, uModArr = dataMan.get_thin_qumodel_byindx(
         indx, oversample=True
     )
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
 
     # Setup the figure
     fig = Figure()
@@ -1639,8 +1635,8 @@ def plot_Ipqu_spectra_fig(
     # Default to non-high-resolution inputs
     if freqHirArr_Hz is None:
         freqHirArr_Hz = freqArr_Hz
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
 
     # Plot I versus nu axis
     ax1 = fig.add_subplot(221)
@@ -1726,7 +1722,7 @@ def plotPolsummary(dataMan, indx, io="fig"):
     uArr = UArr / modIArr
     dqArr = qArr * np.sqrt((rmsQArr / QArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
     duArr = uArr * np.sqrt((rmsUArr / UArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Get the models to overplot
     dummy, modIHirArr = dataMan.get_modI_byindx(indx, oversample=True)
@@ -1778,7 +1774,7 @@ def plotPolresidual(dataMan, indx, io="fig"):
     uArr = UArr / modIArr
     dqArr = qArr * np.sqrt((rmsQArr / QArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
     duArr = uArr * np.sqrt((rmsUArr / UArr) ** 2.0 + (rmsIArr / IArr) ** 2.0)
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Form the residuals
     qResidArr = qArr - qModArr

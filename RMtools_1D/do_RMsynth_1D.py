@@ -43,6 +43,7 @@ import traceback
 
 import matplotlib.pyplot as plt
 import numpy as np
+from astropy.constants import c as speed_of_light
 from scipy.interpolate import interp1d
 
 from RMutils.util_misc import (
@@ -74,8 +75,6 @@ from RMutils.util_RM import (
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
     exit()
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 # -----------------------------------------------------------------------------#
@@ -268,7 +267,7 @@ def run_rmsynth(
     # -------------------------------------------------------------------------#
 
     # Calculate some wavelength parameters
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
     dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
@@ -358,7 +357,7 @@ def run_rmsynth(
     if lam0Sq_m2 == 0:  # Rudnick-Cotton adapatation
         freq0_Hz = fit_result.reference_frequency_Hz
     else:  # standard RM-synthesis
-        freq0_Hz = C / m.sqrt(lam0Sq_m2)
+        freq0_Hz = speed_of_light.value / m.sqrt(lam0Sq_m2)
         if modStokesI is None:
             fit_result = renormalize_StokesI_model(fit_result, freq0_Hz)
         else:

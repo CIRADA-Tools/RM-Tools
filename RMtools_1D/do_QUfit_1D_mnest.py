@@ -60,12 +60,11 @@ from shutil import Error
 import bilby
 import matplotlib.pyplot as plt
 import numpy as np
+from astropy.constants import c as speed_of_light
 
 from RMtools_1D.do_RMsynth_1D import readFile
 from RMutils.util_misc import calculate_StokesI_model, create_frac_spectra, toscalar
 from RMutils.util_plotTk import CustomNavbar, plot_Ipqu_spectra_fig
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 # -----------------------------------------------------------------------------#
@@ -309,7 +308,7 @@ def run_qufit(
         dIArr = np.zeros_like(QArr)
 
     # Convert to GHz for convenience
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Fit the Stokes I spectrum and create the fractional spectra
     dataArr = create_frac_spectra(
@@ -560,7 +559,7 @@ def run_qufit(
 
     # Plot the data and best-fitting model
     lamSqHirArr_m2 = np.linspace(lamSqArr_m2[0], lamSqArr_m2[-1], 10000)
-    freqHirArr_Hz = C / np.sqrt(lamSqHirArr_m2)
+    freqHirArr_Hz = speed_of_light.value / np.sqrt(lamSqHirArr_m2)
     IModArr = calculate_StokesI_model(fit_result, freqHirArr_Hz)
     pDict = {k: v for k, v in zip(parNames, p)}
     quModArr = model(pDict, lamSqHirArr_m2)

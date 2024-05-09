@@ -52,8 +52,6 @@ from astropy.io import fits
 from RMtools_1D.do_RMsynth_1D import run_rmsynth, saveOutput
 from RMtools_3D.make_freq_file import get_freq_array
 
-C = 2.997924538e8  # Speed of light [m/s]
-
 
 # -----------------------------------------------------------------------------#
 def main():
@@ -239,7 +237,7 @@ def main():
     U_array[~np.isfinite(U_array)] = np.nan
     data = [freq_array, Q_array, U_array, dQ_array, dU_array]
 
-    if args.units == None:
+    if args.units is None:
         if "BUNIT" in hduList[0].header:
             args.units = hduList[0].header["BUNIT"]
         else:
