@@ -169,6 +169,12 @@ def main():
         default=10,
         help="number of samples across the RMSF lobe [10].",
     )
+    parser.add_argument(
+        "-f",
+        dest="plotfile",
+        default=None,
+        help="Filename to save plot to. [do not save]",
+    )
 
     args = parser.parse_args()
 
@@ -196,7 +202,10 @@ def main():
 
     # plot adjoint info
     plot_adjoint_info(adjoint_info, units="arb. units")
-    plt.show()
+    if args.plotfile is not None:
+        plt.savefig(args.plotfile, bbox_inches="tight")
+    else:
+        plt.show()
 
 
 # -----------------------------------------------------------------------------#
