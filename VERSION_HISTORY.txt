@@ -1,4 +1,7 @@
 
+1.4.6:
+-fixed bug in rmsynth3d when computing RMSF that is not spatially uniform.
+
 1.4.5:
 -Fixed 3DIrescale tool to work with new NamedTuple for Stokes I fitting outputs.
 
