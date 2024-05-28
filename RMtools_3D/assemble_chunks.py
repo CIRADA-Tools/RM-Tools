@@ -10,14 +10,13 @@ output files from 3D RM synthesis back into larger cubes.
 """
 
 import argparse
-import os.path as path
 import re
 from glob import glob
-from math import ceil, floor, log10
+from math import ceil
 
 import astropy.io.fits as pf
 import numpy as np
-from tqdm.auto import tqdm, trange
+from tqdm.auto import trange
 
 
 def main():

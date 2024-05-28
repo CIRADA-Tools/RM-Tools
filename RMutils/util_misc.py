@@ -78,6 +78,7 @@ from typing import NamedTuple, Optional, Tuple
 import numpy as np
 import numpy.ma as ma
 import scipy.ndimage as ndi
+from astropy.constants import c as speed_of_light
 from deprecation import deprecated
 from scipy.stats import norm
 
@@ -86,9 +87,6 @@ from RMutils.mpfit import mpfit
 from . import __version__
 
 # import ConfigParser
-
-
-C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
@@ -1100,7 +1098,7 @@ def create_pqu_spectra_burn(
     # Calculate some prerequsites
     nChans = len(freqArr_Hz)
     nComps = len(fracPolArr)
-    lamArr_m = C / freqArr_Hz
+    lamArr_m = speed_of_light.value / freqArr_Hz
     lamSqArr_m2 = np.power(lamArr_m, 2.0)
 
     # Convert the inputs to column vectors
@@ -1172,7 +1170,7 @@ def create_pqu_spectra_diff(freqArr_Hz, fracPolArr, psi0Arr_deg, RMArr_radm2):
     # Calculate some prerequsites
     nChans = len(freqArr_Hz)
     nComps = len(fracPolArr)
-    lamArr_m = C / freqArr_Hz
+    lamArr_m = speed_of_light.value / freqArr_Hz
     lamSqArr_m2 = np.power(lamArr_m, 2.0)
 
     # Convert the inputs to column vectors
@@ -1227,7 +1225,7 @@ def create_pqu_spectra_RMthin(freqArr_Hz, fracPol, psi0_deg, RM_radm2):
     """Return fractional P/I, Q/I & U/I spectra for a Faraday thin source"""
 
     # Calculate the p, q and u Spectra
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     pArr = fracPol * np.ones_like(lamSqArr_m2)
     quArr = pArr * np.exp(2j * (np.radians(psi0_deg) + RM_radm2 * lamSqArr_m2))
     qArr = quArr.real

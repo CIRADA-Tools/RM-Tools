@@ -41,6 +41,7 @@ import traceback
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
+from astropy.constants import c as speed_of_light
 from matplotlib.ticker import MaxNLocator
 
 from RMtools_1D.do_RMsynth_1D import saveOutput
@@ -69,9 +70,6 @@ if sys.version_info.major == 2:
     exit()
 
 
-C = 2.997924538e8  # Speed of light [m/s]
-
-
 # -----------------------------------------------------------------------------#
 def rotation_integral_limit(freq, phi):
     """Calculates the analytic solution to the channel polarization integral
@@ -91,10 +89,12 @@ def rotation_integral_limit(freq, phi):
                    intergral limit
 
     """
-    funct1 = freq * np.exp(2.0j * phi * ((C / freq) ** 2))
-    funct2 = C * np.sqrt((np.abs(phi) * np.pi))
+    funct1 = freq * np.exp(2.0j * phi * ((speed_of_light.value / freq) ** 2))
+    funct2 = speed_of_light.value * np.sqrt((np.abs(phi) * np.pi))
     funct3 = -1.0j + np.sign(phi)
-    funct4 = sp.special.erf(np.sqrt(np.abs(phi)) * (C / freq) * (-1.0j + np.sign(phi)))
+    funct4 = sp.special.erf(
+        np.sqrt(np.abs(phi)) * (speed_of_light.value / freq) * (-1.0j + np.sign(phi))
+    )
 
     intergral_lim = funct1 + (funct2 * funct3 * funct4)
 
@@ -153,7 +153,7 @@ def estimate_channel_bandwidth(freq_array):
 def l2_to_freq_array(lambda_square_array):
     """returns the freqency array, corresponding to a lambda square array"""
 
-    f = C**2 / lambda_square_array
+    f = speed_of_light.value**2 / lambda_square_array
     return np.sqrt(f)
 
 
@@ -616,7 +616,7 @@ def bwdepol_get_rmsf_planes(
     except Exception:
         pass
 
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     # Calculate the analytical FWHM width of the main lobe
     fwhmRMSF = (
         2.0 * m.sqrt(3.0) / (np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2))
@@ -861,7 +861,7 @@ def do_adjoint_rmsynth_planes(
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
 
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     # Set the weight array
     if weightArr is None:
         weightArr = np.ones(lambdaSqArr_m2.shape, dtype=dtFloat)
@@ -1130,7 +1130,7 @@ def run_adjoint_rmsynth(
             ax.set_title("RMS noise in Stokes Q, U and <Q,U> spectra")
 
     # Calculate some wavelength parameters
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     # dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
     # dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
@@ -1214,7 +1214,7 @@ def run_adjoint_rmsynth(
 
     # Determine the Stokes I value at lam0Sq_m2 from the Stokes I model
     # Multiply the dirty FDF by Ifreq0 to recover the PI
-    freq0_Hz = C / m.sqrt(lam0Sq_m2)
+    freq0_Hz = speed_of_light.value / m.sqrt(lam0Sq_m2)
     Ifreq0 = poly5(fit_result.params)(freq0_Hz / 1e9)
     dirtyFDF *= Ifreq0  # FDF is in fracpol units initially, convert back to flux
 

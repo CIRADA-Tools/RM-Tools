@@ -22,11 +22,10 @@ shape.
 import argparse
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 from matplotlib import pyplot as plt
 
 from RMutils.util_RM import get_rmsf_planes
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 def main():
@@ -160,7 +159,7 @@ def determine_RMSF_parameters(
         plotfile (str): file name and path to save RMSF plot.
         plotname (str): title of plot
     """
-    lambda2_array = C**2 / freq_array**2
+    lambda2_array = speed_of_light.value**2 / freq_array**2
     l2_min = np.min(lambda2_array)
     l2_max = np.max(lambda2_array)
     dl2 = np.median(np.abs(np.diff(lambda2_array)))
@@ -279,9 +278,9 @@ def determine_RMSF_parameters(
             np.pi / l2_min,
             np.sqrt(3.0) / dl2,
             np.min(freq_array) / 1e9,
-            C / np.min(freq_array) * 100.0,
+            speed_of_light.value / np.min(freq_array) * 100.0,
             np.max(freq_array) / 1e9,
-            C / np.max(freq_array) * 100.0,
+            speed_of_light.value / np.max(freq_array) * 100.0,
             freq_array.size,
         ),
         family="monospace",
