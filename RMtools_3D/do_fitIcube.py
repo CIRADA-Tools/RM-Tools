@@ -35,6 +35,7 @@
 # =============================================================================#
 
 import argparse
+import multiprocessing as mp
 import os
 import sys
 import time
@@ -43,7 +44,6 @@ from functools import partial
 import astropy.io.fits as pf
 import numpy as np
 from tqdm.contrib.concurrent import process_map
-import multiprocessing as mp
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube
 from RMtools_3D.make_freq_file import get_freq_array
@@ -533,7 +533,7 @@ def make_model_I(
     )
 
     # Send each spectrum to a different core
-    if verbose: # Note that 'verbose' is not compatible with Prefect
+    if verbose:  # Note that 'verbose' is not compatible with Prefect
         results = process_map(
             func,
             srcData,
