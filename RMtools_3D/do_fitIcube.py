@@ -35,6 +35,7 @@
 # =============================================================================#
 
 import argparse
+import multiprocessing as mp
 import os
 import sys
 import time
@@ -530,16 +531,23 @@ def make_model_I(
         nDetectPix=nDetectPix,
         verbose=verbose,
     )
+
     # Send each spectrum to a different core
-    results = process_map(
-        func,
-        srcData,
-        max_workers=num_cores,
-        chunksize=chunk_size,
-        disable=not verbose,
-        desc="Fitting spectra",
-        total=nDetectPix,
-    )
+    if verbose:  # Note that 'verbose' is not compatible with Prefect
+        results = process_map(
+            func,
+            srcData,
+            max_workers=num_cores,
+            chunksize=chunk_size,
+            disable=not verbose,
+            desc="Fitting spectra",
+            total=nDetectPix,
+        )
+    else:
+        mp.set_start_method("spawn", force=True)
+        args_list = [d for d in srcData]
+        with mp.Pool(processes=num_cores) as pool:
+            results = pool.map(func, args_list)
 
     headcoeff = strip_fits_dims(header=header, minDim=2)
     del headcoeff["BUNIT"]
