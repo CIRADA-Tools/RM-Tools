@@ -288,28 +288,34 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
     # start = time.time()
     for i in range(nChan):
         dataPlane = datacube[i]
-        if threshold > 0:
-            idxSky = np.where(dataPlane < threshold)  # replaced cutoff with threshold
+        if np.isnan(dataPlane).all():
+            # If this plane is fully flagged, dont have to calculate
+            medSky[i] = np.nan
+            rmsArr[i] = np.nan
+
         else:
-            idxSky = np.where(dataPlane)
+            if threshold > 0:
+                idxSky = np.where(dataPlane < threshold)  # replaced cutoff with threshold
+            else:
+                idxSky = np.where(dataPlane)
 
-        # Pass 1
-        rmsTmp = MAD(dataPlane[idxSky])
-        medTmp = np.nanmedian(dataPlane[idxSky])
+            # Pass 1
+            rmsTmp = MAD(dataPlane[idxSky])
+            medTmp = np.nanmedian(dataPlane[idxSky])
 
-        # Pass 2: use a fixed 3-sigma cutoff to mask off emission
-        idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
-        medSky[i] = np.nanmedian(dataPlane[idxSky])
-        rmsArr[i] = MAD(dataPlane[idxSky])
+            # Pass 2: use a fixed 3-sigma cutoff to mask off emission
+            idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
+            medSky[i] = np.nanmedian(dataPlane[idxSky])
+            rmsArr[i] = MAD(dataPlane[idxSky])
 
-        # When building final emission mask treat +ve threshold as absolute
-        # values and negative threshold as sigma values
-        if threshold > 0:
-            idxSrc = np.where(dataPlane > threshold)
-        else:
-            idxSrc = np.where(dataPlane > medSky[i] - 1 * rmsArr[i] * threshold)
+            # When building final emission mask treat +ve threshold as absolute
+            # values and negative threshold as sigma values
+            if threshold > 0:
+                idxSrc = np.where(dataPlane > threshold)
+            else:
+                idxSrc = np.where(dataPlane > medSky[i] - 1 * rmsArr[i] * threshold)
 
-        mskSrc[idxSrc] += 1
+            mskSrc[idxSrc] += 1
 
     # end = time.time()
     # print(' For loop masking takes %.3fs'%(end-start))
@@ -334,9 +340,7 @@ def savefits_mask(data, header, outDir, prefixOut, dtFloat):
 
     mskArr = np.where(data > 0, 1.0, np.nan).astype(dtFloat)
     MaskfitsFile = os.path.join(outDir, prefixOut + "mask.fits")
-    print("> %s" % MaskfitsFile)
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix", overwrite=True)
-
 
 def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
     """Save the derived coefficients to a fits file
