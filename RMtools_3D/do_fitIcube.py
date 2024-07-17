@@ -295,7 +295,9 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
 
         else:
             if threshold > 0:
-                idxSky = np.where(dataPlane < threshold)  # replaced cutoff with threshold
+                idxSky = np.where(
+                    dataPlane < threshold
+                )  # replaced cutoff with threshold
             else:
                 idxSky = np.where(dataPlane)
 
@@ -341,6 +343,7 @@ def savefits_mask(data, header, outDir, prefixOut, dtFloat):
     mskArr = np.where(data > 0, 1.0, np.nan).astype(dtFloat)
     MaskfitsFile = os.path.join(outDir, prefixOut + "mask.fits")
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix", overwrite=True)
+
 
 def savefits_Coeffs(data, dataerr, header, polyOrd, outDir, prefixOut):
     """Save the derived coefficients to a fits file
@@ -507,7 +510,7 @@ def make_model_I(
 
     coeffs = np.array([mskArr] * 6, dtype=dtFloat)
     coeffs_error = np.array([mskArr] * 6, dtype=dtFloat)
-    reffreq = np.squeeze(np.array([mskArr],dtype=dtFloat))
+    reffreq = np.squeeze(np.array([mskArr], dtype=dtFloat))
 
     covars = np.array([[mskArr] * 6] * 6, dtype=dtFloat)
     datacube = np.squeeze(datacube)
@@ -584,7 +587,13 @@ def make_model_I(
 
     if verbose:
         print("Saving mask image.")
-    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut, dtFloat=dtFloat)
+    savefits_mask(
+        data=mskSrc,
+        header=headcoeff,
+        outDir=outDir,
+        prefixOut=prefixOut,
+        dtFloat=dtFloat,
+    )
 
     if verbose:
         print("Saving model I coefficients.")
