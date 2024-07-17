@@ -210,7 +210,7 @@ def read_data(basename):
 
     # Get coefficient maps (without knowing how many there are)
     # Reverse index order to match RM-Tools internal ordering (highest to lowest polynomial order)
-    coeffs = np.zeros((6, *old_reffreq_map.shape),dtype=covar_map.dtype)
+    coeffs = np.zeros((6, *old_reffreq_map.shape), dtype=covar_map.dtype)
     for i in range(6):
         try:  # Keep trying higher orders
             data = pf.getdata(basename + f"coeff{i}.fits")

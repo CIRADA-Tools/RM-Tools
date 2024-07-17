@@ -503,7 +503,7 @@ def make_model_I(
 
     coeffs = np.array([mskArr] * 6, dtype=dtFloat)
     coeffs_error = np.array([mskArr] * 6, dtype=dtFloat)
-    reffreq = np.squeeze(np.array([mskArr],dtype=dtFloat))
+    reffreq = np.squeeze(np.array([mskArr], dtype=dtFloat))
 
     covars = np.array([[mskArr] * 6] * 6, dtype=dtFloat)
     datacube = np.squeeze(datacube)
@@ -580,7 +580,13 @@ def make_model_I(
 
     if verbose:
         print("Saving mask image.")
-    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut, dtFloat=dtFloat)
+    savefits_mask(
+        data=mskSrc,
+        header=headcoeff,
+        outDir=outDir,
+        prefixOut=prefixOut,
+        dtFloat=dtFloat,
+    )
 
     if verbose:
         print("Saving model I coefficients.")
