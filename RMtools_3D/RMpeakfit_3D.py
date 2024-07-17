@@ -161,13 +161,40 @@ def delete_FITSheader_axis(fitsheader, axis_number):
         except:
             pass
 
+
 def remove_header_third_fourth_axis(header):
     """Removes extra axes from header to compress down to 2 axes"""
     # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
-    keys_to_remove = ['NAXIS3', 'NAXIS4', 'CRPIX3', 'CRPIX4', 'CDELT3', 'CDELT4', 
-                      'CUNIT3', 'CUNIT4', 'CTYPE3', 'CTYPE4', 'CRVAL3', 'CRVAL4',
-                      'PC1_3', 'PC2_3', 'PC3_3', 'PC4_3', 'PC1_4', 'PC2_4', 'PC3_4', 'PC4_4',
-                      'PC3_1', 'PC3_2', 'PC3_3', 'PC3_4', 'PC4_1', 'PC4_2', 'PC4_3', 'PC4_4']
+    keys_to_remove = [
+        "NAXIS3",
+        "NAXIS4",
+        "CRPIX3",
+        "CRPIX4",
+        "CDELT3",
+        "CDELT4",
+        "CUNIT3",
+        "CUNIT4",
+        "CTYPE3",
+        "CTYPE4",
+        "CRVAL3",
+        "CRVAL4",
+        "PC1_3",
+        "PC2_3",
+        "PC3_3",
+        "PC4_3",
+        "PC1_4",
+        "PC2_4",
+        "PC3_4",
+        "PC4_4",
+        "PC3_1",
+        "PC3_2",
+        "PC3_3",
+        "PC3_4",
+        "PC4_1",
+        "PC4_2",
+        "PC4_3",
+        "PC4_4",
+    ]
 
     all_header_keys = list(header.keys())
 
@@ -175,7 +202,7 @@ def remove_header_third_fourth_axis(header):
         if key in all_header_keys:
             del header[key]
 
-    # Set correct NAXIS 
+    # Set correct NAXIS
     header["NAXIS"] = 2
 
     # Remove STOKES for 2D maps
@@ -185,8 +212,9 @@ def remove_header_third_fourth_axis(header):
     # Finally set correct WCSAXES param if its in there
     if "WCSAXES" in header:
         header["WCSAXES"] = 2
-    
+
     return header
+
 
 def save_maps(map_dict, prefix_path, FDFheader):
     """

@@ -476,7 +476,7 @@ def writefits(
 
     # Save the RMSF
     if not not_rmsf:
-        ### TODO: do we want to keep current NAXIS=3 and remove 4th axis 
+        ### TODO: do we want to keep current NAXIS=3 and remove 4th axis
         ### or do we want to remove both 3rd and 4th axis AND SET NAXIS=2 ??
 
         # Put frequency axis first, and reshape to add degenerate axes:
