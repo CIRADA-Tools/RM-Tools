@@ -316,13 +316,14 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
     return rmsArr, mskSrc
 
 
-def savefits_mask(data, header, outDir, prefixOut):
+def savefits_mask(data, header, outDir, prefixOut, dtFloat):
     """Save the derived mask to a fits file
 
     data:  2D data defining the mask.
     header: header to describe the mask
     outDir: directory to save the mask fits data
     prefixOut: prefix to use on the output name
+    dtFloat: type to use for output file
     """
 
     headMask = strip_fits_dims(header=header, minDim=2)
@@ -331,7 +332,7 @@ def savefits_mask(data, header, outDir, prefixOut):
     if "BUNIT" in headMask:
         del headMask["BUNIT"]
 
-    mskArr = np.where(data > 0, 1.0, np.nan)
+    mskArr = np.where(data > 0, 1.0, np.nan).astype(dtFloat)
     MaskfitsFile = os.path.join(outDir, prefixOut + "mask.fits")
     print("> %s" % MaskfitsFile)
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix", overwrite=True)
@@ -500,11 +501,11 @@ def make_model_I(
     modelIcube[:] = np.nan
     results = []
 
-    coeffs = np.array([mskArr] * 6)
-    coeffs_error = np.array([mskArr] * 6)
-    reffreq = np.squeeze(np.array([mskArr]))
+    coeffs = np.array([mskArr] * 6, dtype=dtFloat)
+    coeffs_error = np.array([mskArr] * 6, dtype=dtFloat)
+    reffreq = np.squeeze(np.array([mskArr],dtype=dtFloat))
 
-    covars = np.array([[mskArr] * 6] * 6)
+    covars = np.array([[mskArr] * 6] * 6, dtype=dtFloat)
     datacube = np.squeeze(datacube)
 
     # Select only the spectra with emission
@@ -579,7 +580,7 @@ def make_model_I(
 
     if verbose:
         print("Saving mask image.")
-    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut)
+    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut, dtFloat=dtFloat)
 
     if verbose:
         print("Saving model I coefficients.")

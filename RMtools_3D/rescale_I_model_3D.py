@@ -210,7 +210,7 @@ def read_data(basename):
 
     # Get coefficient maps (without knowing how many there are)
     # Reverse index order to match RM-Tools internal ordering (highest to lowest polynomial order)
-    coeffs = np.zeros((6, *old_reffreq_map.shape))
+    coeffs = np.zeros((6, *old_reffreq_map.shape),dtype=covar_map.dtype)
     for i in range(6):
         try:  # Keep trying higher orders
             data = pf.getdata(basename + f"coeff{i}.fits")
@@ -267,9 +267,9 @@ def rescale_I_model_3D(
         new_errors (3D array): maps of new parameter uncertainties (highest to lowest)
     """
 
-    # Initialize output arrays:
-    new_coeffs = np.zeros_like(coeffs)
-    new_errors = np.zeros_like(coeffs)
+    # Initialize output arrays, keep dtype consistent
+    new_coeffs = np.zeros_like(coeffs, dtype=coeffs.dtype)
+    new_errors = np.zeros_like(coeffs, dtype=coeffs.dtype)
     rs = old_reffreq_map.shape[
         1
     ]  # Get the length of a row, for array indexing later on.
