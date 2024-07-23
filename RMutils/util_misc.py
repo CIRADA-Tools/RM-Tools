@@ -107,13 +107,13 @@ def config_read(filename, delim="=", doValueSplit=True):
     CONFIGFILE = open(filename, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    commaAndSpaces = re.compile(",\s+")
-    commaOrSpace = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+" + delim + ".+")
+    spaces = re.compile(r"\s+")
+    commaAndSpaces = re.compile(r",\s+")
+    commaOrSpace = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+" + delim + ".+")
 
     # Read in the input file, line by line
     for line in CONFIGFILE:
@@ -154,14 +154,14 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
     DATFILE = open(fileName, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    comma_and_spaces = re.compile(",\s+")
-    comma_or_space = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+=.+")
-    words = re.compile("\S+")
+    spaces = re.compile(r"\s+")
+    comma_and_spaces = re.compile(r",\s+")
+    comma_or_space = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+=.+")
+    words = re.compile(r"\S+")
 
     # Read in the input file, line by line
     for line in DATFILE:
