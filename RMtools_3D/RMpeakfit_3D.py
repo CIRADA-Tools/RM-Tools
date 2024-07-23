@@ -13,7 +13,7 @@ import sys
 
 import astropy.io.fits as pf
 import numpy as np
-from tqdm.auto import tqdm, trange
+from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
 from RMutils.util_misc import interp_images
@@ -161,6 +161,32 @@ def delete_FITSheader_axis(fitsheader, axis_number):
         except:
             pass
 
+def remove_header_third_fourth_axis(header):
+    """Removes extra axes from header to compress down to 2 axes"""
+    # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
+    keys_to_remove = ['NAXIS3', 'NAXIS4', 'CRPIX3', 'CRPIX4', 'CDELT3', 'CDELT4', 
+                      'CUNIT3', 'CUNIT4', 'CTYPE3', 'CTYPE4', 'CRVAL3', 'CRVAL4',
+                      'PC1_3', 'PC2_3', 'PC3_3', 'PC4_3', 'PC1_4', 'PC2_4', 'PC3_4', 'PC4_4',
+                      'PC3_1', 'PC3_2', 'PC3_3', 'PC3_4', 'PC4_1', 'PC4_2', 'PC4_3', 'PC4_4']
+
+    all_header_keys = list(header.keys())
+
+    for key in keys_to_remove:
+        if key in all_header_keys:
+            del header[key]
+
+    # Set correct NAXIS 
+    header["NAXIS"] = 2
+
+    # Remove STOKES for 2D maps
+    if "STOKES" in header:
+        del header["STOKES"]
+
+    # Finally set correct WCSAXES param if its in there
+    if "WCSAXES" in header:
+        header["WCSAXES"] = 2
+    
+    return header
 
 def save_maps(map_dict, prefix_path, FDFheader):
     """
@@ -172,14 +198,9 @@ def save_maps(map_dict, prefix_path, FDFheader):
     """
     # Set up generic FITS header
     product_header = FDFheader.copy()
-    product_header["NAXIS"] = 2
     # Remove extra axes:
-    if "NAXIS3" in product_header:
-        delete_FITSheader_axis(product_header, 3)
-    if "NAXIS4" in product_header:
-        delete_FITSheader_axis(product_header, 4)
-    if "STOKES" in product_header:
-        del product_header["STOKES"]
+    product_header = remove_header_third_fourth_axis(product_header)
+
     product_header["HISTORY"] = (
         "Polarization peak maps created with RM-Tools RMpeakfit_3D"
     )
