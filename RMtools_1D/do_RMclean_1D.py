@@ -41,12 +41,10 @@ import sys
 import time
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 from matplotlib import pyplot as plt
-from matplotlib.pyplot import savefig
 
 from RMutils.util_RM import do_rmclean_hogbom, measure_fdf_complexity, measure_FDF_parms
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 # -----------------------------------------------------------------------------#
@@ -94,7 +92,7 @@ def run_rmclean(
     phi2Arr_radm2 = aDict["phi2Arr_radm2"]
     RMSFArr = aDict["RMSFArr"]
 
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # If the cutoff is negative, assume it is a sigma level
     if verbose:

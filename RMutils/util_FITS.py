@@ -45,7 +45,6 @@
 import math as m
 import os
 import re
-import shutil
 import sys
 
 import astropy.io.fits as pf
@@ -159,7 +158,7 @@ def strip_fits_dims(data=None, header=None, minDim=2, forceCheckDims=0):
     xydata = None
 
     # Strip unused dimensions from the header
-    if not data is None:
+    if data is not None:
         naxis = len(data.shape)
         extraDims = naxis - minDim
         if extraDims < 0:
@@ -182,7 +181,7 @@ def strip_fits_dims(data=None, header=None, minDim=2, forceCheckDims=0):
         del data
 
     # Strip unused dimensions from the header
-    if not header is None:
+    if header is not None:
         header = header.copy()
         naxis = header["NAXIS"]
 
@@ -242,11 +241,11 @@ def strip_fits_dims(data=None, header=None, minDim=2, forceCheckDims=0):
         header["WCSAXES"] = minDim
 
     # Return the relevant object(s)
-    if not xydata is None and not header is None:
+    if xydata is not None and header is not None:
         return [xydata, header]
-    elif not xydata is None and header is None:
+    elif xydata is not None and header is None:
         return xydata
-    elif xydata is None and not header is None:
+    elif xydata is None and header is not None:
         return header
     else:
         print("Both header and data are 'Nonetype'.")
