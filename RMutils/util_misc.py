@@ -91,6 +91,56 @@ from . import __version__
 C = 2.99792458e8
 
 
+def remove_header_third_fourth_axis(header):
+    """Removes extra axes from header to compress down to 2 axes"""
+    # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
+    keys_to_remove = [
+        "NAXIS3",
+        "NAXIS4",
+        "CRPIX3",
+        "CRPIX4",
+        "CDELT3",
+        "CDELT4",
+        "CUNIT3",
+        "CUNIT4",
+        "CTYPE3",
+        "CTYPE4",
+        "CRVAL3",
+        "CRVAL4",
+        "PC1_3",
+        "PC2_3",
+        "PC3_3",
+        "PC4_3",
+        "PC1_4",
+        "PC2_4",
+        "PC3_4",
+        "PC4_4",
+        "PC3_1",
+        "PC3_2",
+        "PC3_3",
+        "PC3_4",
+        "PC4_1",
+        "PC4_2",
+        "PC4_3",
+        "PC4_4",
+    ]
+
+    for key in keys_to_remove:
+        # Header can dynamically change when keys are removed so use pop
+        header.pop(key, None)
+
+    # Set correct NAXIS
+    header.set("NAXIS", 2)
+
+    # Remove STOKES axis for 2D maps
+    header.pop("STOKES", None)
+
+    # Finally set correct WCSAXES param
+    header.set("WCSAXES", 2)
+
+    return header
+
+
 # -----------------------------------------------------------------------------#
 @deprecated(
     deprecated_in="1.3.1",
