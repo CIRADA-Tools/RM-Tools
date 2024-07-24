@@ -199,7 +199,6 @@ def remove_header_third_fourth_axis(header):
     for key in keys_to_remove:
         # Header can dynamically change when keys are removed so use pop
         header.pop(key, None)
-            del header[key]
 
     # Set correct NAXIS
     header["NAXIS"] = 2
