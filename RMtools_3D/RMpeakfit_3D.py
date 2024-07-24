@@ -16,7 +16,7 @@ import numpy as np
 from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
-from RMutils.util_misc import interp_images
+from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import fits_make_lin_axis, measure_FDF_parms
 
 C = 2.997924538e8  # Speed of light [m/s]
@@ -160,59 +160,6 @@ def delete_FITSheader_axis(fitsheader, axis_number):
             del fitsheader[keyword + axis_str]
         except:
             pass
-
-
-def remove_header_third_fourth_axis(header):
-    """Removes extra axes from header to compress down to 2 axes"""
-    # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
-    keys_to_remove = [
-        "NAXIS3",
-        "NAXIS4",
-        "CRPIX3",
-        "CRPIX4",
-        "CDELT3",
-        "CDELT4",
-        "CUNIT3",
-        "CUNIT4",
-        "CTYPE3",
-        "CTYPE4",
-        "CRVAL3",
-        "CRVAL4",
-        "PC1_3",
-        "PC2_3",
-        "PC3_3",
-        "PC4_3",
-        "PC1_4",
-        "PC2_4",
-        "PC3_4",
-        "PC4_4",
-        "PC3_1",
-        "PC3_2",
-        "PC3_3",
-        "PC3_4",
-        "PC4_1",
-        "PC4_2",
-        "PC4_3",
-        "PC4_4",
-    ]
-
-    for key in keys_to_remove:
-        # Header can dynamically change when keys are removed so use pop
-        header.pop(key, None)
-
-    # Set correct NAXIS
-    header["NAXIS"] = 2
-
-    # Remove STOKES for 2D maps
-    if "STOKES" in header:
-        del header["STOKES"]
-
-    # Finally set correct WCSAXES param if its in there
-    if "WCSAXES" in header:
-        header["WCSAXES"] = 2
-
-    return header
-
 
 def save_maps(map_dict, prefix_path, FDFheader):
     """
