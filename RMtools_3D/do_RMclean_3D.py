@@ -455,7 +455,7 @@ def main():
         "fitsRMSF",
         metavar="RMSF.fits",
         nargs=1,
-        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)",
+        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes (so not _FWHM.fits!) from do_RMsynth_3D.py)",
     )
     parser.add_argument(
         "-c",
