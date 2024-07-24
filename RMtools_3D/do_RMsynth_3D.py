@@ -534,7 +534,6 @@ def writefits(
             del hdu2
             gc.collect()
 
-            print("shape fwhmRMSFCube", np.shape(fwhmRMSFCube))
             hdu3 = pf.PrimaryHDU(
                 np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
             )
