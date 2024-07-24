@@ -90,6 +90,7 @@ from . import __version__
 
 C = 2.99792458e8
 
+
 def remove_header_third_fourth_axis(header):
     """Removes extra axes from header to compress down to 2 axes"""
     # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
@@ -136,7 +137,7 @@ def remove_header_third_fourth_axis(header):
 
     # Finally set correct WCSAXES param
     header.set("WCSAXES", 2)
-    
+
     return header
 
 

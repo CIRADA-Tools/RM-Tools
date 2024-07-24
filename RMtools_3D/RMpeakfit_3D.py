@@ -161,6 +161,7 @@ def delete_FITSheader_axis(fitsheader, axis_number):
         except:
             pass
 
+
 def save_maps(map_dict, prefix_path, FDFheader):
     """
     Saves the selected 2D maps of the fit output.
