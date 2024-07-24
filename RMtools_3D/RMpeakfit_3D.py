@@ -196,10 +196,9 @@ def remove_header_third_fourth_axis(header):
         "PC4_4",
     ]
 
-    all_header_keys = list(header.keys())
-
     for key in keys_to_remove:
-        if key in all_header_keys:
+        # Header can dynamically change when keys are removed so use pop
+        header.pop(key, None) 
             del header[key]
 
     # Set correct NAXIS
