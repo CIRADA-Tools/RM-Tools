@@ -91,6 +91,25 @@ from . import __version__
 C = 2.99792458e8
 
 
+def update_position_wcsaxes(header):
+    # Store and delete the WCSAXES keyword
+    wcsaxes = header['WCSAXES']
+    del header['WCSAXES']
+
+    # Determine the correct insertion point before the first WCS-related keyword
+    wcs_keywords = ['CRPIX1', 'CRPIX2', 'CRVAL1', 'CRVAL2', 'CTYPE1', 'CTYPE2', 'CUNIT1', 'CUNIT2', 'PC1_1', 'PC2_2', 'CD1_1', 'CD2_2']
+
+    # Convert the header keys to a list
+    header_keys = list(header.keys())
+
+    # Find the first occurrence of any WCS-related keyword
+    insert_pos = min(header_keys.index(key) for key in wcs_keywords if key in header_keys)
+
+    # Insert WCSAXES at the correct position
+    header.insert(insert_pos, ('WCSAXES', wcsaxes))
+
+    return header
+
 def remove_header_third_fourth_axis(header):
     """Removes extra axes from header to compress down to 2 axes"""
     # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
@@ -137,6 +156,9 @@ def remove_header_third_fourth_axis(header):
 
     # Finally set correct WCSAXES param
     header.set("WCSAXES", 2)
+
+    # To obey fitsverify, the WCSAXES param must come before the other WCS params
+    header = update_position_wcsaxes(header)
 
     return header
 
