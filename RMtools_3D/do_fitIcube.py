@@ -48,7 +48,7 @@ from tqdm.contrib.concurrent import process_map
 from RMtools_3D.do_RMsynth_3D import readFitsCube
 from RMtools_3D.make_freq_file import get_freq_array
 from RMutils.util_FITS import strip_fits_dims
-from RMutils.util_misc import MAD, calculate_StokesI_model, fit_StokesI_model
+from RMutils.util_misc import MAD, calculate_StokesI_model, fit_StokesI_model, remove_header_third_fourth_axis
 
 # -----------------------------------------------------------------------------#
 
@@ -334,7 +334,7 @@ def savefits_mask(data, header, outDir, prefixOut, dtFloat):
     dtFloat: type to use for output file
     """
 
-    headMask = strip_fits_dims(header=header, minDim=2)
+    headMask = remove_header_third_fourth_axis(header=header)
     headMask["DATAMAX"] = 1
     headMask["DATAMIN"] = 0
     if "BUNIT" in headMask:
@@ -557,7 +557,7 @@ def make_model_I(
         with mp.Pool(processes=num_cores) as pool:
             results = pool.map(func, args_list)
 
-    headcoeff = strip_fits_dims(header=header, minDim=2)
+    headcoeff = remove_header_third_fourth_axis(header=header.copy())
     del headcoeff["BUNIT"]
 
     endTime = time.time()
