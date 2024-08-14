@@ -536,7 +536,8 @@ def writefits(
 
             hdu3 = pf.PrimaryHDU(
                 # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
-                fwhmRMSFCube.astype(dtFloat), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat),
+                rmsffwhm_header,
             )
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if verbose:
@@ -555,7 +556,8 @@ def writefits(
             hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
             hdu3 = pf.ImageHDU(
                 # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
-                fwhmRMSFCube.astype(dtFloat), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat),
+                rmsffwhm_header,
             )
 
             fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
