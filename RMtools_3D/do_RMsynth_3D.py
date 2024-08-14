@@ -535,7 +535,8 @@ def writefits(
             gc.collect()
 
             hdu3 = pf.PrimaryHDU(
-                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat), rmsffwhm_header
             )
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if verbose:
@@ -553,7 +554,8 @@ def writefits(
             del header["STOKES"]
             hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
             hdu3 = pf.ImageHDU(
-                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat), rmsffwhm_header
             )
 
             fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
@@ -572,6 +574,11 @@ def writefits(
         # don't try to remove the FD axis, but just make it degenerate.
         # Also requires np.expand_dims to set the correct NAXIS.
         # Generate peak maps:
+
+        ## Erik: THIS NOW INCONSISTENT WITH RMSF_FWHM (2D). PEAK MAPS STILL USE np.expand_dims
+        ## but since do_peakmaps shouldnt be used anyways, I did not update the code below
+        ## it still produces OK data though, just inconsistent in dimensions
+        log("WARNING: dimensions of these peak maps are not 2D")
 
         maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
         # Save a maximum polarised intensity map
