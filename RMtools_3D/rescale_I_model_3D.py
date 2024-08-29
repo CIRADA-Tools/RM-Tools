@@ -322,7 +322,9 @@ def write_new_parameters(
 
     # Work out highest order of polynomial:
     # if any of the 6 possible coeff planes contain non-zero and non-nan values, it's a 'good' plane.
-    max_order = np.sum ( np.any( (new_coeffs != 0.0) & (~np.isnan(new_coeffs)),axis=(1,2) )) - 1
+    max_order = (
+        np.sum(np.any((new_coeffs != 0.0) & (~np.isnan(new_coeffs)), axis=(1, 2))) - 1
+    )
 
     for i in range(max_order + 1):
         pf.writeto(
