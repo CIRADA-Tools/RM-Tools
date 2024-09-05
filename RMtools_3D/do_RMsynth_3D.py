@@ -240,7 +240,7 @@ def run_rmsynth(
             else np.nanmean(freqArr_Hz)
         )
 
-    if dataI is not None and not not_rmsynth: # if we created an FDF cube
+    if dataI is not None and not not_rmsynth:  # if we created an FDF cube
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx] < freq0_Hz:
             Ifreq0Arr = interp_images(dataI[idx, :, :], dataI[idx + 1, :, :], f=0.5)
