@@ -492,12 +492,8 @@ def run_rmsynth(
         log("FDF Noise (Corrected MAD) = %.4g %s" % (mDict["dFDFcorMAD"], units))
         log("FDF SNR = %.4g " % (mDict["snrPIfit"]))
         log(
-            "sigma_add(q) = %.4g (+%.4g, -%.4g)"
-            % (mDict["sigmaAddQ"], mDict["dSigmaAddPlusQ"], mDict["dSigmaAddMinusQ"])
-        )
-        log(
-            "sigma_add(u) = %.4g (+%.4g, -%.4g)"
-            % (mDict["sigmaAddU"], mDict["dSigmaAddPlusU"], mDict["dSigmaAddMinusU"])
+            "sigma_add (combined) = %.4g (+%.4g, -%.4g)"
+            % (mDict["sigmaAddC"], mDict["dSigmaAddPlusC"], mDict["dSigmaAddMinusC"])
         )
         log("Fitted polynomial order = {} ".format(mDict["polyOrd"]))
         log()
