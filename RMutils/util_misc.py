@@ -89,8 +89,6 @@ from . import __version__
 # import ConfigParser
 
 
-
-
 def update_position_wcsaxes(header):
     # Store and delete the WCSAXES keyword
     wcsaxes = header["WCSAXES"]
