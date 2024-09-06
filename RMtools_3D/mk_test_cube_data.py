@@ -79,6 +79,7 @@ import math as m
 import os
 import shutil
 import sys
+from pathlib import Path
 
 import astropy.wcs.wcs as pw
 import numpy as np
@@ -312,22 +313,24 @@ def create_IQU_cube_data(
         sys.exit()
     catInLst = csv_read_to_list(inCatFile, doFloat=True)
     print("Found %d entries in the catalogue." % len(catInLst))
+    if not Path(dataPath).exists():
+        Path(dataPath).mkdir(parents=True)
 
-    # Create the output directory path
-    dirs = dataPath.rstrip("/").split("/")
-    for i in range(1, len(dirs)):
-        dirStr = "/".join(dirs[:i])
-        if not os.path.exists(dirStr):
-            os.mkdir(dirStr)
-    if os.path.exists(dataPath):
-        print("\n ", end=" ")
-        print("*** WARNING ***" * 5)
-        print("  About to delete existing data directory!", end=" ")
-        print("Previous results will be deleted.\n")
-        print("Press <RETURN> to continue ...", end=" ")
-        input()
-        shutil.rmtree(dataPath, True)
-    os.mkdir(dataPath)
+    # # Create the output directory path
+    # dirs = dataPath.rstrip("/").split("/")
+    # for i in range(1, len(dirs)):
+    #     dirStr = "/".join(dirs[:i])
+    #     if not os.path.exists(dirStr):
+    #         os.mkdir(dirStr)
+    # if os.path.exists(dataPath):
+    #     print("\n ", end=" ")
+    #     print("*** WARNING ***" * 5)
+    #     print("  About to delete existing data directory!", end=" ")
+    #     print("Previous results will be deleted.\n")
+    #     print("Press <RETURN> to continue ...", end=" ")
+    #     input()
+    #     shutil.rmtree(dataPath, True)
+    # os.mkdir(dataPath)
 
     # Create simple HDUs in memmory
     print("Creating test data in memory.")

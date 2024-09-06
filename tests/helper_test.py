@@ -112,11 +112,12 @@ class test_RMtools(unittest.TestCase):
 
     def test_testdata3D(self):
         """Test that rmtools_testdata3D runs and outputs."""
+
         res = subprocess.run(
             [
                 "rmtools_testdata3D",
                 f"{TEST_PATH}/../RMtools_3D/catalogue.csv",
-                "./simdata/3D",
+                f"{THREED_PATH}",
             ]
         )
         self.assertEqual(res.returncode, 0, "testdata3D fails to run to completion.")
@@ -128,24 +129,31 @@ class test_RMtools(unittest.TestCase):
 
     def test_testdata1D(self):
         """Test that rmtools_testdata1D runs and outputs."""
+
         res = subprocess.run(
             [
                 "rmtools_testdata1D",
                 f"{TEST_PATH}/../RMtools_3D/catalogue.csv",
-                "./simdata/1D",
+                f"{ONED_PATH}",
             ]
         )
         self.assertEqual(res.returncode, 0, "testdata1D fails to run to completion.")
 
         self.assertTrue(
-            (TEST_PATH / "simdata/1D/Source8.dat").exists(),
+            (ONED_PATH / "Source8.dat").exists(),
             "testdata1D not outputting files as expected.",
         )
 
     def test_calcRMSF(self):
         """Test that rmtools_calcRMSF runs as expected."""
+
+        if not ONED_PATH.exists():
+            ONED_PATH.mkdir(parents=True)
+
         res = subprocess.run(
-            shlex.split("rmtools_calcRMSF -f 800e6 1088e6 1e6 -s ./simdata/rmsf.png"),
+            shlex.split(
+                f"rmtools_calcRMSF -f 800e6 1088e6 1e6 -s {TEST_PATH}/rmsf.png"
+            ),
             capture_output=True,
             text=True,
         )
