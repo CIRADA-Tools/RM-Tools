@@ -104,6 +104,8 @@ class test_RMtools(unittest.TestCase):
             shutil.rmtree(TEST_PATH / "simdata")
 
         (TEST_PATH / "simdata").mkdir(parents=True)
+        (TEST_PATH / "simdata/1D").mkdir(parents=True)
+        (TEST_PATH / "simdata/3D").mkdir(parents=True)
 
         N_chan = 288
         self.freq_arr = np.linspace(800e6, 1088e6, num=N_chan)
