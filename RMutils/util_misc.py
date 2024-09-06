@@ -89,6 +89,96 @@ from . import __version__
 # import ConfigParser
 
 
+
+
+def update_position_wcsaxes(header):
+    # Store and delete the WCSAXES keyword
+    wcsaxes = header["WCSAXES"]
+    del header["WCSAXES"]
+
+    # Determine the correct insertion point before the first WCS-related keyword
+    wcs_keywords = [
+        "CRPIX1",
+        "CRPIX2",
+        "CRVAL1",
+        "CRVAL2",
+        "CTYPE1",
+        "CTYPE2",
+        "CUNIT1",
+        "CUNIT2",
+        "PC1_1",
+        "PC2_2",
+        "CD1_1",
+        "CD2_2",
+    ]
+
+    # Convert the header keys to a list
+    header_keys = list(header.keys())
+
+    # Find the first occurrence of any WCS-related keyword
+    insert_pos = min(
+        header_keys.index(key) for key in wcs_keywords if key in header_keys
+    )
+
+    # Insert WCSAXES at the correct position
+    header.insert(insert_pos, ("WCSAXES", wcsaxes))
+
+    return header
+
+
+def remove_header_third_fourth_axis(header):
+    """Removes extra axes from header to compress down to 2 axes"""
+    # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
+    keys_to_remove = [
+        "NAXIS3",
+        "NAXIS4",
+        "CRPIX3",
+        "CRPIX4",
+        "CDELT3",
+        "CDELT4",
+        "CUNIT3",
+        "CUNIT4",
+        "CTYPE3",
+        "CTYPE4",
+        "CRVAL3",
+        "CRVAL4",
+        "PC1_3",
+        "PC2_3",
+        "PC3_3",
+        "PC4_3",
+        "PC1_4",
+        "PC2_4",
+        "PC3_4",
+        "PC4_4",
+        "PC3_1",
+        "PC3_2",
+        "PC3_3",
+        "PC3_4",
+        "PC4_1",
+        "PC4_2",
+        "PC4_3",
+        "PC4_4",
+    ]
+
+    for key in keys_to_remove:
+        # Header can dynamically change when keys are removed so use pop
+        header.pop(key, None)
+
+    # Set correct NAXIS
+    header.set("NAXIS", 2)
+
+    # Remove STOKES axis for 2D maps
+    header.pop("STOKES", None)
+
+    # Finally set correct WCSAXES param
+    header.set("WCSAXES", 2)
+
+    # To obey fitsverify, the WCSAXES param must come before the other WCS params
+    header = update_position_wcsaxes(header)
+
+    return header
+
+
 # -----------------------------------------------------------------------------#
 @deprecated(
     deprecated_in="1.3.1",
@@ -105,13 +195,13 @@ def config_read(filename, delim="=", doValueSplit=True):
     CONFIGFILE = open(filename, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    commaAndSpaces = re.compile(",\s+")
-    commaOrSpace = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+" + delim + ".+")
+    spaces = re.compile(r"\s+")
+    commaAndSpaces = re.compile(r",\s+")
+    commaOrSpace = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+" + delim + ".+")
 
     # Read in the input file, line by line
     for line in CONFIGFILE:
@@ -152,14 +242,14 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
     DATFILE = open(fileName, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    comma_and_spaces = re.compile(",\s+")
-    comma_or_space = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+=.+")
-    words = re.compile("\S+")
+    spaces = re.compile(r"\s+")
+    comma_and_spaces = re.compile(r",\s+")
+    comma_or_space = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+=.+")
+    words = re.compile(r"\S+")
 
     # Read in the input file, line by line
     for line in DATFILE:

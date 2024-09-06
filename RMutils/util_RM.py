@@ -403,7 +403,7 @@ def get_rmsf_planes(
             finufft.nufft1d3(
                 x=a,
                 c=np.ascontiguousarray(weightCube.T),
-                s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
+                s=(phi2Arr[::-1] * 2).astype(a.dtype),
                 eps=eps,
             )
             * KArr[..., None]

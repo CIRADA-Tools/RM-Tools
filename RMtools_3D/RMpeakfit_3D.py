@@ -17,7 +17,7 @@ from astropy.constants import c as speed_of_light
 from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
-from RMutils.util_misc import interp_images
+from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import fits_make_lin_axis, measure_FDF_parms
 
 
@@ -171,14 +171,9 @@ def save_maps(map_dict, prefix_path, FDFheader):
     """
     # Set up generic FITS header
     product_header = FDFheader.copy()
-    product_header["NAXIS"] = 2
     # Remove extra axes:
-    if "NAXIS3" in product_header:
-        delete_FITSheader_axis(product_header, 3)
-    if "NAXIS4" in product_header:
-        delete_FITSheader_axis(product_header, 4)
-    if "STOKES" in product_header:
-        del product_header["STOKES"]
+    product_header = remove_header_third_fourth_axis(product_header)
+
     product_header["HISTORY"] = (
         "Polarization peak maps created with RM-Tools RMpeakfit_3D"
     )

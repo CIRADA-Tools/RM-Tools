@@ -52,7 +52,7 @@ from functools import partial
 import astropy.io.fits as pf
 import numpy as np
 
-from RMutils.util_misc import renormalize_StokesI_model
+from RMutils.util_misc import FitResult, renormalize_StokesI_model
 
 
 def command_line():
@@ -210,7 +210,7 @@ def read_data(basename):
 
     # Get coefficient maps (without knowing how many there are)
     # Reverse index order to match RM-Tools internal ordering (highest to lowest polynomial order)
-    coeffs = np.zeros((6, *old_reffreq_map.shape))
+    coeffs = np.zeros((6, *old_reffreq_map.shape), dtype=covar_map.dtype)
     for i in range(6):
         try:  # Keep trying higher orders
             data = pf.getdata(basename + f"coeff{i}.fits")
@@ -229,8 +229,23 @@ def rescale_I_pixel(data, fit_function):
     oldDict["pcov"] = covar
     oldDict["fit_function"] = fit_function
 
-    newDict = renormalize_StokesI_model(oldDict, new_freq)
-    return newDict["p"], newDict["perror"]
+    old_result = FitResult(
+        params=coeff,
+        fitStatus=np.nan,  # Placeholder
+        chiSq=np.nan,  # Placeholder
+        chiSqRed=np.nan,  # Placeholder
+        AIC=np.nan,  # Placeholder
+        polyOrd=len(coeff) - 1,
+        nIter=0,  # Placeholder
+        reference_frequency_Hz=old_freq,
+        dof=np.nan,  # Placeholder
+        pcov=covar,
+        perror=np.zeros_like(coeff),  # Placeholder
+        fit_function=fit_function,
+    )
+
+    new_fit_result = renormalize_StokesI_model(old_result, new_freq)
+    return new_fit_result.params, new_fit_result.perror
 
 
 def rescale_I_model_3D(
@@ -252,9 +267,9 @@ def rescale_I_model_3D(
         new_errors (3D array): maps of new parameter uncertainties (highest to lowest)
     """
 
-    # Initialize output arrays:
-    new_coeffs = np.zeros_like(coeffs)
-    new_errors = np.zeros_like(coeffs)
+    # Initialize output arrays, keep dtype consistent
+    new_coeffs = np.zeros_like(coeffs, dtype=coeffs.dtype)
+    new_errors = np.zeros_like(coeffs, dtype=coeffs.dtype)
     rs = old_reffreq_map.shape[
         1
     ]  # Get the length of a row, for array indexing later on.
@@ -306,7 +321,10 @@ def write_new_parameters(
         del out_header["BUNIT"]
 
     # Work out highest order of polynomial:
-    max_order = np.sum(np.any(new_coeffs != 0.0, axis=(1, 2))) - 1
+    # if any of the 6 possible coeff planes contain non-zero and non-nan values, it's a 'good' plane.
+    max_order = (
+        np.sum(np.any((new_coeffs != 0.0) & (~np.isnan(new_coeffs)), axis=(1, 2))) - 1
+    )
 
     for i in range(max_order + 1):
         pf.writeto(

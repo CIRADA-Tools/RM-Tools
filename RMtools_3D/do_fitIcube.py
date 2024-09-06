@@ -35,6 +35,7 @@
 # =============================================================================#
 
 import argparse
+import multiprocessing as mp
 import os
 import sys
 import time
@@ -47,7 +48,12 @@ from tqdm.contrib.concurrent import process_map
 from RMtools_3D.do_RMsynth_3D import readFitsCube
 from RMtools_3D.make_freq_file import get_freq_array
 from RMutils.util_FITS import strip_fits_dims
-from RMutils.util_misc import MAD, calculate_StokesI_model, fit_StokesI_model
+from RMutils.util_misc import (
+    MAD,
+    calculate_StokesI_model,
+    fit_StokesI_model,
+    remove_header_third_fourth_axis,
+)
 
 # -----------------------------------------------------------------------------#
 
@@ -287,52 +293,60 @@ def cube_noise(datacube, header, freqArr_Hz, threshold=-5):
     # start = time.time()
     for i in range(nChan):
         dataPlane = datacube[i]
-        if threshold > 0:
-            idxSky = np.where(dataPlane < threshold)  # replaced cutoff with threshold
+        if np.isnan(dataPlane).all():
+            # If this plane is fully flagged, dont have to calculate
+            medSky[i] = np.nan
+            rmsArr[i] = np.nan
+
         else:
-            idxSky = np.where(dataPlane)
+            if threshold > 0:
+                idxSky = np.where(
+                    dataPlane < threshold
+                )  # replaced cutoff with threshold
+            else:
+                idxSky = np.where(dataPlane)
 
-        # Pass 1
-        rmsTmp = MAD(dataPlane[idxSky])
-        medTmp = np.nanmedian(dataPlane[idxSky])
+            # Pass 1
+            rmsTmp = MAD(dataPlane[idxSky])
+            medTmp = np.nanmedian(dataPlane[idxSky])
 
-        # Pass 2: use a fixed 3-sigma cutoff to mask off emission
-        idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
-        medSky[i] = np.nanmedian(dataPlane[idxSky])
-        rmsArr[i] = MAD(dataPlane[idxSky])
+            # Pass 2: use a fixed 3-sigma cutoff to mask off emission
+            idxSky = np.where(dataPlane < medTmp + rmsTmp * 3)
+            medSky[i] = np.nanmedian(dataPlane[idxSky])
+            rmsArr[i] = MAD(dataPlane[idxSky])
 
-        # When building final emission mask treat +ve threshold as absolute
-        # values and negative threshold as sigma values
-        if threshold > 0:
-            idxSrc = np.where(dataPlane > threshold)
-        else:
-            idxSrc = np.where(dataPlane > medSky[i] - 1 * rmsArr[i] * threshold)
+            # When building final emission mask treat +ve threshold as absolute
+            # values and negative threshold as sigma values
+            if threshold > 0:
+                idxSrc = np.where(dataPlane > threshold)
+            else:
+                idxSrc = np.where(dataPlane > medSky[i] - 1 * rmsArr[i] * threshold)
 
-        mskSrc[idxSrc] += 1
+            mskSrc[idxSrc] += 1
 
     # end = time.time()
     # print(' For loop masking takes %.3fs'%(end-start))
     return rmsArr, mskSrc
 
 
-def savefits_mask(data, header, outDir, prefixOut):
+def savefits_mask(data, header, outDir, prefixOut, dtFloat):
     """Save the derived mask to a fits file
 
     data:  2D data defining the mask.
     header: header to describe the mask
     outDir: directory to save the mask fits data
     prefixOut: prefix to use on the output name
+    dtFloat: type to use for output file
     """
 
-    headMask = strip_fits_dims(header=header, minDim=2)
+    headMask = remove_header_third_fourth_axis(header=header)
     headMask["DATAMAX"] = 1
     headMask["DATAMIN"] = 0
     if "BUNIT" in headMask:
         del headMask["BUNIT"]
 
-    mskArr = np.where(data > 0, 1.0, np.nan)
+    mskArr = np.where(data > 0, 1.0, np.nan).astype(dtFloat)
     MaskfitsFile = os.path.join(outDir, prefixOut + "mask.fits")
-    print("> %s" % MaskfitsFile)
     pf.writeto(MaskfitsFile, mskArr, headMask, output_verify="fix", overwrite=True)
 
 
@@ -499,11 +513,11 @@ def make_model_I(
     modelIcube[:] = np.nan
     results = []
 
-    coeffs = np.array([mskArr] * 6)
-    coeffs_error = np.array([mskArr] * 6)
-    reffreq = np.squeeze(np.array([mskArr]))
+    coeffs = np.array([mskArr] * 6, dtype=dtFloat)
+    coeffs_error = np.array([mskArr] * 6, dtype=dtFloat)
+    reffreq = np.squeeze(np.array([mskArr], dtype=dtFloat))
 
-    covars = np.array([[mskArr] * 6] * 6)
+    covars = np.array([[mskArr] * 6] * 6, dtype=dtFloat)
     datacube = np.squeeze(datacube)
 
     # Select only the spectra with emission
@@ -530,18 +544,25 @@ def make_model_I(
         nDetectPix=nDetectPix,
         verbose=verbose,
     )
-    # Send each spectrum to a different core
-    results = process_map(
-        func,
-        srcData,
-        max_workers=num_cores,
-        chunksize=chunk_size,
-        disable=not verbose,
-        desc="Fitting spectra",
-        total=nDetectPix,
-    )
 
-    headcoeff = strip_fits_dims(header=header, minDim=2)
+    # Send each spectrum to a different core
+    if verbose:  # Note that 'verbose' is not compatible with Prefect
+        results = process_map(
+            func,
+            srcData,
+            max_workers=num_cores,
+            chunksize=chunk_size,
+            disable=not verbose,
+            desc="Fitting spectra",
+            total=nDetectPix,
+        )
+    else:
+        mp.set_start_method("spawn", force=True)
+        args_list = [d for d in srcData]
+        with mp.Pool(processes=num_cores) as pool:
+            results = pool.map(func, args_list)
+
+    headcoeff = remove_header_third_fourth_axis(header=header.copy())
     del headcoeff["BUNIT"]
 
     endTime = time.time()
@@ -571,7 +592,13 @@ def make_model_I(
 
     if verbose:
         print("Saving mask image.")
-    savefits_mask(data=mskSrc, header=headcoeff, outDir=outDir, prefixOut=prefixOut)
+    savefits_mask(
+        data=mskSrc,
+        header=headcoeff,
+        outDir=outDir,
+        prefixOut=prefixOut,
+        dtFloat=dtFloat,
+    )
 
     if verbose:
         print("Saving model I coefficients.")

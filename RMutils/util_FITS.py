@@ -274,7 +274,7 @@ def get_beam_from_header(header):
         bpa = None
 
     # Or try history for AIPS CLEAN Beam
-    beamHistStr = "AIPS\s+CLEAN\sBMAJ=\s+(\S+)\s+BMIN=\s+(\S+)\s+BPA=\s+(\S+)"
+    beamHistStr = r"AIPS\s+CLEAN\sBMAJ=\s+(\S+)\s+BMIN=\s+(\S+)\s+BPA=\s+(\S+)"
     bmHistPat = re.compile(beamHistStr)
     if bmaj is None or bmin is None:
         try:
