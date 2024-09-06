@@ -7,6 +7,7 @@ from time import time
 from typing import NamedTuple
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 from tqdm import trange
 
 from RMutils.util_RM import do_rmsynth_planes, extrap, fit_rmsf, get_rmsf_planes
@@ -359,7 +360,7 @@ def get_rmsf_planes_old(
 def make_fake_data() -> FakeData:
     # Set up
     freq = np.arange(744, 1032, 1) * 1e6
-    lsq = (2.998e8 / freq) ** 2
+    lsq = (speed_of_light.value / freq) ** 2
     rm = -100
 
     # Make fake data

@@ -23,6 +23,7 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 from astropy.io import fits as pf
 from scipy.ndimage import gaussian_filter
 
@@ -36,7 +37,7 @@ def Faraday_thin_complex_polarization(freq_array, RM, Polint, initial_angle):
     RM = source RM in rad m^-2
     Polint = polarized intensity in whatever units
     initial angle = pre-rotation polarization angle (in degrees)"""
-    l2_array = (299792458.0 / freq_array) ** 2
+    l2_array = (speed_of_light.value / freq_array) ** 2
     Q = Polint * np.cos(2 * (np.outer(l2_array, RM) + np.deg2rad(initial_angle)))
     U = Polint * np.sin(2 * (np.outer(l2_array, RM) + np.deg2rad(initial_angle)))
     return np.squeeze(np.transpose(Q + 1j * U))

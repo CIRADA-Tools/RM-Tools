@@ -11,6 +11,7 @@ Author: cvaneck, Aug 2021
 import json
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 
 from RMtools_1D.do_RMsynth_1D import readFile as read_freqFile
 from RMutils.util_misc import FitResult, calculate_StokesI_model
@@ -33,8 +34,7 @@ def calculate_QU_model(freqArr, phiArr, CCArr, lambdaSq_0, Iparms=None):
     CURRENTLY ASSUMES THAT STOKES I MODEL IS LOG MODEL. SHOULD BE FIXED!
     """
 
-    C = 2.997924538e8  # Speed of light [m/s]
-    lambdaSqArr_m2 = np.power(C / freqArr, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr, 2.0)
 
     a = lambdaSqArr_m2 - lambdaSq_0
     quarr = np.sum(CCArr[:, np.newaxis] * np.exp(2.0j * np.outer(phiArr, a)), axis=0)
@@ -48,7 +48,7 @@ def calculate_QU_model(freqArr, phiArr, CCArr, lambdaSq_0, Iparms=None):
         AIC=0,
         polyOrd=0,
         nIter=0,
-        reference_frequency_Hz=C / np.sqrt(lambdaSq_0),
+        reference_frequency_Hz=speed_of_light.value / np.sqrt(lambdaSq_0),
         dof=0,
         pcov=None,
         perror=None,

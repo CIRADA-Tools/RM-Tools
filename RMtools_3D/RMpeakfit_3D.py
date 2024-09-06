@@ -13,13 +13,12 @@ import sys
 
 import astropy.io.fits as pf
 import numpy as np
+from astropy.constants import c as speed_of_light
 from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
 from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import fits_make_lin_axis, measure_FDF_parms
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 def pixelwise_peak_fitting(
@@ -72,8 +71,8 @@ def pixelwise_peak_fitting(
     for parameter in product_list:
         map_dict[parameter] = np.zeros(map_size)
 
-    freqArr_Hz = C / np.sqrt(lamSqArr_m2)
-    freq0_Hz = C / np.sqrt(lam0Sq)
+    freqArr_Hz = speed_of_light.value / np.sqrt(lamSqArr_m2)
+    freq0_Hz = speed_of_light.value / np.sqrt(lam0Sq)
     if stokesIcube is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx] < freq0_Hz:
@@ -291,7 +290,7 @@ def read_files(FDF_filename, freq_filename):
     lam0Sq = head["LAMSQ0"]
 
     freqArr_Hz = np.loadtxt(freq_filename, dtype=float)
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis - 1)
 

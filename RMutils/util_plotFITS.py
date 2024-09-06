@@ -18,13 +18,11 @@
 
 import math as m
 
-import astropy.io.fits as pf
 import astropy.wcs.wcs as pw
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Ellipse, Polygon
-from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 from .normalize import APLpyNormalize
 from .util_FITS import mkWCSDict, strip_fits_dims
@@ -165,9 +163,9 @@ def plot_fits_map(
             vMin = measures["madfm"] * (-7.0)
             vMax = measures["madfm"] * 200.0
             stretch = "sqrt"
-    if not zMax is None:
+    if zMax is not None:
         vMax = max(zMax, measures["max"])
-    if not zMax is None:
+    if zMax is not None:
         vMin = zMin
 
     # Set the colourscale using an normalizer object
@@ -238,7 +236,7 @@ def plot_fits_map(
             cbar.set_label(header["BUNIT"])
         else:
             cbar.set_label("Unknown")
-        if not bunit is None:
+        if bunit is not None:
             cbar.set_label(bunit)
 
     # Format the colourbar labels - TODO

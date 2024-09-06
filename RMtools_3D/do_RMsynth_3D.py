@@ -41,8 +41,8 @@ import sys
 import time
 
 import astropy.io.fits as pf
-import astropy.table as at
 import numpy as np
+from astropy.constants import c as speed_of_light
 
 from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes
@@ -50,8 +50,6 @@ from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
     exit()
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 # -----------------------------------------------------------------------------#
 
@@ -127,7 +125,7 @@ def run_rmsynth(
         sys.exit()
 
     # Check dimensions of Stokes I cube, if present
-    if not dataI is None:
+    if dataI is not None:
         if not str(dataI.shape) == str(dataQ.shape):
             log(
                 "Err: unequal dimensions: Q = "
@@ -142,7 +140,7 @@ def run_rmsynth(
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
 
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
@@ -235,7 +233,7 @@ def run_rmsynth(
     # nearest two planes.
     with np.errstate(divide="ignore", invalid="ignore"):
         freq0_Hz = (
-            np.true_divide(C, m.sqrt(lam0Sq_m2))
+            np.true_divide(speed_of_light.value, m.sqrt(lam0Sq_m2))
             if lam0Sq_m2 > 0
             else np.nanmean(freqArr_Hz)
         )
