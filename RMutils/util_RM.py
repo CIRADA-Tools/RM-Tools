@@ -1361,7 +1361,6 @@ def measure_qu_complexity(
         RMArr_radm2=[RM_radm2],
     )
     lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
-    ndata = len(lamSqArr_m2)
 
     # Subtract the RM-thin model to create a residual q & u
     qResidArr = qArr - qModArr
@@ -1371,9 +1370,9 @@ def measure_qu_complexity(
     mDict = {}
     pDict = {}
     m1D, p1D = calc_sigma_add(
-        xArr=lamSqArr_m2[: int(ndata / specF)],
-        yArr=(qResidArr / dqArr)[: int(ndata / specF)],
-        dyArr=(dqArr / dqArr)[: int(ndata / specF)],
+        xArr=lamSqArr_m2,
+        yArr=(qResidArr / dqArr),
+        dyArr=(dqArr / dqArr),
         yMed=0.0,
         noise=1.0,
         suffix="Q",
@@ -1381,15 +1380,26 @@ def measure_qu_complexity(
     mDict.update(m1D)
     pDict.update(p1D)
     m2D, p2D = calc_sigma_add(
-        xArr=lamSqArr_m2[: int(ndata / specF)],
-        yArr=(uResidArr / duArr)[: int(ndata / specF)],
-        dyArr=(duArr / duArr)[: int(ndata / specF)],
+        xArr=lamSqArr_m2,
+        yArr=(uResidArr / duArr),
+        dyArr=(duArr / duArr),
         yMed=0.0,
         noise=1.0,
         suffix="U",
     )
     mDict.update(m2D)
     pDict.update(p2D)
+
+    m3D, p3D = calc_sigma_add(
+        xArr=lamSqArr_m2,
+        yArr=np.concatenate((qResidArr / dqArr, uResidArr / duArr)),
+        dyArr=np.concatenate((dqArr / dqArr, duArr / duArr)),
+        yMed=0.0,
+        noise=1.0,
+        suffix="C",
+    )
+    mDict.update(m3D)
+    pDict.update(p3D)
 
     # Calculate the deviations statistics
     # Done as a test for the paper, not usually offered to user.
