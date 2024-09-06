@@ -41,6 +41,8 @@ import numpy as np
 from QA_test import create_1D_data, create_3D_data
 
 TEST_PATH = Path(__file__).parent.absolute()
+ONED_PATH = TEST_PATH / "simdata" / "1D"
+THREED_PATH = TEST_PATH / "simdata" / "3D"
 
 
 def create_3D_stokesI(freq_arr, N_side=100):
@@ -162,7 +164,7 @@ class test_RMtools(unittest.TestCase):
     def test_freqfile(self):
         """Test that rmtools_freqfile runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
 
         res = subprocess.run(
             shlex.split(
@@ -183,7 +185,7 @@ class test_RMtools(unittest.TestCase):
     def test_extractregion(self):
         """Test that rmtools_extractregion runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
 
         res = subprocess.run(
             shlex.split(
@@ -195,7 +197,7 @@ class test_RMtools(unittest.TestCase):
     def test_createchunks(self):
         """Test that rmtools_createchunks runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
 
         res = subprocess.run(
             shlex.split(f"rmtools_createchunks {TEST_PATH}/simdata/3D/Q_cube.fits 2099")
@@ -214,7 +216,7 @@ class test_RMtools(unittest.TestCase):
     def test_assemblechunks(self):
         """Test that rmtools_assemblechunks runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
 
         if not (TEST_PATH / "simdata/3D/Q_cube.C4.fits").exists():
             res = subprocess.run(
@@ -293,7 +295,7 @@ class test_RMtools(unittest.TestCase):
     def test_peakfitcube(self):
         """Test that rmtools_peakfitcube runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
         res = subprocess.run(
             shlex.split(
                 f"rmsynth3d {TEST_PATH}/simdata/3D/Q_cube.fits {TEST_PATH}/simdata/3D/Q_cube.fits {TEST_PATH}/simdata/3D/freqHz.txt -s 2"
@@ -315,7 +317,7 @@ class test_RMtools(unittest.TestCase):
     def test_bwpredict(self):
         """Test that rmtools_bwpredict runs as expected."""
         if not (TEST_PATH / "simdata/3D/Q_cube.fits").exists():
-            create_3D_data(self.freq_arr)
+            create_3D_data(self.freq_arr, THREED_PATH)
 
         res = subprocess.run(
             shlex.split(
@@ -327,7 +329,7 @@ class test_RMtools(unittest.TestCase):
     def test_bwdepol(self):
         """Test that rmtools_bwdepol runs as expected."""
         if not (TEST_PATH / "simdata/1D/simsource.dat").exists():
-            create_1D_data(self.freq_arr)
+            create_1D_data(self.freq_arr, TEST_PATH, ONED_PATH)
 
         res = subprocess.run(
             shlex.split(f"rmtools_bwdepol {TEST_PATH}/simdata/1D/simsource.dat -s 3 -S")
