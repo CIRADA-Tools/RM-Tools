@@ -38,7 +38,8 @@ from pathlib import Path
 
 import astropy.io.fits as pf
 import numpy as np
-from QA_test import create_1D_data, create_3D_data
+
+from RMutils.util_testing import create_1D_data, create_3D_data
 
 TEST_PATH = Path(__file__).parent.absolute()
 ONED_PATH = TEST_PATH / "simdata" / "1D"
