@@ -51,8 +51,6 @@ except:
 from RMtools_3D.do_RMsynth_3D import _setStokes
 from RMutils.util_RM import do_rmclean_hogbom, fits_make_lin_axis
 
-C = 2.997924538e8  # Speed of light [m/s]
-
 
 # -----------------------------------------------------------------------------#
 def run_rmclean(
@@ -455,7 +453,7 @@ def main():
         "fitsRMSF",
         metavar="RMSF.fits",
         nargs=1,
-        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes from do_RMsynth_3D.py)",
+        help="FITS cube containing the RMSF and FWHM image.\n(Cans be any of the RMSF output cubes (so not _FWHM.fits!) from do_RMsynth_3D.py)",
     )
     parser.add_argument(
         "-c",

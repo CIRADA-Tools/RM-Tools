@@ -41,17 +41,15 @@ import sys
 import time
 
 import astropy.io.fits as pf
-import astropy.table as at
 import numpy as np
+from astropy.constants import c as speed_of_light
 
-from RMutils.util_misc import interp_images
+from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes
 
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
     exit()
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 # -----------------------------------------------------------------------------#
 
@@ -127,7 +125,7 @@ def run_rmsynth(
         sys.exit()
 
     # Check dimensions of Stokes I cube, if present
-    if not dataI is None:
+    if dataI is not None:
         if not str(dataI.shape) == str(dataQ.shape):
             log(
                 "Err: unequal dimensions: Q = "
@@ -142,7 +140,7 @@ def run_rmsynth(
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
 
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
@@ -235,12 +233,12 @@ def run_rmsynth(
     # nearest two planes.
     with np.errstate(divide="ignore", invalid="ignore"):
         freq0_Hz = (
-            np.true_divide(C, m.sqrt(lam0Sq_m2))
+            np.true_divide(speed_of_light.value, m.sqrt(lam0Sq_m2))
             if lam0Sq_m2 > 0
             else np.nanmean(freqArr_Hz)
         )
 
-    if dataI is not None:
+    if dataI is not None and not not_rmsynth:  # if we created an FDF cube
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx] < freq0_Hz:
             Ifreq0Arr = interp_images(dataI[idx, :, :], dataI[idx + 1, :, :], f=0.5)
@@ -474,9 +472,11 @@ def writefits(
             hduLst.writeto(fitsFileOut, output_verify="fix", overwrite=True)
             hduLst.close()
 
-    # Save the RMSF
+    # Save the RMSF: real, im, tot (4D) and FWHM (2D)
     if not not_rmsf:
-        # Put frequency axis first, and reshape to add degenerate axes:
+        # Create header for RMSF_{real,imag,tot}.fits
+
+        # Put frequency axis first, and reshape to add degenerate Stokes axis:
         RMSFcube = np.reshape(RMSFcube, [RMSFcube.shape[0]] + output_axes)
         # Move Faraday depth axis to appropriate position to match header.
         RMSFcube = np.moveaxis(RMSFcube, 0, Ndim - freq_axis)
@@ -494,29 +494,12 @@ def writefits(
         )
         header["BUNIT"] = ""
 
-        rmheader = header.copy()
-        rmheader["BUNIT"] = "rad/m^2"
-        if "BTYPE" in rmheader:
-            del rmheader["BTYPE"]
-        # Because there can be problems with different axes having different FITS keywords,
-        # don't try to remove the FD axis, but just make it degenerate.
-        # Also requires np.expand_dims to set the correct NAXIS.
-        rmheader["NAXIS" + str(freq_axis)] = 1
-        rmheader["CTYPE" + str(freq_axis)] = (
-            "DEGENERATE",
-            "Axis left in to avoid FITS errors",
-        )
-        rmheader["CUNIT" + str(freq_axis)] = ""
-        rmheader["CRVAL" + str(freq_axis)] = 0  # doesnt mean anything
-        stokes_axis = None
-        for axis in range(1, rmheader["NAXIS"] + 1):
-            if "STOKES" in rmheader[f"CTYPE{axis}"]:
-                stokes_axis = axis
-        if stokes_axis is not None:
-            rmheader[f"CTYPE{stokes_axis}"] = (
-                "DEGENERATE",
-                "Axis left in to avoid FITS errors",
-            )
+        # Create header for RMSF_FHWM.fits
+        rmsffwhm_header = header.copy()
+        rmsffwhm_header["BUNIT"] = "rad/m^2"
+        rmsffwhm_header.pop("BTYPE", None)
+        # Remove 3rd and 4th axis, RMSF_FWHM is a plane, like the 2D peak maps
+        rmsffwhm_header = remove_header_third_fourth_axis(rmsffwhm_header)
 
         if write_seperate_FDF:  # more memory efficient as well
             header = _setStokes(header, "Q")
@@ -550,7 +533,9 @@ def writefits(
             gc.collect()
 
             hdu3 = pf.PrimaryHDU(
-                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmheader
+                # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat),
+                rmsffwhm_header,
             )
             fitsFileOut = outDir + "/" + prefixOut + "RMSF_FWHM.fits"
             if verbose:
@@ -568,7 +553,9 @@ def writefits(
             del header["STOKES"]
             hdu2 = pf.ImageHDU(np.abs(RMSFcube).astype(dtFloat), header)
             hdu3 = pf.ImageHDU(
-                np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmheader
+                # np.expand_dims(fwhmRMSFCube.astype(dtFloat), axis=0), rmsffwhm_header
+                fwhmRMSFCube.astype(dtFloat),
+                rmsffwhm_header,
             )
 
             fitsFileOut = outDir + "/" + prefixOut + "RMSF.fits"
@@ -587,6 +574,11 @@ def writefits(
         # don't try to remove the FD axis, but just make it degenerate.
         # Also requires np.expand_dims to set the correct NAXIS.
         # Generate peak maps:
+
+        ## Erik: THIS NOW INCONSISTENT WITH RMSF_FWHM (2D). PEAK MAPS STILL USE np.expand_dims
+        ## but since do_peakmaps shouldnt be used anyways, I did not update the code below
+        ## it still produces OK data though, just inconsistent in dimensions
+        log("WARNING: dimensions of these peak maps are not 2D")
 
         maxPI, peakRM = create_peak_maps(FDFcube, phiArr_radm2, Ndim - freq_axis)
         # Save a maximum polarised intensity map

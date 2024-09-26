@@ -13,13 +13,12 @@ import sys
 
 import astropy.io.fits as pf
 import numpy as np
-from tqdm.auto import tqdm, trange
+from astropy.constants import c as speed_of_light
+from tqdm.auto import trange
 
 from RMtools_3D.do_RMsynth_3D import readFitsCube, readFreqFile
-from RMutils.util_misc import interp_images
+from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
 from RMutils.util_RM import fits_make_lin_axis, measure_FDF_parms
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 def pixelwise_peak_fitting(
@@ -31,6 +30,7 @@ def pixelwise_peak_fitting(
     product_list,
     noiseArr=None,
     stokesIcube=None,
+    weightType="uniform",
 ):
     """
     Performs the 1D FDF peak fitting used in RMsynth/RMclean_1D, pixelwise on
@@ -71,8 +71,8 @@ def pixelwise_peak_fitting(
     for parameter in product_list:
         map_dict[parameter] = np.zeros(map_size)
 
-    freqArr_Hz = C / np.sqrt(lamSqArr_m2)
-    freq0_Hz = C / np.sqrt(lam0Sq)
+    freqArr_Hz = speed_of_light.value / np.sqrt(lamSqArr_m2)
+    freq0_Hz = speed_of_light.value / np.sqrt(lam0Sq)
     if stokesIcube is not None:
         idx = np.abs(freqArr_Hz - freq0_Hz).argmin()
         if freqArr_Hz[idx] < freq0_Hz:
@@ -91,8 +91,15 @@ def pixelwise_peak_fitting(
 
     # compute weights if needed:
     if noiseArr is not None:
-        weightArr = 1.0 / np.power(noiseArr, 2.0)
-        weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+        if weightType == "variance":
+            weightArr = 1.0 / np.power(noiseArr, 2.0)
+            weightArr = np.where(np.isnan(weightArr), 0.0, weightArr)
+        elif weightType == "uniform":
+            weightArr = np.ones(lamSqArr_m2.shape, dtype=np.float32)
+            weightArr = np.where(np.isnan(noiseArr), 0.0, weightArr)
+        else:
+            raise Exception("Invalid weight type; must be 'uniform' or 'variance'")
+
         dFDF = Ifreq0Arr * np.sqrt(
             np.sum(weightArr**2 * np.nan_to_num(noiseArr) ** 2)
             / (np.sum(weightArr)) ** 2
@@ -164,14 +171,9 @@ def save_maps(map_dict, prefix_path, FDFheader):
     """
     # Set up generic FITS header
     product_header = FDFheader.copy()
-    product_header["NAXIS"] = 2
     # Remove extra axes:
-    if "NAXIS3" in product_header:
-        delete_FITSheader_axis(product_header, 3)
-    if "NAXIS4" in product_header:
-        delete_FITSheader_axis(product_header, 4)
-    if "STOKES" in product_header:
-        del product_header["STOKES"]
+    product_header = remove_header_third_fourth_axis(product_header)
+
     product_header["HISTORY"] = (
         "Polarization peak maps created with RM-Tools RMpeakfit_3D"
     )
@@ -288,7 +290,7 @@ def read_files(FDF_filename, freq_filename):
     lam0Sq = head["LAMSQ0"]
 
     freqArr_Hz = np.loadtxt(freq_filename, dtype=float)
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     phiArr_radm2 = fits_make_lin_axis(head, axis=FD_axis - 1)
 
@@ -377,6 +379,12 @@ def main():
         dest="noiseFile",
         default=None,
         help="FITS file or cube containing noise values [None].",
+    )
+    parser.add_argument(
+        "-w",
+        dest="weightType",
+        default="uniform",
+        help="weighting ['uniform'] (all 1s) or 'variance' used in rmsynth3d, affects uncertainty estimation.",
     )
 
     args = parser.parse_args()
@@ -474,6 +482,7 @@ def main():
         product_list,
         noiseArr=rmsArr,
         stokesIcube=dataI,
+        weightType=args.weightType,
     )
 
     save_maps(map_dict, args.output_name[0], header)

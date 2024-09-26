@@ -78,6 +78,7 @@ from typing import NamedTuple, Optional, Tuple
 import numpy as np
 import numpy.ma as ma
 import scipy.ndimage as ndi
+from astropy.constants import c as speed_of_light
 from deprecation import deprecated
 from scipy.stats import norm
 
@@ -88,7 +89,92 @@ from . import __version__
 # import ConfigParser
 
 
-C = 2.99792458e8
+def update_position_wcsaxes(header):
+    # Store and delete the WCSAXES keyword
+    wcsaxes = header["WCSAXES"]
+    del header["WCSAXES"]
+
+    # Determine the correct insertion point before the first WCS-related keyword
+    wcs_keywords = [
+        "CRPIX1",
+        "CRPIX2",
+        "CRVAL1",
+        "CRVAL2",
+        "CTYPE1",
+        "CTYPE2",
+        "CUNIT1",
+        "CUNIT2",
+        "PC1_1",
+        "PC2_2",
+        "CD1_1",
+        "CD2_2",
+    ]
+
+    # Convert the header keys to a list
+    header_keys = list(header.keys())
+
+    # Find the first occurrence of any WCS-related keyword
+    insert_pos = min(
+        header_keys.index(key) for key in wcs_keywords if key in header_keys
+    )
+
+    # Insert WCSAXES at the correct position
+    header.insert(insert_pos, ("WCSAXES", wcsaxes))
+
+    return header
+
+
+def remove_header_third_fourth_axis(header):
+    """Removes extra axes from header to compress down to 2 axes"""
+    # List of keys related to the 3rd and 4th axes to remove (essentially everything with a '3' or '4')
+    keys_to_remove = [
+        "NAXIS3",
+        "NAXIS4",
+        "CRPIX3",
+        "CRPIX4",
+        "CDELT3",
+        "CDELT4",
+        "CUNIT3",
+        "CUNIT4",
+        "CTYPE3",
+        "CTYPE4",
+        "CRVAL3",
+        "CRVAL4",
+        "PC1_3",
+        "PC2_3",
+        "PC3_3",
+        "PC4_3",
+        "PC1_4",
+        "PC2_4",
+        "PC3_4",
+        "PC4_4",
+        "PC3_1",
+        "PC3_2",
+        "PC3_3",
+        "PC3_4",
+        "PC4_1",
+        "PC4_2",
+        "PC4_3",
+        "PC4_4",
+    ]
+
+    for key in keys_to_remove:
+        # Header can dynamically change when keys are removed so use pop
+        header.pop(key, None)
+
+    # Set correct NAXIS
+    header.set("NAXIS", 2)
+
+    # Remove STOKES axis for 2D maps
+    header.pop("STOKES", None)
+
+    # Finally set correct WCSAXES param
+    header.set("WCSAXES", 2)
+
+    # To obey fitsverify, the WCSAXES param must come before the other WCS params
+    header = update_position_wcsaxes(header)
+
+    return header
 
 
 # -----------------------------------------------------------------------------#
@@ -107,13 +193,13 @@ def config_read(filename, delim="=", doValueSplit=True):
     CONFIGFILE = open(filename, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    commaAndSpaces = re.compile(",\s+")
-    commaOrSpace = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+" + delim + ".+")
+    spaces = re.compile(r"\s+")
+    commaAndSpaces = re.compile(r",\s+")
+    commaOrSpace = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+" + delim + ".+")
 
     # Read in the input file, line by line
     for line in CONFIGFILE:
@@ -154,14 +240,14 @@ def csv_read_to_list(fileName, delim=",", doFloat=False):
     DATFILE = open(fileName, "r")
 
     # Compile a few useful regular expressions
-    spaces = re.compile("\s+")
-    comma_and_spaces = re.compile(",\s+")
-    comma_or_space = re.compile("[\s|,]")
-    brackets = re.compile("[\[|\]\(|\)|\{|\}]")
-    comment = re.compile("#.*")
-    quotes = re.compile("'[^']*'")
-    keyVal = re.compile("^.+=.+")
-    words = re.compile("\S+")
+    spaces = re.compile(r"\s+")
+    comma_and_spaces = re.compile(r",\s+")
+    comma_or_space = re.compile(r"[\s|,]")
+    brackets = re.compile(r"[\[|\]\(|\)|\{|\}]")
+    comment = re.compile(r"#.*")
+    quotes = re.compile(r"'[^']*'")
+    keyVal = re.compile(r"^.+=.+")
+    words = re.compile(r"\S+")
 
     # Read in the input file, line by line
     for line in DATFILE:
@@ -583,7 +669,7 @@ def renormalize_StokesI_model(
                 + 4 * lnx * cov[3, 4]
                 + cov[4, 4]
             ),
-            g2
+            np.abs(g2)
             * np.sqrt(
                 lnx**10 * cov[0, 0]
                 + 2 * lnx**9 * cov[0, 1]
@@ -1100,7 +1186,7 @@ def create_pqu_spectra_burn(
     # Calculate some prerequsites
     nChans = len(freqArr_Hz)
     nComps = len(fracPolArr)
-    lamArr_m = C / freqArr_Hz
+    lamArr_m = speed_of_light.value / freqArr_Hz
     lamSqArr_m2 = np.power(lamArr_m, 2.0)
 
     # Convert the inputs to column vectors
@@ -1172,7 +1258,7 @@ def create_pqu_spectra_diff(freqArr_Hz, fracPolArr, psi0Arr_deg, RMArr_radm2):
     # Calculate some prerequsites
     nChans = len(freqArr_Hz)
     nComps = len(fracPolArr)
-    lamArr_m = C / freqArr_Hz
+    lamArr_m = speed_of_light.value / freqArr_Hz
     lamSqArr_m2 = np.power(lamArr_m, 2.0)
 
     # Convert the inputs to column vectors
@@ -1227,7 +1313,7 @@ def create_pqu_spectra_RMthin(freqArr_Hz, fracPol, psi0_deg, RM_radm2):
     """Return fractional P/I, Q/I & U/I spectra for a Faraday thin source"""
 
     # Calculate the p, q and u Spectra
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     pArr = fracPol * np.ones_like(lamSqArr_m2)
     quArr = pArr * np.exp(2j * (np.radians(psi0_deg) + RM_radm2 * lamSqArr_m2))
     qArr = quArr.real

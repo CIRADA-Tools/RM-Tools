@@ -63,9 +63,11 @@
 import gc
 import math as m
 import sys
+from typing import NamedTuple
 
 import finufft
 import numpy as np
+from astropy.constants import c as speed_of_light
 from deprecation import deprecated
 from scipy.stats import anderson, kstest, kurtosis, kurtosistest, norm, skew, skewtest
 from tqdm.auto import tqdm, trange
@@ -81,11 +83,17 @@ from RMutils.util_misc import (
 
 from . import __version__
 
-# Constants
-C = 2.99792458e8
-
 
 # -----------------------------------------------------------------------------#
+class RMsynthResults(NamedTuple):
+    """Results of the RM-synthesis calculation"""
+
+    FDFcube: np.ndarray
+    """The Faraday dispersion function cube"""
+    lam0Sq_m2: float
+    """The reference lambda^2 value"""
+
+
 def do_rmsynth_planes(
     dataQ,
     dataU,
@@ -96,7 +104,7 @@ def do_rmsynth_planes(
     nBits=32,
     eps=1e-6,
     log=print,
-):
+) -> RMsynthResults:
     """Perform RM-synthesis on Stokes Q and U cubes (1,2 or 3D). This version
     of the routine loops through spectral planes and is faster than the pixel-
     by-pixel code. This version also correctly deals with isolated clumps of
@@ -214,10 +222,25 @@ def do_rmsynth_planes(
     # Remove redundant dimensions in the FDF array
     FDFcube = np.squeeze(FDFcube)
 
-    return FDFcube, lam0Sq_m2
+    return RMsynthResults(FDFcube=FDFcube, lam0Sq_m2=lam0Sq_m2)
 
 
 # -----------------------------------------------------------------------------#
+class RMSFResults(NamedTuple):
+    """Results of the RMSF calculation"""
+
+    RMSFcube: np.ndarray
+    """The RMSF cube"""
+    phi2Arr: np.ndarray
+    """The (double length) Faraday depth array"""
+    fwhmRMSFArr: np.ndarray
+    """The FWHM of the RMSF main lobe"""
+    statArr: np.ndarray
+    """The status of the RMSF fit"""
+    lam0Sq_m2: float
+    """The reference lambda^2 value"""
+
+
 def get_rmsf_planes(
     lambdaSqArr_m2,
     phiArr_radm2,
@@ -231,7 +254,7 @@ def get_rmsf_planes(
     eps=1e-6,
     verbose=False,
     log=print,
-):
+) -> RMSFResults:
     """Calculate the Rotation Measure Spread Function from inputs. This version
     returns a cube (1, 2 or 3D) of RMSF spectra based on the shape of a
     boolean mask array, where flagged data are True and unflagged data False.
@@ -380,7 +403,7 @@ def get_rmsf_planes(
             finufft.nufft1d3(
                 x=a,
                 c=np.ascontiguousarray(weightCube.T),
-                s=(phiArr_radm2[::-1] * 2).astype(a.dtype),
+                s=(phi2Arr[::-1] * 2).astype(a.dtype),
                 eps=eps,
             )
             * KArr[..., None]
@@ -423,10 +446,29 @@ def get_rmsf_planes(
         fwhmRMSFArr = np.reshape(fwhmRMSFArr, (old_data_shape[1], old_data_shape[2]))
         statArr = np.reshape(statArr, (old_data_shape[1], old_data_shape[2]))
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr, lam0Sq_m2
+    return RMSFResults(
+        RMSFcube=RMSFcube,
+        phi2Arr=phi2Arr,
+        fwhmRMSFArr=fwhmRMSFArr,
+        statArr=statArr,
+        lam0Sq_m2=lam0Sq_m2,
+    )
 
 
 # -----------------------------------------------------------------------------#
+class RMCleanResults(NamedTuple):
+    """Results of the RM-CLEAN calculation"""
+
+    cleanFDF: np.ndarray
+    """The cleaned Faraday dispersion function cube"""
+    ccArr: np.ndarray
+    """The clean components cube"""
+    iterCountArr: np.ndarray
+    """The number of iterations for each pixel"""
+    residFDF: np.ndarray
+    """The residual Faraday dispersion function cube"""
+
+
 def do_rmclean_hogbom(
     dirtyFDF,
     phiArr_radm2,
@@ -444,7 +486,7 @@ def do_rmclean_hogbom(
     chunksize=None,
     log=print,
     window=0,
-):
+) -> RMCleanResults:
     """Perform Hogbom CLEAN on a cube of complex Faraday dispersion functions
     given a cube of rotation measure spread functions.
 
@@ -593,10 +635,19 @@ def do_rmclean_hogbom(
     iterCountArr = np.squeeze(iterCountArr)
     residFDF = np.squeeze(residFDF)
 
-    return cleanFDF, ccArr, iterCountArr, residFDF
+    return RMCleanResults(cleanFDF, ccArr, iterCountArr, residFDF)
 
 
 # -----------------------------------------------------------------------------#
+class CleanLoopResults(NamedTuple):
+    """Results of the RM-CLEAN loop"""
+
+    cleanFDF: np.ndarray
+    """The cleaned Faraday dispersion function cube"""
+    residFDF: np.ndarray
+    """The residual Faraday dispersion function cube"""
+    ccArr: np.ndarray
+    """The clean components cube"""
 
 
 class RMcleaner:
@@ -630,10 +681,10 @@ class RMcleaner:
         self.nbits = nbits
         self.window = window
 
-    def cleanloop(self, args):
+    def cleanloop(self, args) -> CleanLoopResults:
         return self._cleanloop(*args)
 
-    def _cleanloop(self, yi, xi, dirtyFDF):
+    def _cleanloop(self, yi, xi, dirtyFDF) -> CleanLoopResults:
         dirtyFDF = dirtyFDF[:, yi, xi]
         # Initialise arrays to hold the residual FDF, clean components, clean FDF
         residFDF = dirtyFDF.copy()
@@ -724,7 +775,7 @@ class RMcleaner:
         residFDF = np.squeeze(residFDF)
         ccArr = np.squeeze(ccArr)
 
-        return cleanFDF, residFDF, ccArr
+        return CleanLoopResults(cleanFDF=cleanFDF, residFDF=residFDF, ccArr=ccArr)
 
 
 # -----------------------------------------------------------------------------#
@@ -1309,7 +1360,7 @@ def measure_qu_complexity(
         psi0Arr_deg=[psi0_deg],
         RMArr_radm2=[RM_radm2],
     )
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     ndata = len(lamSqArr_m2)
 
     # Subtract the RM-thin model to create a residual q & u
@@ -1585,7 +1636,7 @@ def do_rmclean(
     # If the RMSF has been passed in then check for correct formatting:
     #  - Twice the number of channels as dirtyFDF
     #  - Must be complex
-    if not RMSFArr is None:
+    if RMSFArr is not None:
         # Check 1D
         if len(RMSFArr.shape) != 1:
             print("Err: input RMSF must be a 1D array.")
@@ -1626,7 +1677,7 @@ def do_rmclean(
             fwhmRMSF = mp.params[2]
 
     # If the weight array has been passed in ...
-    if not weight is None:
+    if weight is not None:
         uniformWt = False
         weightArr = np.array(weight, dtype=dtype)
 
@@ -1852,7 +1903,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
 
     from .util_plotTk import plot_pqu_vs_lamsq_ax
 
-    lamSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lamSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
     # Create a RM-thin model to subtract
     pModArr, qModArr, uModArr = create_pqu_spectra_burn(
@@ -1870,7 +1921,7 @@ def plot_complexity(freqArr_Hz, qArr, uArr, dqArr, duArr, fracPol, psi0_deg, RM_
 
     # High resolution models
     freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-    lamSqHirArr_m2 = np.power(C / freqHirArr_Hz, 2.0)
+    lamSqHirArr_m2 = np.power(speed_of_light.value / freqHirArr_Hz, 2.0)
     pModArr, qModArr, uModArr = create_pqu_spectra_burn(
         freqArr_Hz=freqHirArr_Hz,
         fracPolArr=[fracPol],

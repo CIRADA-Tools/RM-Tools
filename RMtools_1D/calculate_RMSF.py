@@ -22,11 +22,10 @@ shape.
 import argparse
 
 import numpy as np
+from astropy.constants import c as speed_of_light
 from matplotlib import pyplot as plt
 
 from RMutils.util_RM import get_rmsf_planes
-
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 def main():
@@ -160,7 +159,7 @@ def determine_RMSF_parameters(
         plotfile (str): file name and path to save RMSF plot.
         plotname (str): title of plot
     """
-    lambda2_array = C**2 / freq_array**2
+    lambda2_array = speed_of_light.value**2 / freq_array**2
     l2_min = np.min(lambda2_array)
     l2_max = np.max(lambda2_array)
     dl2 = np.median(np.abs(np.diff(lambda2_array)))
@@ -174,7 +173,7 @@ def determine_RMSF_parameters(
         -1 * phi_max / 2, phi_max / 2 + 1e-6, dphi
     )  # division by two accounts for how RMSF is always twice as wide as FDF.
 
-    RMSFcube, phi2Arr, fwhmRMSFArr, statArr = get_rmsf_planes(
+    rmsf_results = get_rmsf_planes(
         lambda2_array,
         phi_array,
         weightArr=weights_array,
@@ -190,7 +189,11 @@ def determine_RMSF_parameters(
             3.8 / (l2_max - l2_min)
         )
     )
-    print("Measured FWHM:                       {:.4g} rad m^-2".format(fwhmRMSFArr))
+    print(
+        "Measured FWHM:                       {:.4g} rad m^-2".format(
+            rmsf_results.fwhmRMSFArr
+        )
+    )
     print("Theoretical largest FD scale probed: {:.4g} rad m^-2".format(np.pi / l2_min))
     print(
         "Theoretical maximum FD*:             {:.4g} rad m^-2".format(
@@ -208,15 +211,21 @@ def determine_RMSF_parameters(
     # finds the highest amplitude one, and calls that the first sidelobe.
     try:
         x = np.diff(
-            np.sign(np.diff(np.abs(RMSFcube[RMSFcube.size // 2 :])))
+            np.sign(
+                np.diff(
+                    np.abs(rmsf_results.RMSFcube[rmsf_results.RMSFcube.size // 2 :])
+                )
+            )
         )  # -2=local max, +2=local min
         y = (
             1 + np.where(x == -2)[0]
         )  # indices of peaks, +1 is because of offset from double differencing
-        peaks = np.abs(RMSFcube[RMSFcube.size // 2 :])[y]
+        peaks = np.abs(rmsf_results.RMSFcube[rmsf_results.RMSFcube.size // 2 :])[y]
         print(
             "First sidelobe FD and amplitude:     {:.4g} rad m^-2".format(
-                phi2Arr[phi2Arr.size // 2 :][y[np.argmax(peaks)]]
+                rmsf_results.phi2Arr[rmsf_results.phi2Arr.size // 2 :][
+                    y[np.argmax(peaks)]
+                ]
             )
         )
         print(
@@ -235,9 +244,15 @@ def determine_RMSF_parameters(
         plt.title("Simulated RMSF")
     else:
         plt.title(plotname)
-    plt.plot(phi2Arr, np.real(RMSFcube), "b-", label="Stokes Q")
-    plt.plot(phi2Arr, np.imag(RMSFcube), "r--", label="Stokes U")
-    plt.plot(phi2Arr, np.abs(RMSFcube), "k-", label="Amplitude")
+    plt.plot(
+        rmsf_results.phi2Arr, np.real(rmsf_results.RMSFcube), "b-", label="Stokes Q"
+    )
+    plt.plot(
+        rmsf_results.phi2Arr, np.imag(rmsf_results.RMSFcube), "r--", label="Stokes U"
+    )
+    plt.plot(
+        rmsf_results.phi2Arr, np.abs(rmsf_results.RMSFcube), "k-", label="Amplitude"
+    )
     plt.legend()
     plt.xlabel(r"Faraday depth (rad m$^{-2}$)")
     plt.ylabel("RMSF (unitless)")
@@ -259,13 +274,13 @@ def determine_RMSF_parameters(
             + "# of channels:                                {:.4g}\n"
         ).format(
             3.8 / (l2_max - l2_min),
-            fwhmRMSFArr,
+            rmsf_results.fwhmRMSFArr,
             np.pi / l2_min,
             np.sqrt(3.0) / dl2,
             np.min(freq_array) / 1e9,
-            C / np.min(freq_array) * 100.0,
+            speed_of_light.value / np.min(freq_array) * 100.0,
             np.max(freq_array) / 1e9,
-            C / np.max(freq_array) * 100.0,
+            speed_of_light.value / np.max(freq_array) * 100.0,
             freq_array.size,
         ),
         family="monospace",
@@ -282,7 +297,10 @@ def determine_RMSF_parameters(
                 + "First sidelobe FD and amplitude:     {:.4g} rad m^-2\n"
                 + "                                     {:.4g} % of peak"
             ).format(
-                phi2Arr[phi2Arr.size // 2 :][y[np.argmax(peaks)]], np.max(peaks) * 100
+                rmsf_results.phi2Arr[rmsf_results.phi2Arr.size // 2 :][
+                    y[np.argmax(peaks)]
+                ],
+                np.max(peaks) * 100,
             ),
             family="monospace",
             horizontalalignment="left",
@@ -298,7 +316,7 @@ def determine_RMSF_parameters(
     #    ax.text(0.,0.22,'First sidelobe FD and amplitude:       {:.4g} rad m^-2'.format(phi2Arr[phi2Arr.size//2:][y[np.argmax(peaks)]]))
     #    ax.text(0.,0.1,'                                                           {:.4g} % of peak'.format(np.max(peaks)*100))
 
-    if plotfile != None:
+    if plotfile is not None:
         plt.savefig(plotfile, bbox_inches="tight")
     else:
         plt.show()

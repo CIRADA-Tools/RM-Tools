@@ -38,6 +38,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from astropy.constants import c as speed_of_light
 
 from RMtools_1D.rmtools_bwdepol import (
     adjoint_theory,
@@ -48,7 +49,6 @@ from RMtools_1D.rmtools_bwdepol import (
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
     exit()
-C = 2.997924538e8  # Speed of light [m/s]
 
 
 # -----------------------------------------------------------------------------#
@@ -81,7 +81,7 @@ def bwdepol_compute_predictions(
 
     """
     # Calculate some wavelength parameters
-    lambdaSqArr_m2 = np.power(C / freqArr_Hz, 2.0)
+    lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
     # dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
     dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
@@ -169,6 +169,12 @@ def main():
         default=10,
         help="number of samples across the RMSF lobe [10].",
     )
+    parser.add_argument(
+        "-f",
+        dest="plotfile",
+        default=None,
+        help="Filename to save plot to. [do not save]",
+    )
 
     args = parser.parse_args()
 
@@ -196,7 +202,10 @@ def main():
 
     # plot adjoint info
     plot_adjoint_info(adjoint_info, units="arb. units")
-    plt.show()
+    if args.plotfile is not None:
+        plt.savefig(args.plotfile, bbox_inches="tight")
+    else:
+        plt.show()
 
 
 # -----------------------------------------------------------------------------#

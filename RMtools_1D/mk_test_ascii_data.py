@@ -50,6 +50,7 @@ import argparse
 import os
 import shutil
 import sys
+from pathlib import Path
 
 import numpy as np
 
@@ -61,8 +62,6 @@ from RMutils.util_misc import (
     extrap,
     split_repeat_lst,
 )
-
-C = 2.99792458e8
 
 
 # -----------------------------------------------------------------------------#
@@ -308,20 +307,24 @@ def create_IQU_ascii_data(
     # Create the output directory path
     dataPath = dataPath.rstrip("/")
     print("Creating test dataset in '%s/'" % dataPath)
-    dirs = dataPath.split("/")
-    for i in range(1, len(dirs)):
-        dirStr = "/".join(dirs[:i])
-        if not os.path.exists(dirStr):
-            os.mkdir(dirStr)
-    if os.path.exists(dataPath):
-        print("\n ", end=" ")
-        print("*** WARNING ***" * 5)
-        print("  About to delete existing data directory!", end=" ")
-        print("Previous results will be deleted.\n")
-        print("Press <RETURN> to continue ...", end=" ")
-        input()
-        shutil.rmtree(dataPath, True)
-    os.mkdir(dataPath)
+    if not Path(dataPath).exists():
+        Path(dataPath).mkdir(parents=True)
+
+    # dirs = dataPath.split("/")
+    # print(dirs)
+    # for i in range(1, len(dirs)):
+    #     dirStr = "/".join(dirs[:i])
+    #     if not os.path.exists(dirStr):
+    #         os.mkdir(dirStr)
+    # if os.path.exists(dataPath):
+    #     print("\n ", end=" ")
+    #     print("*** WARNING ***" * 5)
+    #     print("  About to delete existing data directory!", end=" ")
+    #     print("Previous results will be deleted.\n")
+    #     print("Press <RETURN> to continue ...", end=" ")
+    #     input()
+    #     shutil.rmtree(dataPath, True)
+    # os.mkdir(dataPath)
 
     # Loop through the sources, calculate the spectra and save to disk
     successCount = 0
