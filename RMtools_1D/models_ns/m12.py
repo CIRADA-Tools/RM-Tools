@@ -1,20 +1,21 @@
 #
-#=============================================================================#
-import numpy as np
+# =============================================================================#
 import bilby
+import numpy as np
 
-#-----------------------------------------------------------------------------#
+
+# -----------------------------------------------------------------------------#
 # Function defining the model.                                                #
 #                                                                             #
 #  pDict       = Dictionary of parameters, created by parsing inParms, below. #
 #  lamSqArr_m2 = Array of lambda-squared values                               #
 #  quArr       = Complex array containing the Re and Im spectra.              #
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 def model(pDict, lamSqArr_m2):
     """
-    Single Faraday component with internal Faraday dispersion and 
+    Single Faraday component with internal Faraday dispersion and
     an foreground external dispersion screen
-    
+
     Ref:
     Sokoloff et al. (1998) Eq 34
     O'Sullivan et al. (2012) Eq 10
@@ -23,24 +24,31 @@ def model(pDict, lamSqArr_m2):
 
     # Calculate the complex fractional q and u spectra
     pArr = pDict["fracPol"] * np.ones_like(lamSqArr_m2)
-    para_S = (2. * lamSqArr_m2**2 * pDict["sigmaRM_radm2"]**2 - 2j * lamSqArr_m2 * pDict["deltaRM_radm2"])
+    para_S = (
+        2.0 * lamSqArr_m2**2 * pDict["sigmaRM_radm2"] ** 2
+        - 2j * lamSqArr_m2 * pDict["deltaRM_radm2"]
+    )
 
-    quArr = (pArr * np.exp(2j * (np.radians(pDict["psi0_deg"]) + pDict["RM_screen"] * lamSqArr_m2)) * ((1 - np.exp(-1.*para_S)) / para_S) * np.exp(-2.0 * pDict["sigmaRM_radm2_FG"]**2.0 * lamSqArr_m2**2.0))
+    quArr = (
+        pArr
+        * np.exp(
+            2j * (np.radians(pDict["psi0_deg"]) + pDict["RM_screen"] * lamSqArr_m2)
+        )
+        * ((1 - np.exp(-1.0 * para_S)) / para_S)
+        * np.exp(-2.0 * pDict["sigmaRM_radm2_FG"] ** 2.0 * lamSqArr_m2**2.0)
+    )
 
     return quArr
 
 
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 # Priors for the above model.                                                 #
 # See https://lscsoft.docs.ligo.org/bilby/prior.html for details.             #
 #                                                                             #
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
 priors = {
     "fracPol": bilby.prior.Uniform(
-        minimum=0.0,
-        maximum=0.6,
-        name="fracPol",
-        latex_label="$p$"
+        minimum=0.0, maximum=0.6, name="fracPol", latex_label="$p$"
     ),
     "psi0_deg": bilby.prior.Uniform(
         minimum=0,
