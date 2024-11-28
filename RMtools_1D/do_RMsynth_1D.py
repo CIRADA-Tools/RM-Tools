@@ -242,9 +242,7 @@ def run_rmsynth(
     if debug:
         rmsFig = plt.figure(facecolor="w", figsize=(12.0, 8))
         ax = rmsFig.add_subplot(111)
-        ax.plot(
-            freqArr_GHz, dQUArr, marker="o", color="k", lw=0.5, label="noise <QU>"
-        )
+        ax.plot(freqArr_GHz, dQUArr, marker="o", color="k", lw=0.5, label="noise <QU>")
         ax.plot(freqArr_GHz, dQArr, marker="o", color="b", lw=0.5, label="noise Q")
         ax.plot(freqArr_GHz, dUArr, marker="o", color="r", lw=0.5, label="noise U")
         xRange = (np.nanmax(freqArr_Hz) - np.nanmin(freqArr_Hz)) / 1e9
