@@ -243,10 +243,10 @@ def run_rmsynth(
         rmsFig = plt.figure(facecolor="w", figsize=(12.0, 8))
         ax = rmsFig.add_subplot(111)
         ax.plot(
-            freqArr_Hz / 1e9, dQUArr, marker="o", color="k", lw=0.5, label="noise <QU>"
+            freqArr_GHz, dQUArr, marker="o", color="k", lw=0.5, label="noise <QU>"
         )
-        ax.plot(freqArr_Hz / 1e9, dQArr, marker="o", color="b", lw=0.5, label="noise Q")
-        ax.plot(freqArr_Hz / 1e9, dUArr, marker="o", color="r", lw=0.5, label="noise U")
+        ax.plot(freqArr_GHz, dQArr, marker="o", color="b", lw=0.5, label="noise Q")
+        ax.plot(freqArr_GHz, dUArr, marker="o", color="r", lw=0.5, label="noise U")
         xRange = (np.nanmax(freqArr_Hz) - np.nanmin(freqArr_Hz)) / 1e9
         ax.set_xlim(
             np.min(freqArr_Hz) / 1e9 - xRange * 0.05,
@@ -261,9 +261,9 @@ def run_rmsynth(
 
     # Calculate some wavelength parameters
     lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
-    dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
+    # dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
-    dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
+    # dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
     dLambdaSqMax_m2 = np.nanmax(np.abs(np.diff(lambdaSqArr_m2)))
 
     # Set the Faraday depth range
@@ -454,13 +454,14 @@ def run_rmsynth(
             tmpFig.show()
 
     # add array dictionary
+    # Force dtypes as given by input
     aDict = dict()
-    aDict["phiArr_radm2"] = phiArr_radm2
-    aDict["phi2Arr_radm2"] = phi2Arr_radm2
-    aDict["RMSFArr"] = RMSFArr
-    aDict["freqArr_Hz"] = freqArr_Hz
-    aDict["weightArr"] = weightArr
-    aDict["dirtyFDF"] = dirtyFDF
+    aDict["phiArr_radm2"] = phiArr_radm2.astype(dtFloat)
+    aDict["phi2Arr_radm2"] = phi2Arr_radm2.astype(dtFloat)
+    aDict["RMSFArr"] = RMSFArr.astype(dtComplex)
+    aDict["freqArr_Hz"] = freqArr_Hz.astype(dtFloat)
+    aDict["weightArr"] = weightArr.astype(dtFloat)
+    aDict["dirtyFDF"] = dirtyFDF.astype(dtComplex)
 
     if verbose:
         # Print the results to the screen
@@ -582,7 +583,6 @@ def readFile(dataFile, nBits, verbose=True, debug=False):
                 print("... success.")
             data = [freqArr_Hz, QArr, UArr, dQArr, dUArr]
 
-            noStokesI = True
         except Exception:
             if verbose:
                 print("...failed.")
