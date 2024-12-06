@@ -558,6 +558,7 @@ def main():
         maxIter=args.maxIter,
         gain=args.gain,
         chunksize=chunksize,
+        pool=pool,
         nBits=32,
         window=args.window,
         verbose=verbose,
