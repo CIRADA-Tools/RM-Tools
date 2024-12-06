@@ -1,4 +1,16 @@
 
+1.4.8:
+-Added m12 model (mixed slab with turbulent foreground).
+-forced rmsynth1d outputs to the bit depth specified by the user (previously many outputs were 64bit regardless of user specification).
+-Added combined Q/U sigma_add calculation and output. Now produces sigma_add for Q and U separately, and for both together.
+-Fixed bug in rmclean3d where multiprocessing pool was not used properly.
+
+1.4.7:
+-fixed crash when using Stokes I model cube in rmsynth3d.
+-changed all references to speed of light to use astropy constant.
+-fixed bug from strange interaction between Prefect, Docker, and multiprocessing.
+-added basic tests for helper tools.
+
 1.4.6:
 -fixed bug in rmsynth3d when computing RMSF that is not spatially uniform.
 
