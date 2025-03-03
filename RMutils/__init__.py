@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-"""Dependencies for RM utilities """
+"""Dependencies for RM utilities"""
 import pkg_resources
 
 __all__ = [
