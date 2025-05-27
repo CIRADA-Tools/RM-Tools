@@ -1,29 +1,29 @@
 """
 Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 
-								   AUTHORS
+                                                                   AUTHORS
   The original version of this software, called LMFIT, was written in FORTRAN
   as part of the MINPACK-1 package by XXX.
 
   Craig Markwardt converted the FORTRAN code to IDL.  The information for the
   IDL version is:
-	 Craig B. Markwardt, NASA/GSFC Code 662, Greenbelt, MD 20770
-	 craigm@lheamail.gsfc.nasa.gov
-	 UPDATED VERSIONs can be found on my WEB PAGE:
-		http://cow.physics.wisc.edu/~craigm/idl/idl.html
+         Craig B. Markwardt, NASA/GSFC Code 662, Greenbelt, MD 20770
+         craigm@lheamail.gsfc.nasa.gov
+         UPDATED VERSIONs can be found on my WEB PAGE:
+                http://cow.physics.wisc.edu/~craigm/idl/idl.html
 
   Mark Rivers created this Python version from Craig's IDL version.
-	Mark Rivers, University of Chicago
-	Building 434A, Argonne National Laboratory
-	9700 South Cass Avenue, Argonne, IL 60439
-	rivers@cars.uchicago.edu
-	Updated versions can be found at http://cars.uchicago.edu/software
+        Mark Rivers, University of Chicago
+        Building 434A, Argonne National Laboratory
+        9700 South Cass Avenue, Argonne, IL 60439
+        rivers@cars.uchicago.edu
+        Updated versions can be found at http://cars.uchicago.edu/software
 
  Sergey Koposov converted the Mark's Python version from Numeric to numpy
-	Sergey Koposov, University of Cambridge, Institute of Astronomy,
-	Madingley road, CB3 0HA, Cambridge, UK
-	koposov@ast.cam.ac.uk
-	Updated versions can be found at http://code.google.com/p/astrolibpy/source/browse/trunk/
+        Sergey Koposov, University of Cambridge, Institute of Astronomy,
+        Madingley road, CB3 0HA, Cambridge, UK
+        koposov@ast.cam.ac.uk
+        Updated versions can be found at http://code.google.com/p/astrolibpy/source/browse/trunk/
 
   UPDATE 2016-05-15: Cormac Purcell updated this version to use the latest
                      SciPy blas libraries and explicitly copy arrays when
@@ -31,7 +31,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 
   UPDATE 2017-03-12: Cormac Purcell updated this for use with Python3.
 
-								 DESCRIPTION
+                                                                 DESCRIPTION
 
  MPFIT uses the Levenberg-Marquardt technique to solve the
  least-squares problem.  In its typical use, MPFIT will be used to
@@ -85,7 +85,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  least-squares minimization problem.
 
 
-							   USER FUNCTION
+                                                           USER FUNCTION
 
  The user must define a function which returns the appropriate
  values as specified above.  The function should return the weighted
@@ -95,15 +95,15 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  function should be declared in the following way:
 
    def myfunct(p, fjac=None, x=None, y=None, err=None)
-	# Parameter values are passed in "p"
-	# If fjac==None then partial derivatives should not be
-	# computed.  It will always be None if MPFIT is called with default
-	# flag.
-	model = F(x, p)
-	# Non-negative status value means MPFIT should continue, negative means
-	# stop the calculation.
-	status = 0
-	return([status, (y-model)/err]
+        # Parameter values are passed in "p"
+        # If fjac==None then partial derivatives should not be
+        # computed.  It will always be None if MPFIT is called with default
+        # flag.
+        model = F(x, p)
+        # Non-negative status value means MPFIT should continue, negative means
+        # stop the calculation.
+        status = 0
+        return([status, (y-model)/err]
 
  See below for applications with analytical derivatives.
 
@@ -122,7 +122,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  -15 and -1 then MPFIT will stop the calculation and return to the caller.
 
 
-							ANALYTIC DERIVATIVES
+                                                        ANALYTIC DERIVATIVES
 
  In the search for the best-fit solution, MPFIT by default
  calculates derivatives numerically via a finite difference
@@ -137,21 +137,21 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  FJAC, and if FJAC!=None then return the partial derivative array in the
  return list.
    def myfunct(p, fjac=None, x=None, y=None, err=None)
-	# Parameter values are passed in "p"
-	# If FJAC!=None then partial derivatives must be comptuer.
-	# FJAC contains an array of len(p), where each entry
-	# is 1 if that parameter is free and 0 if it is fixed.
-	model = F(x, p)
-	Non-negative status value means MPFIT should continue, negative means
-	# stop the calculation.
-	status = 0
-	if (dojac):
-	   pderiv = zeros([len(x), len(p)], Float)
-	   for j in range(len(p)):
-		 pderiv[:,j] = FGRAD(x, p, j)
-	else:
-	   pderiv = None
-	return([status, (y-model)/err, pderiv]
+        # Parameter values are passed in "p"
+        # If FJAC!=None then partial derivatives must be comptuer.
+        # FJAC contains an array of len(p), where each entry
+        # is 1 if that parameter is free and 0 if it is fixed.
+        model = F(x, p)
+        Non-negative status value means MPFIT should continue, negative means
+        # stop the calculation.
+        status = 0
+        if (dojac):
+           pderiv = zeros([len(x), len(p)], Float)
+           for j in range(len(p)):
+                 pderiv[:,j] = FGRAD(x, p, j)
+        else:
+           pderiv = None
+        return([status, (y-model)/err, pderiv]
 
  where FGRAD(x, p, i) is a user function which must compute the
  derivative of the model with respect to parameter P[i] at X.  When
@@ -176,7 +176,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  50x50 image, "dp" should be 50x50xNPAR.
 
 
-		   CONSTRAINING PARAMETER VALUES WITH THE PARINFO KEYWORD
+                   CONSTRAINING PARAMETER VALUES WITH THE PARINFO KEYWORD
 
  The behavior of MPFIT can be modified with respect to each
  parameter to be fitted.  A parameter value can be fixed; simple
@@ -192,72 +192,72 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  numerical order.  The dictionary can have the following keys
  (none are required, keys are case insensitive):
 
-	'value' - the starting parameter value (but see the START_PARAMS
-			 parameter for more information).
+        'value' - the starting parameter value (but see the START_PARAMS
+                         parameter for more information).
 
-	'fixed' - a boolean value, whether the parameter is to be held
-			 fixed or not.  Fixed parameters are not varied by
-			 MPFIT, but are passed on to MYFUNCT for evaluation.
+        'fixed' - a boolean value, whether the parameter is to be held
+                         fixed or not.  Fixed parameters are not varied by
+                         MPFIT, but are passed on to MYFUNCT for evaluation.
 
-	'limited' - a two-element boolean array.  If the first/second
-			   element is set, then the parameter is bounded on the
-			   lower/upper side.  A parameter can be bounded on both
-			   sides.  Both LIMITED and LIMITS must be given
-			   together.
+        'limited' - a two-element boolean array.  If the first/second
+                           element is set, then the parameter is bounded on the
+                           lower/upper side.  A parameter can be bounded on both
+                           sides.  Both LIMITED and LIMITS must be given
+                           together.
 
-	'limits' - a two-element float array.  Gives the
-			  parameter limits on the lower and upper sides,
-			  respectively.  Zero, one or two of these values can be
-			  set, depending on the values of LIMITED.  Both LIMITED
-			  and LIMITS must be given together.
+        'limits' - a two-element float array.  Gives the
+                          parameter limits on the lower and upper sides,
+                          respectively.  Zero, one or two of these values can be
+                          set, depending on the values of LIMITED.  Both LIMITED
+                          and LIMITS must be given together.
 
-	'parname' - a string, giving the name of the parameter.  The
-			   fitting code of MPFIT does not use this tag in any
-			   way.  However, the default iterfunct will print the
-			   parameter name if available.
+        'parname' - a string, giving the name of the parameter.  The
+                           fitting code of MPFIT does not use this tag in any
+                           way.  However, the default iterfunct will print the
+                           parameter name if available.
 
-	'step' - the step size to be used in calculating the numerical
-			derivatives.  If set to zero, then the step size is
-			computed automatically.  Ignored when AUTODERIVATIVE=0.
+        'step' - the step size to be used in calculating the numerical
+                        derivatives.  If set to zero, then the step size is
+                        computed automatically.  Ignored when AUTODERIVATIVE=0.
 
-	'mpside' - the sidedness of the finite difference when computing
-			  numerical derivatives.  This field can take four
-			  values:
+        'mpside' - the sidedness of the finite difference when computing
+                          numerical derivatives.  This field can take four
+                          values:
 
-				 0 - one-sided derivative computed automatically
-				 1 - one-sided derivative (f(x+h) - f(x)  )/h
-				-1 - one-sided derivative (f(x)   - f(x-h))/h
-				 2 - two-sided derivative (f(x+h) - f(x-h))/(2*h)
+                                 0 - one-sided derivative computed automatically
+                                 1 - one-sided derivative (f(x+h) - f(x)  )/h
+                                -1 - one-sided derivative (f(x)   - f(x-h))/h
+                                 2 - two-sided derivative (f(x+h) - f(x-h))/(2*h)
 
-			 Where H is the STEP parameter described above.  The
-			 'automatic' one-sided derivative method will chose a
-			 direction for the finite difference which does not
-			 violate any constraints.  The other methods do not
-			 perform this check.  The two-sided method is in
-			 principle more precise, but requires twice as many
-			 function evaluations.  Default: 0.
+                         Where H is the STEP parameter described above.  The
+                         'automatic' one-sided derivative method will chose a
+                         direction for the finite difference which does not
+                         violate any constraints.  The other methods do not
+                         perform this check.  The two-sided method is in
+                         principle more precise, but requires twice as many
+                         function evaluations.  Default: 0.
 
-	'mpmaxstep' - the maximum change to be made in the parameter
-				 value.  During the fitting process, the parameter
-				 will never be changed by more than this value in
-				 one iteration.
+        'mpmaxstep' - the maximum change to be made in the parameter
+                                 value.  During the fitting process, the parameter
+                                 will never be changed by more than this value in
+                                 one iteration.
 
-				 A value of 0 indicates no maximum.  Default: 0.
+                                 A value of 0 indicates no maximum.  Default: 0.
 
-	'tied' - a string expression which "ties" the parameter to other
-			free or fixed parameters.  Any expression involving
-			constants and the parameter array P are permitted.
-			Example: if parameter 2 is always to be twice parameter
-			1 then use the following: parinfo(2).tied = '2 * p(1)'.
-			Since they are totally constrained, tied parameters are
-			considered to be fixed; no errors are computed for them.
-			[ NOTE: the PARNAME can't be used in expressions. ]
+        'tied' - a string expression which "ties" the parameter to other
+                        free or fixed parameters.  Any expression involving
+                        constants and the parameter array P are permitted.
+                        Example: if parameter 2 is always to be twice parameter
+                        1 then use the following: parinfo(2).tied = '2 * p(1)'.
+                        Since they are totally constrained, tied parameters are
+                        considered to be fixed; no errors are computed for them.
+                        [ NOTE: the PARNAME can't be used in expressions. ]
 
-	'mpprint' - if set to 1, then the default iterfunct will print the
-			   parameter value.  If set to 0, the parameter value
-			   will not be printed.  This tag can be used to
-			   selectively print only a few parameter values out of
-			   many.  Default: 1 (all parameters printed)
+        'mpprint' - if set to 1, then the default iterfunct will print the
+                           parameter value.  If set to 0, the parameter value
+                           will not be printed.  This tag can be used to
+                           selectively print only a few parameter values out of
+                           many.  Default: 1 (all parameters printed)
 
 
  Future modifications to the PARINFO structure, if any, will involve
@@ -268,7 +268,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 
  PARINFO Example:
  parinfo = [{'value':0., 'fixed':0, 'limited':[0,0], 'limits':[0.,0.]}
- 												for i in range(5)]
+                                                                                                for i in range(5)]
  parinfo[0]['fixed'] = 1
  parinfo[4]['limited'][0] = 1
  parinfo[4]['limits'][0]  = 50.
@@ -281,14 +281,14 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  constrained to be above 50.
 
 
-								   EXAMPLE
+                                                                   EXAMPLE
 
    import mpfit
    import numpy.oldnumeric as Numeric
    x = arange(100, float)
    p0 = [5.7, 2.2, 500., 1.5, 2000.]
    y = ( p[0] + p[1]*[x] + p[2]*[x**2] + p[3]*sqrt(x) +
-		 p[4]*log(x))
+                 p[4]*log(x))
    fa = {'x':x, 'y':y, 'err':err}
    m = mpfit('myfunct', p0, functkw=fa)
    print('status = ', m.status)
@@ -300,16 +300,16 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    results can be obtained from the returned object m.
 
 
-							THEORY OF OPERATION
+                                                        THEORY OF OPERATION
 
    There are many specific strategies for function minimization.  One
    very popular technique is to use function gradient information to
    realize the local structure of the function.  Near a local minimum
    the function value can be taylor expanded about x0 as follows:
 
-	  f(x) = f(x0) + f'(x0) . (x-x0) + (1/2) (x-x0) . f''(x0) . (x-x0)
-			 -----   ---------------   -------------------------------  (1)
-	 Order	0th		  1st					  2nd
+          f(x) = f(x0) + f'(x0) . (x-x0) + (1/2) (x-x0) . f''(x0) . (x-x0)
+                         -----   ---------------   -------------------------------  (1)
+         Order	0th		  1st					  2nd
 
    Here f'(x) is the gradient vector of f at x, and f''(x) is the
    Hessian matrix of second derivatives of f at x.  The vector x is
@@ -317,7 +317,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    can find the minimum of f, f(xm) using Newton's method, and
    arrives at the following linear equation:
 
-	  f''(x0) . (xm-x0) = - f'(x0)							(2)
+          f''(x0) . (xm-x0) = - f'(x0)							(2)
 
    If an inverse can be found for f''(x0) then one can solve for
    (xm-x0), the step vector from the current position x0 to the new
@@ -329,7 +329,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    It adds an additional diagonal term to the equation which may aid the
    convergence properties:
 
-	  (f''(x0) + nu I) . (xm-x0) = -f'(x0)				  (2a)
+          (f''(x0) + nu I) . (xm-x0) = -f'(x0)				  (2a)
 
    where I is the identity matrix.  When nu is large, the overall
    matrix is diagonally dominant, and the iterations follow steepest
@@ -347,14 +347,14 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    which assist in solving eqn (2).  The function to be minimized is
    a sum of squares:
 
-	   f = Sum(hi^2)										 (3)
+           f = Sum(hi^2)										 (3)
 
    where hi is the ith residual out of m residuals as described
    above.  This can be substituted back into eqn (2) after computing
    the derivatives:
 
-	   f'  = 2 Sum(hi  hi')
-	   f'' = 2 Sum(hi' hj') + 2 Sum(hi hi'')				(4)
+           f'  = 2 Sum(hi  hi')
+           f'' = 2 Sum(hi' hj') + 2 Sum(hi hi'')				(4)
 
    If one assumes that the parameters are already close enough to a
    minimum, then one typically finds that the second term in f'' is
@@ -364,7 +364,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 
    In matrix notation, the combination of eqns (2) and (4) becomes:
 
-		hT' . h' . dx = - hT' . h						  (5)
+                hT' . h' . dx = - hT' . h						  (5)
 
    Where h is the residual vector (length m), hT is its transpose, h'
    is the Jacobian matrix (dimensions n x m), and dx is (xm-x0).  The
@@ -380,9 +380,9 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    Q = I, and R is upper right triangular.  Using h' = Q . R and the
    ortogonality of Q, eqn (5) becomes
 
-		(RT . QT) . (Q . R) . dx = - (RT . QT) . h
-					 RT . R . dx = - RT . QT . h		 (6)
-						  R . dx = - QT . h
+                (RT . QT) . (Q . R) . dx = - (RT . QT) . h
+                                         RT . R . dx = - RT . QT . h		 (6)
+                                                  R . dx = - QT . h
 
    where the last statement follows because R is upper triangular.
    Here, R, QT and h are known so this is a matter of solving for dx.
@@ -390,17 +390,17 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    pivoting, and MPFIT_QRSOLV provides the solution for dx.
 
 
-								 REFERENCES
+                                                                 REFERENCES
 
    MINPACK-1, Jorge More', available from netlib (www.netlib.org).
    "Optimization Software Guide," Jorge More' and Stephen Wright,
-	 SIAM, *Frontiers in Applied Mathematics*, Number 14.
+         SIAM, *Frontiers in Applied Mathematics*, Number 14.
    More', Jorge J., "The Levenberg-Marquardt Algorithm:
-	 Implementation and Theory," in *Numerical Analysis*, ed. Watson,
-	 G. A., Lecture Notes in Mathematics 630, Springer-Verlag, 1977.
+         Implementation and Theory," in *Numerical Analysis*, ed. Watson,
+         G. A., Lecture Notes in Mathematics 630, Springer-Verlag, 1977.
 
 
-						   MODIFICATION HISTORY
+                                                   MODIFICATION HISTORY
 
    Translated from MINPACK-1 in FORTRAN, Apr-Jul 1998, CM
  Copyright (C) 1997-2002, Craig Markwardt
