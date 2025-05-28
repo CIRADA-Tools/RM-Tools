@@ -228,7 +228,7 @@ def save_maps(map_dict, prefix_path, FDFheader):
 
     # per product, customize FITS header as needed and save file
     for product in map_dict.keys():
-        if map_dict[product].dtype == np.float_:
+        if map_dict[product].dtype == np.float64:
             data = map_dict[product].astype(np.float32)
         else:
             data = map_dict[product]

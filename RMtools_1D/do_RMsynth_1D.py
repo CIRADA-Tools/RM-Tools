@@ -643,13 +643,13 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
         print("> %s" % outFile)
 
     for k, v in outdict.items():
-        if isinstance(v, np.float_):
+        if isinstance(v, (np.float64, float)):
             outdict[k] = float(v)
-        elif isinstance(v, np.int_):
+        elif isinstance(v, (np.int64, int)):
             outdict[k] = int(v)
         elif isinstance(v, np.ndarray):
             outdict[k] = v.tolist()
-        elif isinstance(v, np.bool_):
+        elif isinstance(v, (np.bool_, bool)):
             outdict[k] = bool(v)
 
     json.dump(dict(outdict), open(outFile, "w"))
