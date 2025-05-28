@@ -510,13 +510,13 @@ def run_qufit(
     }
 
     for k, v in saveDict.items():
-        if isinstance(v, np.float_):
+        if isinstance(v, (np.float64, float)):
             saveDict[k] = float(v)
-        elif isinstance(v, np.int_):
+        elif isinstance(v, (np.int64, int)):
             saveDict[k] = int(v)
         elif isinstance(v, np.ndarray):
             saveDict[k] = v.tolist()
-        elif isinstance(v, np.bool_):
+        elif isinstance(v, (np.bool_, bool)):
             saveDict[k] = bool(v)
     json.dump(saveDict, open(outFile, "w"))
     outFile = f"{prefixOut}_m{modelNum}_{sampler}.dat"

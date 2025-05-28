@@ -324,13 +324,13 @@ def saveOutput(mDict_cl, aDict_cl, prefixOut="", verbose=False, log=print):
     if verbose:
         log("> %s" % outFile)
     for k, v in mDict_cl.items():
-        if isinstance(v, np.float_):
+        if isinstance(v, (np.float64, float)):
             mDict_cl[k] = float(v)
-        elif isinstance(v, np.int_):
+        elif isinstance(v, (np.int64, int)):
             mDict_cl[k] = int(v)
         elif isinstance(v, np.ndarray):
             mDict_cl[k] = v.tolist()
-        elif isinstance(v, np.bool_):
+        elif isinstance(v, (np.bool_, bool)):
             mDict_cl[k] = bool(v)
 
     json.dump(mDict_cl, open(outFile, "w"))
