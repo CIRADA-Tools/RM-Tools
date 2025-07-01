@@ -1,4 +1,8 @@
 
+1.4.9:
+-Fixed numpy deprecations in assemble chunks tool, QU-fitting, and 1D synth/clean (thanks tYingkang Zhang)
+-Fixed peakfitting tool from crashing when running on chunks
+
 1.4.8:
 -Added m12 model (mixed slab with turbulent foreground).
 -forced rmsynth1d outputs to the bit depth specified by the user (previously many outputs were 64bit regardless of user specification).
