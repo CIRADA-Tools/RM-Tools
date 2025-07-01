@@ -1391,7 +1391,7 @@ def measure_qu_complexity(
     pDict.update(p2D)
 
     m3D, p3D = calc_sigma_add(
-        xArr=lamSqArr_m2,
+        xArr=np.concatenate((lamSqArr_m2, lamSqArr_m2)),
         yArr=np.concatenate((qResidArr / dqArr, uResidArr / duArr)),
         dyArr=np.concatenate((dqArr / dqArr, duArr / duArr)),
         yMed=0.0,
@@ -1405,6 +1405,7 @@ def measure_qu_complexity(
     # Done as a test for the paper, not usually offered to user.
     # mDict.update( calc_normal_tests(qResidArr/dqArr, suffix="Q") )
     # mDict.update( calc_normal_tests(uResidArr/duArr, suffix="U") )
+    # mDict.update( calc_normal_tests(np.concatenate((qResidArr / dqArr, uResidArr / duArr)), suffix="C") )
 
     return mDict, pDict
 
