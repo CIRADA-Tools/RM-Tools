@@ -97,7 +97,7 @@ def main():
     with open(output_filename, "rb+") as fobj:
         fobj.seek(
             len(new_header.tostring())
-            + (np.product(shape) * np.abs(new_header["BITPIX"] // 8))
+            + (np.prod(shape) * np.abs(new_header["BITPIX"] // 8))
             - 1
         )
         fobj.write(b"\0")
