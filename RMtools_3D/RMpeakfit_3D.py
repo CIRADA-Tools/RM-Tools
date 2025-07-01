@@ -472,6 +472,12 @@ def main():
     else:
         rmsArr = None
 
+    if (
+        FDF.ndim == 2
+    ):  # When inputting chunks made from createchunks, it drops an axis and breaks things. Re-add to fix things.
+        FDF = np.expand_dims(FDF, axis=1)
+        fwhmRMSF = np.expand_dims(fwhmRMSF, axis=0)
+
     # Fit peaks
     map_dict = pixelwise_peak_fitting(
         FDF,
