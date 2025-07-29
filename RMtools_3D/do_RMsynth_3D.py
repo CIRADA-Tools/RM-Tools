@@ -933,6 +933,22 @@ def main():
     else:
         rmsArr = None
 
+    # Anna Ordog found that using a Stokes I model AND a noise vector at the
+    # same time results in problems -- the noise isn't normalized by the
+    # Stokes I model. Doing this properly would require some re-working to
+    # properly handle things (like weights) with full 3D dependence. I don't
+    # want to deal with this, so I'm going to defer it until a major overhaul
+    # of the 3D tools (if that ever happens).
+    if (args.noiseFile is not None) and (args.fitsI is not None):
+        print(
+            "WARNING! rmsynth3d does not currently support both a noise "
+            "vector and Stokes I model at the same time. "
+            "Please be aware that the combination will result in weighting "
+            "that doesn't quite match expectations."
+        )
+        print("Press enter to continue.")
+        input()
+
     header, dataQ = readFitsCube(args.fitsQ[0], verbose)
 
     # Run RM-synthesis on the cubes
