@@ -43,7 +43,7 @@ The following terminal commands are available to access the [additional tools](h
 
 
 ## Citing
-If you use this package in a publication, please cite the [ASCL entry](https://ui.adsabs.harvard.edu/abs/2020ascl.soft05003P/abstract) for the time being. A paper with a full description of the package is being prepared but is not available yet.
+If you use this package in a publication, please cite the [RM-Tools paper](https://doi.org/10.3847/1538-4365/ae3dea), and optionally the Zenodo DOI for the specific version (version DOIs can be found [here](https://doi.org/10.5281/zenodo.17851649)).
 
 More information on the Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) can be found at cirada.ca.
 
