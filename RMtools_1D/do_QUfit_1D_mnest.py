@@ -284,12 +284,12 @@ def run_qufit(
     # Parse the data array
     # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
+        freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = data
         print("\nFormat [freq_Hz, I, Q, U, dI, dQ, dU]")
     except Exception:
         # freq_Hz, Q, U, dQ, dU
         try:
-            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data
+            freqArr_Hz, QArr, UArr, dQArr, dUArr = data
             print("\nFormat [freq_Hz, Q, U,  dQ, dU]")
             noStokesI = True
         except Exception:
@@ -320,7 +320,7 @@ def run_qufit(
         verbose=True,
         fit_function=fit_function,
     )
-    (IModArr, qArr, uArr, dqArr, duArr, fit_result) = dataArr
+    IModArr, qArr, uArr, dqArr, duArr, fit_result = dataArr
 
     # Plot the data and the Stokes I model fit
     print("Plotting the input data and spectral index fit.")

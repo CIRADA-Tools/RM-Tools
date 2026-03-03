@@ -15,6 +15,7 @@ QU fitting, which uses random numbers internally that can't be controlled.
 Created on Fri Oct 25 10:00:24 2019
 @author: Cameron Van Eck
 """
+
 import json
 import os
 import shutil
