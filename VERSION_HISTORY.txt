@@ -1,3 +1,6 @@
+Current repository:
+-Fixed QU fitting using Stokes Q errors instead of U errors when evaluating log_likelihood.
+
 1.4.10:
 -added warning to rmsynth3d if users specify both Stokes I model and noise vector (not compatible at present)
 -for chunking tools, added optional memmap keyword to allow loading of arrays into memory (speeds up, if there is enough available memory)

@@ -621,7 +621,7 @@ class lnlike_call(bilby.Likelihood):
         quMod = model(self.parameters, self.lamSqArr_m2)
         dquArr = np.sqrt(np.power(self.dqArr, 2) + np.power(self.duArr, 2))
         chiSqQ = np.nansum(np.power((self.qArr - quMod.real) / self.dqArr, 2))
-        chiSqU = np.nansum(np.power((self.uArr - quMod.imag) / self.dqArr, 2))
+        chiSqU = np.nansum(np.power((self.uArr - quMod.imag) / self.duArr, 2))
         nData = len(dquArr)
         logLike = (
             -nData * np.log(2.0 * np.pi)
