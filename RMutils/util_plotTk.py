@@ -77,14 +77,14 @@
 import math as m
 import os
 import sys
-import tkinter.ttk
+#import tkinter.ttk
 import traceback
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.constants import c as speed_of_light
-from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+#from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
 from matplotlib.ticker import FuncFormatter, MaxNLocator
@@ -184,6 +184,7 @@ def format_ticks(ax, pad=10, w=1.0):
 
 
 # -----------------------------------------------------------------------------#
+'''
 class CustomNavbar(NavigationToolbar2Tk):
     """Custom navigation toolbar subclass"""
 
@@ -223,7 +224,7 @@ class CustomNavbar(NavigationToolbar2Tk):
         else:
             self.legBtn["text"] = "Hide Legend"
         self.canvas.draw()
-
+'''
 
 # -----------------------------------------------------------------------------#
 def plot_I_vs_nu_ax(
@@ -548,7 +549,14 @@ def plot_pqu_vs_lamsq_ax(
             idx = np.random.choice(np.arange(model_dict["posterior"].shape[0]))
             for j, name in enumerate(model_dict["parNames"]):
                 errDict[name] = model_dict["posterior"][name][idx]
-            QUerrmodel.append(model_dict["model"](errDict, lamSqHirArr_m2))
+            
+            model_out = model_dict["model"](errDict, lamSqHirArr_m2)
+            if isinstance(model_out, tuple):
+                qu_model = model_out[0]
+            else:
+                qu_model = model_out
+
+            QUerrmodel.append(qu_model)
         QUerrmodel = np.array(QUerrmodel)
         low_re, med_re, high_re = np.percentile(
             np.real(QUerrmodel), [16, 50, 84], axis=0
@@ -666,7 +674,14 @@ def plot_psi_vs_lamsq_ax(
             idx = np.random.choice(np.arange(model_dict["posterior"].shape[0]))
             for j, name in enumerate(model_dict["parNames"]):
                 errDict[name] = model_dict["posterior"][name][idx]
-            QUerrmodel = model_dict["model"](errDict, lamSqHirArr_m2)
+
+            model_out = model_dict["model"](errDict, lamSqHirArr_m2)
+            if isinstance(model_out, tuple):
+                qu_model = model_out[0]
+            else:
+                qu_model = model_out
+
+            QUerrmodel = qu_model 
             Qerrmodel = np.real(QUerrmodel)
             Uerrmodel = np.imag(QUerrmodel)
             psi_errmodel.append(np.degrees(np.arctan2(Uerrmodel, Qerrmodel) / 2.0))
@@ -758,7 +773,14 @@ def plot_q_vs_u_ax(
             idx = np.random.choice(np.arange(model_dict["posterior"].shape[0]))
             for j, name in enumerate(model_dict["parNames"]):
                 errDict[name] = model_dict["posterior"][name][idx]
-            QUerrmodel = model_dict["model"](errDict, lamSqHirArr_m2)
+
+            model_out = model_dict["model"](errDict, lamSqHirArr_m2)
+            if isinstance(model_out, tuple):
+                qu_model = model_out[0]
+            else:
+                qu_model = model_out
+
+            QUerrmodel = qu_model
             Qerrmodel = np.real(QUerrmodel)
             Uerrmodel = np.imag(QUerrmodel)
             ax.plot(Qerrmodel, Uerrmodel, color="k", lw=0.1, alpha=0.5, zorder=2)

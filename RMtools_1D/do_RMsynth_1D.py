@@ -146,7 +146,7 @@ def run_rmsynth(
     try:
         if verbose:
             log("> Trying [freq_Hz, I, Q, U, dI, dQ, dU]", end=" ")
-        freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = data
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
         if verbose:
             log("... success.")
     except Exception:
@@ -156,7 +156,7 @@ def run_rmsynth(
         try:
             if verbose:
                 log("> Trying [freq_Hz, q, u,  dq, du]", end=" ")
-            freqArr_Hz, QArr, UArr, dQArr, dUArr = data
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data
             if verbose:
                 log("... success.")
             noStokesI = True
@@ -557,7 +557,7 @@ def readFile(dataFile, nBits, verbose=True, debug=False):
     try:
         if verbose:
             print("> Trying [freq_Hz, I, Q, U, dI, dQ, dU]", end=" ")
-        freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = np.loadtxt(
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = np.loadtxt(
             dataFile, unpack=True, dtype=dtFloat
         )
         if verbose:
@@ -570,7 +570,7 @@ def readFile(dataFile, nBits, verbose=True, debug=False):
         try:
             if verbose:
                 print("> Trying [freq_Hz, q, u,  dq, du]", end=" ")
-            freqArr_Hz, QArr, UArr, dQArr, dUArr = np.loadtxt(
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = np.loadtxt(
                 dataFile, unpack=True, dtype=dtFloat
             )
             if verbose:

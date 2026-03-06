@@ -1026,7 +1026,7 @@ def run_adjoint_rmsynth(
     if data.shape[0] == 7:
         if verbose:
             log("> Seven columns found, trying [freq_Hz, I, Q, U, dI, dQ, dU]", end=" ")
-        freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = data
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
         widths_Hz = None
     elif data.shape[0] == 8:
         if verbose:
@@ -1034,18 +1034,18 @@ def run_adjoint_rmsynth(
                 "> Eight columns found, trying [freq_Hz, widths_Hz, I, Q, U, dI, dQ, dU]",
                 end=" ",
             )
-        freqArr_Hz, widths_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = data
+        (freqArr_Hz, widths_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
     elif data.shape[0] == 6:
         if verbose:
             log(
                 "> Six columns found, trying [freq_Hz, widths_Hz, Q, U, dQ, dU]",
                 end=" ",
             )
-        freqArr_Hz, width_Hz, QArr, UArr, dQArr, dUArr = data
+        (freqArr_Hz, width_Hz, QArr, UArr, dQArr, dUArr) = data
     elif data.shape[0] == 5:
         if verbose:
             log("> Five columns found, trying [freq_Hz, Q, U, dQ, dU]", end=" ")
-        freqArr_Hz, QArr, UArr, dQArr, dUArr = data
+        (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data
         widths_Hz = None
         noStokesI = True
     else:
