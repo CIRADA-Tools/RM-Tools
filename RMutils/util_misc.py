@@ -210,7 +210,7 @@ def config_read(filename, delim="=", doValueSplit=True):
         if not comment.match(line) and keyVal.match(line):
             # Weed out internal comments & split on 1st space
             line = comment.sub("", line)
-            keyword, value = line.split(delim, 1)
+            (keyword, value) = line.split(delim, 1)
 
             # If the line contains a value
             keyword = keyword.strip()  # kill external whitespace
@@ -392,8 +392,8 @@ def calc_parabola_vertex(x1, y1, x2, y2, x3, y3):
     midpoint = x2
     deltax = x2 - x3
     yscale = y2
-    x1, x2, x3 = [(x - x2) / deltax for x in (x1, x2, x3)]  # slide spectrum to zero
-    y1, y2, y3 = [y / yscale for y in (y1, y2, y3)]
+    (x1, x2, x3) = [(x - x2) / deltax for x in (x1, x2, x3)]  # slide spectrum to zero
+    (y1, y2, y3) = [y / yscale for y in (y1, y2, y3)]
 
     D = (x1 - x2) * (x1 - x3) * (x2 - x3)
     A = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D
@@ -589,7 +589,7 @@ def renormalize_StokesI_model(
             UserWarning,
         )
 
-    a, b, c, d, f, g = fit_result.params
+    (a, b, c, d, f, g) = fit_result.params
 
     # Modify fit parameters to new reference frequency.
     # I have derived all these conversion equations analytically for the
@@ -1377,3 +1377,49 @@ def norm_cdf(mean=0.0, std=1.0, N=50, xArr=None):
     y = norm.cdf(x, loc=mean, scale=std)
 
     return x, y
+
+#-----------------------------------------------------------------------------# 
+### From an old version of RM-tools
+def fit_spec_gauss_mod(xData, yData, dyData=None):
+    """Fit a 5th order polynomial to a spectrum. To avoid overflow errors the
+    X-axis data should not be large numbers (e.g.: x10^9 Hz; use GHz
+    instead)."""
+
+    if dyData is None:
+        dyData = np.ones_like(yData)
+    if np.all(dyData==0):
+        dyData = np.ones_like(yData)
+    
+    C0 = 0.0
+    C1 = 0.0
+    C2 = 0.0
+    
+    inParms=[ {'value': C2, 'parname': 'C2', 'fixed': False},
+              {'value': C1, 'parname': 'C1', 'fixed': False},
+              {'value': C0, 'parname': 'C0', 'fixed': False} ]
+    
+    # Function to evaluate the difference between the model and data.
+    # This is minimised in the least-squared sense by the fitter
+    def errFn(p, fjac=None):
+        status = 0
+        return status, (gauss_mod(p)(xData) - yData)/dyData
+
+    # Use MPFIT to perform the LM-minimisation
+    mp = mpfit(errFn, parinfo=inParms, quiet=True)
+    
+    return mp
+
+#-----------------------------------------------------------------------------# 
+### From an old version of RM-tools
+def gauss_mod(p):
+    """Returns a function to evaluate a polynomial. The subfunction can be
+    accessed via 'argument unpacking' like so: 'y = poly5(p)(*x)',
+    where x is a vector of X values and p is a vector of coefficients."""
+   
+    p = np.append(np.zeros((3-len(p))), p)
+   
+    def rfunc(x):
+        y = p[0]*(x/x.min())**(p[1]+p[2]*np.log(x/x.min()))
+        return y
+    
+    return rfunc

@@ -61,8 +61,8 @@ from astropy.constants import c as speed_of_light
 
 from RMtools_1D.do_RMsynth_1D import readFile
 from RMutils.util_misc import calculate_StokesI_model, create_frac_spectra, toscalar
-from RMutils.util_plotTk import CustomNavbar, plot_Ipqu_spectra_fig
-
+#from RMutils.util_plotTk import CustomNavbar, plot_Ipqu_spectra_fig
+from RMutils.util_plotTk  import plot_Ipqu_spectra_fig
 
 # -----------------------------------------------------------------------------#
 def main():
@@ -284,12 +284,12 @@ def run_qufit(
     # Parse the data array
     # freq_Hz, I, Q, U, dI, dQ, dU
     try:
-        freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr = data
+        (freqArr_Hz, IArr, QArr, UArr, dIArr, dQArr, dUArr) = data
         print("\nFormat [freq_Hz, I, Q, U, dI, dQ, dU]")
     except Exception:
         # freq_Hz, Q, U, dQ, dU
         try:
-            freqArr_Hz, QArr, UArr, dQArr, dUArr = data
+            (freqArr_Hz, QArr, UArr, dQArr, dUArr) = data
             print("\nFormat [freq_Hz, Q, U,  dQ, dU]")
             noStokesI = True
         except Exception:
@@ -320,7 +320,7 @@ def run_qufit(
         verbose=True,
         fit_function=fit_function,
     )
-    IModArr, qArr, uArr, dqArr, duArr, fit_result = dataArr
+    (IModArr, qArr, uArr, dqArr, duArr, fit_result) = dataArr
 
     # Plot the data and the Stokes I model fit
     print("Plotting the input data and spectral index fit.")
@@ -621,7 +621,7 @@ class lnlike_call(bilby.Likelihood):
         quMod = model(self.parameters, self.lamSqArr_m2)
         dquArr = np.sqrt(np.power(self.dqArr, 2) + np.power(self.duArr, 2))
         chiSqQ = np.nansum(np.power((self.qArr - quMod.real) / self.dqArr, 2))
-        chiSqU = np.nansum(np.power((self.uArr - quMod.imag) / self.duArr, 2))
+        chiSqU = np.nansum(np.power((self.uArr - quMod.imag) / self.dqArr, 2))
         nData = len(dquArr)
         logLike = (
             -nData * np.log(2.0 * np.pi)
