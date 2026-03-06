@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-# =============================================================================#
+#=============================================================================#
 #                                                                             #
 # NAME:     do_RMsynth_1D.py                                                  #
 #                                                                             #
-# PURPOSE: API for runnning RM-synthesis on an ASCII Stokes I, Q & U spectrum.#
+# PURPOSE:  Run RM-synthesis on an ASCII Stokes I, Q & U spectrum.            #
 #                                                                             #
-# MODIFIED: 16-Nov-2018 by J. West                                            #
-# MODIFIED: 23-October-2019 by A. Thomson                                     #
+# MODIFIED: 15-Nov-2018 by J. West                                            #
 #                                                                             #
-# =============================================================================#
+#=============================================================================#
 #                                                                             #
 # The MIT License (MIT)                                                       #
 #                                                                             #
@@ -32,44 +31,20 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER         #
 # DEALINGS IN THE SOFTWARE.                                                   #
 #                                                                             #
-# =============================================================================#
-
-import json
-import math as m
-import os
+#=============================================================================#
+ 
 import sys
-import time
-import traceback
-
-import matplotlib.pyplot as plt
-import numpy as np
-from astropy.constants import c as speed_of_light
-from scipy.interpolate import interp1d
-
-from RMutils.util_misc import (
-    calculate_StokesI_model,
-    create_frac_spectra,
-    nanmedian,
-    renormalize_StokesI_model,
-    toscalar,
-)
-from RMutils.util_plotTk import (
-    plot_complexity_fig,
-    plot_Ipqu_spectra_fig,
-    plot_rmsf_fdf_fig,
-)
-from RMutils.util_RM import (
-    do_rmsynth_planes,
-    get_rmsf_planes,
-    measure_FDF_parms,
-    measure_qu_complexity,
-)
-
+import os
+#import time
+import argparse
+#import pdb
 if sys.version_info.major == 2:
-    print("RM-tools will no longer run with Python 2! Please use Python 3.")
+    print('RM-tools will no longer run with Python 2! Please use Python 3.')
     exit()
 
+import RMtools_1D.cl_RMsynth_1d as clRM
 
+<<<<<<< HEAD
 # -----------------------------------------------------------------------------#
 def run_rmsynth(
     data,
@@ -526,12 +501,13 @@ def run_rmsynth(
     #        input()
 
     return mDict, aDict
+=======
+C = 2.997924538e8 # Speed of light [m/s]
+>>>>>>> 9c6f3b846733b6d1a73d1074ee2421af6445a8a5
 
 
-def readFile(dataFile, nBits, verbose=True, debug=False):
-    """
-    Read the I, Q & U data from the ASCII file.
 
+<<<<<<< HEAD
     Inputs:
         datafile (str): relative or absolute path to file.
         nBits (int): number of bits to store the data as.
@@ -656,9 +632,10 @@ def saveOutput(outdict, arrdict, prefixOut, verbose):
 
 
 # -----------------------------------------------------------------------------#
+=======
+#-----------------------------------------------------------------------------#
+>>>>>>> 9c6f3b846733b6d1a73d1074ee2421af6445a8a5
 def main():
-    import argparse
-
     """
     Start the function to perform RM-synthesis if called from the command line.
     """
@@ -666,19 +643,17 @@ def main():
     # Help string to be shown using the -h option
     descStr = """
     Run RM-synthesis on Stokes I, Q and U spectra (1D) stored in an ASCII
-    file. The Stokes I spectrum is first fit with a polynomial or power law
-    and the resulting model used to create fractional q = Q/I and u = U/I spectra.
+    file. The Stokes I spectrum is first fit with a polynomial and the 
+    resulting model used to create fractional q = Q/I and u = U/I spectra.
 
     The ASCII file should the following columns, in a space separated format:
     [freq_Hz, I, Q, U, I_err, Q_err, U_err]
     OR
     [freq_Hz, Q, U, Q_err, U_err]
 
-
-    To get outputs, one or more of the following flags must be set: -S, -p, -v.
     """
 
-    epilog_text = """
+    epilog_text="""
     Outputs with -S flag:
     _FDFdirty.dat: Dirty FDF/RM Spectrum [Phi, Q, U]
     _RMSF.dat: Computed RMSF [Phi, Q, U]
@@ -687,111 +662,40 @@ def main():
     _RMsynth.json: dictionary of derived parameters for RM spectrum
     _weight.dat: Calculated channel weights [freq_Hz, weight]
     """
-
+    
     # Parse the command line options
-    parser = argparse.ArgumentParser(
-        description=descStr,
-        epilog=epilog_text,
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    parser.add_argument(
-        "dataFile",
-        metavar="dataFile.dat",
-        nargs=1,
-        help="ASCII file containing Stokes spectra & errors.",
-    )
-    parser.add_argument(
-        "-t",
-        dest="fitRMSF",
-        action="store_true",
-        help="fit a Gaussian to the RMSF [False]",
-    )
-    parser.add_argument(
-        "-l",
-        dest="phiMax_radm2",
-        type=float,
-        default=None,
-        help="absolute max Faraday depth sampled [Auto].",
-    )
-    parser.add_argument(
-        "-d",
-        dest="dPhi_radm2",
-        type=float,
-        default=None,
-        help="width of Faraday depth channel [Auto].\n(overrides -s NSAMPLES flag)",
-    )
-    parser.add_argument(
-        "-s",
-        dest="nSamples",
-        type=float,
-        default=10,
-        help="number of samples across the RMSF lobe [10].",
-    )
-    parser.add_argument(
-        "-w",
-        dest="weightType",
-        default="variance",
-        help="weighting [inverse 'variance'] or 'uniform' (all 1s).",
-    )
-    parser.add_argument(
-        "-f",
-        dest="fit_function",
-        type=str,
-        default="log",
-        help="Stokes I fitting function: 'linear' or ['log'] polynomials.",
-    )
-    parser.add_argument(
-        "-o",
-        dest="polyOrd",
-        type=int,
-        default=2,
-        help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.",
-    )
-    parser.add_argument(
-        "-i",
-        dest="noStokesI",
-        action="store_true",
-        help="ignore the Stokes I spectrum [False].",
-    )
-    parser.add_argument(
-        "-b",
-        dest="bit64",
-        action="store_true",
-        help="use 64-bit floating point precision [False (uses 32-bit)]",
-    )
-    parser.add_argument(
-        "-p", dest="showPlots", action="store_true", help="show the plots [False]."
-    )
-    parser.add_argument(
-        "-v", dest="verbose", action="store_true", help="verbose output [False]."
-    )
-    parser.add_argument(
-        "-S",
-        dest="saveOutput",
-        action="store_true",
-        help="save the arrays and plots [False].",
-    )
-    parser.add_argument(
-        "-D",
-        dest="debug",
-        action="store_true",
-        help="turn on debugging messages & plots [False].",
-    )
-    parser.add_argument(
-        "-U",
-        dest="units",
-        type=str,
-        default="Jy/beam",
-        help="Intensity units of the data. [Jy/beam]",
-    )
-    parser.add_argument(
-        "-r",
-        "--super-resolution",
-        action="store_true",
-        help="Optimise the resolution of the RMSF (as per Rudnick & Cotton). ",
-    )
+    parser = argparse.ArgumentParser(description=descStr,epilog=epilog_text,
+                                 formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("dataFile", metavar="dataFile.dat", nargs=1,
+                        help="ASCII file containing Stokes spectra & errors.")
+    parser.add_argument("-t", dest="fitRMSF", action="store_true",
+                        help="fit a Gaussian to the RMSF [False]")
+    parser.add_argument("-l", dest="phiMax_radm2", type=float, default=None,
+                        help="absolute max Faraday depth sampled [Auto].")
+    parser.add_argument("-d", dest="dPhi_radm2", type=float, default=None,
+                        help="width of Faraday depth channel [Auto].\n(overrides -s NSAMPLES flag)")
+    parser.add_argument("-s", dest="nSamples", type=float, default=10,
+                        help="number of samples across the RMSF lobe [10].")
+    parser.add_argument("-w", dest="weightType", default="variance",
+                        help="weighting [inverse variance] or 'uniform' (all 1s).")
+    parser.add_argument("-o", dest="polyOrd", type=int, default=2,
+                        help="polynomial order to fit to I spectrum [2].")
+    parser.add_argument("-i", dest="noStokesI", action="store_true",
+                        help="ignore the Stokes I spectrum [False].")
+    parser.add_argument("-b", dest="bit64", action="store_true",
+                        help="use 64-bit floating point precision [False (uses 32-bit)]")
+    parser.add_argument("-p", dest="showPlots", action="store_true",
+                        help="show the plots [False].")
+    parser.add_argument("-v", dest="verbose", action="store_true",
+                        help="verbose output [False].")
+    parser.add_argument("-S", dest="saveOutput", action="store_true",
+                        help="save the arrays [False].")
+    parser.add_argument("-D", dest="debug", action="store_true",
+                        help="turn on debugging messages & plots [False].")
+    parser.add_argument("-U", dest="units", type=str, default="Jy/beam",
+                        help="Intensity units of the data. [Jy/beam]")    
     args = parser.parse_args()
-
+    
     # Sanity checks
     if not os.path.exists(args.dataFile[0]):
         print("File does not exist: '%s'." % args.dataFile[0])
@@ -802,34 +706,28 @@ def main():
     nBits = 32
     if args.bit64:
         nBits = 64
-    verbose = args.verbose
-    data = readFile(args.dataFile[0], nBits, verbose=verbose, debug=args.debug)
-
+    verbose=args.verbose
+    data = clRM.readFile(args.dataFile[0],nBits, verbose)
+    
     # Run RM-synthesis on the spectra
-    mDict, aDict = run_rmsynth(
-        data=data,
-        polyOrd=args.polyOrd,
-        phiMax_radm2=args.phiMax_radm2,
-        dPhi_radm2=args.dPhi_radm2,
-        nSamples=args.nSamples,
-        weightType=args.weightType,
-        fitRMSF=args.fitRMSF,
-        noStokesI=args.noStokesI,
-        nBits=nBits,
-        showPlots=args.showPlots,
-        debug=args.debug,
-        verbose=verbose,
-        units=args.units,
-        prefixOut=prefixOut,
-        saveFigures=args.saveOutput,
-        fit_function=args.fit_function,
-        super_resolution=args.super_resolution,
-    )
-
+    dict, aDict = clRM.run_rmsynth(data           = data,
+                polyOrd        = args.polyOrd,
+                phiMax_radm2   = args.phiMax_radm2,
+                dPhi_radm2     = args.dPhi_radm2,
+                nSamples       = args.nSamples,
+                weightType     = args.weightType,
+                fitRMSF        = args.fitRMSF,
+                noStokesI      = args.noStokesI,
+                nBits          = nBits,
+                showPlots      = args.showPlots,
+                debug          = args.debug,
+                verbose        = verbose,
+                units          = args.units)
+    #pdb.set_trace()
     if args.saveOutput:
-        saveOutput(mDict, aDict, prefixOut, verbose)
+        clRM.saveOutput(dict, aDict, prefixOut, verbose)
 
 
-# -----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 if __name__ == "__main__":
     main()
