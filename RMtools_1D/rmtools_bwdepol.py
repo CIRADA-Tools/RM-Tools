@@ -47,6 +47,7 @@ from matplotlib.ticker import MaxNLocator
 from RMtools_1D.do_RMsynth_1D import saveOutput
 from RMutils.util_misc import (
     MAD,
+    calculate_StokesI_model,
     create_frac_spectra,
     nanmedian,
     poly5,
@@ -307,7 +308,7 @@ def bwdepol_simulation(peak_rm, freqArr_Hz, widths_Hz):
          [freq_Hz, q, u,  dq, du]
 
     """
-    if widths_Hz == None:
+    if widths_Hz is None:
         widths_Hz = estimate_channel_bandwidth(freqArr_Hz)
 
     p_tilda = analytical_chan_pol(freqArr_Hz, widths_Hz, peak_rm)
@@ -935,7 +936,7 @@ def do_adjoint_rmsynth_planes(
         progress(40, 0)
 
     # calculate channel widths if necessary
-    if widths_Hz == None:
+    if widths_Hz is None:
         widths_Hz = estimate_channel_bandwidth(freqArr_Hz)
     for i in range(nPhi):
         if verbose:
@@ -973,6 +974,7 @@ def run_adjoint_rmsynth(
     verbose=False,
     log=print,
     units="Jy/beam",
+    fit_function="log",
 ):
     """Run bwdepol RM synthesis on 1D data.
 
@@ -1069,7 +1071,7 @@ def run_adjoint_rmsynth(
 
     # Fit the Stokes I spectrum and create the fractional spectra
     IModArr, qArr, uArr, dqArr, duArr, fit_result = create_frac_spectra(
-        freqArr=freqArr_GHz,
+        freqArr=freqArr_Hz,
         IArr=IArr,
         QArr=QArr,
         UArr=UArr,
@@ -1079,6 +1081,7 @@ def run_adjoint_rmsynth(
         polyOrd=polyOrd,
         verbose=True,
         debug=debug,
+        fit_function=fit_function,
     )
 
     # Plot the data and the Stokes I model fit
@@ -1086,16 +1089,16 @@ def run_adjoint_rmsynth(
         if verbose:
             log("Plotting the input data and spectral index fit.")
         freqHirArr_Hz = np.linspace(freqArr_Hz[0], freqArr_Hz[-1], 10000)
-        IModHirArr = poly5(fit_result.params)(freqHirArr_Hz / 1e9)
+        IModHirArr = calculate_StokesI_model(fit_result, freqHirArr_Hz)
         specFig = plt.figure(figsize=(12.0, 8))
         plot_Ipqu_spectra_fig(
             freqArr_Hz=freqArr_Hz,
             IArr=IArr,
             qArr=qArr,
             uArr=uArr,
-            dIArr=dIArr,
-            dqArr=dqArr,
-            duArr=duArr,
+            dIArr=np.abs(dIArr),
+            dqArr=np.abs(dqArr),
+            duArr=np.abs(duArr),
             freqHirArr_Hz=freqHirArr_Hz,
             IModArr=IModHirArr,
             fig=specFig,
@@ -1260,7 +1263,7 @@ def run_adjoint_rmsynth(
     mDict["min_freq"] = float(np.min(freqArr_Hz[good_channels]))
     mDict["max_freq"] = float(np.max(freqArr_Hz[good_channels]))
     mDict["N_channels"] = good_channels.size
-    if widths_Hz != None:
+    if widths_Hz is not None:
         mDict["median_channel_width"] = float(np.median(widths_Hz))
     else:
         mDict["median_channel_width"] = float(np.median(np.diff(freqArr_Hz)))
@@ -1332,7 +1335,7 @@ def run_adjoint_rmsynth(
             % (mDict["ampPeakPIfit"], mDict["dAmpPeakPIfit"], units)
         )
         log("QU Noise = %.4g %s" % (mDict["dQU"], units))
-        log("FDF Noise (theory)   = %.4g %s" % (mDict["dFDFth"], units))
+        # log("FDF Noise (theory)   = %.4g %s" % (mDict["dFDFth"], units))
         log("FDF Noise (Corrected MAD) = %.4g %s" % (mDict["dFDFcorMAD"], units))
         log("FDF SNR = %.4g " % (mDict["snrPIfit"]))
         log(
@@ -1448,11 +1451,18 @@ def main():
         help="weighting [inverse variance] or 'uniform' (all 1s).",
     )
     parser.add_argument(
+        "-f",
+        dest="fit_function",
+        type=str,
+        default="log",
+        help="Stokes I fitting function: 'linear' or ['log'] polynomials.",
+    )
+    parser.add_argument(
         "-o",
         dest="polyOrd",
         type=int,
         default=2,
-        help="polynomial order to fit to I spectrum [2].",
+        help="polynomial order to fit to I spectrum: 0-5 supported, 2 is default.\nSet to negative number to enable dynamic order selection.",
     )
     parser.add_argument(
         "-i",
@@ -1511,6 +1521,7 @@ def main():
         debug=args.debug,
         verbose=args.verbose,
         units=args.units,
+        fit_function=args.fit_function,
     )
 
     if args.saveOutput:

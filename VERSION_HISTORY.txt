@@ -1,5 +1,10 @@
 Current repository:
+
+
+1.4.111:
 -Fixed QU fitting using Stokes Q errors instead of U errors when evaluating log_likelihood.
+-Updated bwdepol tool to same Stokes I modelling as rmsynth1d, fixing errors in the Stokes I modelling for that tool
+-Fixed broken logic (form newer numpy versions) in bwdepol tool.
 
 1.4.10:
 -added warning to rmsynth3d if users specify both Stokes I model and noise vector (not compatible at present)
