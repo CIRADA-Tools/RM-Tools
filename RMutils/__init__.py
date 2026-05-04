@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """Dependencies for RM utilities"""
 
-import pkg_resources
+from importlib.metadata import version
 
 __all__ = [
     "mpfit",
@@ -14,4 +14,5 @@ __all__ = [
     "util_RM",
 ]
 
-__version__ = pkg_resources.get_distribution("RM-Tools").version
+
+__version__ = version("RM-Tools")
