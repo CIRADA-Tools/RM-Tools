@@ -27,6 +27,14 @@ jobs:
         activate-environment: test
         python-version: ${{ matrix.python-version }}
         auto-activate-base: false
+
+
+    - name: Fix pip for Python 3.9
+      if: matrix.python-version == '3.9'
+      shell: bash -l {0}
+      run: |
+        conda install -y pip=22.2
+
     - name: Install dependencies
       shell: bash -l {0}
       run: |
