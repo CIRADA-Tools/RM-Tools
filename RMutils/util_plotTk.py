@@ -1073,7 +1073,7 @@ def plot_hist4_ax(
     # TODO: Remove extra columns in the recarrays
 
     # Determine the max and min of the ensemble population
-    popEnsemble = np.concatenate(popLst).astype(np.float)
+    popEnsemble = np.concatenate(popLst).astype(np.float64)
     xMinData = float(np.nanmin(popEnsemble))
     xMaxData = float(np.nanmax(popEnsemble))
 
@@ -1096,8 +1096,8 @@ def plot_hist4_ax(
     # Bin the data in each population
     nLst = []
     for p in popLst:
-        n, b = np.histogram(p.astype(np.float), bins=b)
-        n = np.array(n, dtype=np.float)
+        n, b = np.histogram(p.astype(np.float64), bins=b)
+        n = np.array(n, dtype=np.float64)
         nLst.append(n)
 
     # Print the binned values to the screen
@@ -1249,16 +1249,16 @@ def plot_scatter4_ax(
             yLst.append(popLst[i][colNames[2]])
 
     # Determine the max and min of the ensemble population
-    xEnsemble = np.concatenate(xLst).astype(np.float)
+    xEnsemble = np.concatenate(xLst).astype(np.float64)
     signX = np.sign(xEnsemble)[0]
     xMinData = float(np.nanmin(xEnsemble))
     xMaxData = float(np.nanmax(xEnsemble))
-    yEnsemble = np.concatenate(yLst).astype(np.float)
+    yEnsemble = np.concatenate(yLst).astype(np.float64)
     signY = np.sign(yEnsemble)[0]
     yMinData = float(np.nanmin(yEnsemble))
     yMaxData = float(np.nanmax(yEnsemble))
     if not zLst == []:
-        zEnsemble = np.concatenate(zLst).astype(np.float)
+        zEnsemble = np.concatenate(zLst).astype(np.float64)
         signZ = np.sign(zEnsemble)[0]
         zMinData = float(np.nanmin(zEnsemble))
         zMaxData = float(np.nanmax(zEnsemble))

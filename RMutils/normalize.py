@@ -74,10 +74,10 @@ class APLpyNormalize(Normalize):
 
         if cbook.iterable(value):
             vtype = "array"
-            val = ma.asarray(value).astype(np.float)
+            val = ma.asarray(value).astype(np.float64)
         else:
             vtype = "scalar"
-            val = ma.array([value]).astype(np.float)
+            val = ma.array([value]).astype(np.float64)
 
         self.autoscale_None(val)
         vmin, vmax = self.vmin, self.vmax
