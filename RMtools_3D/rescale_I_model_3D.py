@@ -45,14 +45,32 @@
 #                      (make uniform across all pixels)
 
 import argparse
+import logging
 import multiprocessing as mp
 import os
+import warnings
 from functools import partial
 
 import astropy.io.fits as pf
 import numpy as np
 
 from RMutils.util_misc import FitResult, renormalize_StokesI_model
+
+logger = logging.getLogger(__name__)
+
+
+def _summarize_coeffs(coeffs):
+    """Return a one-line summary string of a coefficient array for logging."""
+    if not hasattr(coeffs, "shape"):
+        return f"type={type(coeffs).__name__} (no shape)"
+    total = int(np.prod(coeffs.shape))
+    nans = int(np.isnan(coeffs).sum())
+    zeros = int((coeffs == 0.0).sum())
+    finite_nonzero = int(np.count_nonzero(np.isfinite(coeffs) & (coeffs != 0.0)))
+    return (
+        f"shape={coeffs.shape} dtype={coeffs.dtype} total={total} "
+        f"nans={nans} zeros={zeros} finite_nonzero={finite_nonzero}"
+    )
 
 
 def command_line():
@@ -267,6 +285,13 @@ def rescale_I_model_3D(
         new_errors (3D array): maps of new parameter uncertainties (highest to lowest)
     """
 
+    logger.info(
+        "rescale_I_model_3D: begin. num_cores=%d fit_function=%s input coeffs %s",
+        num_cores,
+        fit_function,
+        _summarize_coeffs(coeffs),
+    )
+
     # Initialize output arrays, keep dtype consistent
     new_coeffs = np.zeros_like(coeffs, dtype=coeffs.dtype)
     new_errors = np.zeros_like(coeffs, dtype=coeffs.dtype)
@@ -294,6 +319,11 @@ def rescale_I_model_3D(
     for i, (p, perror) in enumerate(results):
         new_coeffs[:, i // rs, i % rs] = p
         new_errors[:, i // rs, i % rs] = perror
+
+    logger.info(
+        "rescale_I_model_3D: end. output new_coeffs %s",
+        _summarize_coeffs(new_coeffs),
+    )
 
     return new_freq_map, new_coeffs, new_errors
 
@@ -326,19 +356,54 @@ def write_new_parameters(
         np.sum(np.any((new_coeffs != 0.0) & (~np.isnan(new_coeffs)), axis=(1, 2))) - 1
     )
 
+    logger.info(
+        "write_new_parameters: input new_coeffs %s -> computed max_order=%d, "
+        "will write %d newcoeff*.fits + %d newcoeff*err.fits files with basename %r",
+        _summarize_coeffs(new_coeffs),
+        int(max_order),
+        max(max_order + 1, 0),
+        max(max_order + 1, 0),
+        out_basename,
+    )
+
+    if max_order < 0:
+        # Every plane of new_coeffs is zero or NaN. The write loop below would
+        # be range(0) — nothing written, no exception raised. Historically this
+        # was silent; downstream callers that expect newcoeff*.fits to exist
+        # (e.g. POSSUM_Polarimetry_Pipeline's fracpol3d_Irescale) can then
+        # destroy the input coeff*.fits and hit a FileNotFoundError much later,
+        # far from the actual root cause. Make the condition loudly visible.
+        msg = (
+            "RMtools_3D.rescale_I_model_3D.write_new_parameters: no output "
+            "written because computed max_order=-1 (every plane of new_coeffs "
+            "is 0.0 or NaN). This usually means rescale_I_model_3D received "
+            "unusable inputs or the per-pixel rescale failed everywhere. "
+            f"out_basename={out_basename!r}"
+        )
+        logger.warning(msg)
+        warnings.warn(msg, UserWarning, stacklevel=2)
+        return
+
+    written = []
     for i in range(max_order + 1):
+        coeff_path = out_basename + f"newcoeff{i}.fits"
+        err_path = out_basename + f"newcoeff{i}err.fits"
         pf.writeto(
-            out_basename + f"newcoeff{i}.fits",
+            coeff_path,
             new_coeffs[5 - i],
             header=out_header,
             overwrite=overwrite,
         )
         pf.writeto(
-            out_basename + f"newcoeff{i}err.fits",
+            err_path,
             new_errors[5 - i],
             header=out_header,
             overwrite=overwrite,
         )
+        written.extend((coeff_path, err_path))
+        logger.info("write_new_parameters: wrote %s and %s", coeff_path, err_path)
+
+    logger.info("write_new_parameters: end. wrote %d files.", len(written))
 
 
 # -----------------------------------------------------------------------------#
