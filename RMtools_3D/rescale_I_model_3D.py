@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 def _summarize_coeffs(coeffs):
     """Return a one-line summary string of a coefficient array for logging."""
-    if not hasattr(coeffs, 'shape'):
+    if not hasattr(coeffs, "shape"):
         return f"type={type(coeffs).__name__} (no shape)"
     total = int(np.prod(coeffs.shape))
     nans = int(np.isnan(coeffs).sum())
@@ -287,7 +287,9 @@ def rescale_I_model_3D(
 
     logger.info(
         "rescale_I_model_3D: begin. num_cores=%d fit_function=%s input coeffs %s",
-        num_cores, fit_function, _summarize_coeffs(coeffs),
+        num_cores,
+        fit_function,
+        _summarize_coeffs(coeffs),
     )
 
     # Initialize output arrays, keep dtype consistent
@@ -357,8 +359,11 @@ def write_new_parameters(
     logger.info(
         "write_new_parameters: input new_coeffs %s -> computed max_order=%d, "
         "will write %d newcoeff*.fits + %d newcoeff*err.fits files with basename %r",
-        _summarize_coeffs(new_coeffs), int(max_order),
-        max(max_order + 1, 0), max(max_order + 1, 0), out_basename,
+        _summarize_coeffs(new_coeffs),
+        int(max_order),
+        max(max_order + 1, 0),
+        max(max_order + 1, 0),
+        out_basename,
     )
 
     if max_order < 0:
