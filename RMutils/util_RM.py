@@ -792,7 +792,7 @@ def fits_make_lin_axis(head, axis=0, dtype="f4"):
     stop = (
         head["CRVAL" + i] + (head["NAXIS" + i] - head["CRPIX" + i]) * head["CDELT" + i]
     )
-    nChan = int(abs(start - stop) / head["CDELT" + i] + 1)
+    nChan = int(round(abs(start - stop) / head["CDELT" + i] + 1))
 
     return np.linspace(start, stop, nChan).astype(dtype)
 

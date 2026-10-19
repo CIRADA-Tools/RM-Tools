@@ -1,7 +1,8 @@
 Current repository:
+-Fixed error where phiArr would end up one element too short because of rounding error (#89). Credit to Celia Merino for finding the problem.
 
 
-1.4.111:
+1.4.11:
 -Fixed QU fitting using Stokes Q errors instead of U errors when evaluating log_likelihood.
 -Updated bwdepol tool to same Stokes I modelling as rmsynth1d, fixing errors in the Stokes I modelling for that tool
 -Fixed broken logic (form newer numpy versions) in bwdepol tool.
