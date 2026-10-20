@@ -25,7 +25,7 @@ import numpy as np
 from astropy.constants import c as speed_of_light
 from matplotlib import pyplot as plt
 
-from RMutils.util_RM import get_rmsf_planes
+from RMutils.util_RM import get_rmsf_planes, make_phi_axes
 
 
 def main():
@@ -169,13 +169,13 @@ def determine_RMSF_parameters(
     if dphi == None:
         dphi = 0.1 * 2 * np.sqrt(3.0) / (l2_max - l2_min)  # ~10*FWHM
 
-    phi_array = np.arange(
-        -1 * phi_max / 2, phi_max / 2 + 1e-6, dphi
-    )  # division by two accounts for how RMSF is always twice as wide as FDF.
+    # The RMSF axis is always twice as wide as the FDF axis, so build the FDF
+    # axis out to phi_max/2 and use the double-size RMSF axis from it.
+    _, phi2_array = make_phi_axes(phi_max / 2, dphi)
 
     rmsf_results = get_rmsf_planes(
         lambda2_array,
-        phi_array,
+        phi2_array,
         weightArr=weights_array,
         fitRMSF=True,
         fitRMSFreal=super_resolution,

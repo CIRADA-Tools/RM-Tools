@@ -10,7 +10,12 @@ import numpy as np
 from astropy.constants import c as speed_of_light
 from tqdm import trange
 
-from RMutils.util_RM import do_rmsynth_planes, extrap, fit_rmsf, get_rmsf_planes
+from RMutils.util_RM import (
+    do_rmsynth_planes,
+    fit_rmsf,
+    get_rmsf_planes,
+    make_phi_axes,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -35,6 +40,8 @@ class FakeData(NamedTuple):
     """Weighted mean of lsq"""
     phis: np.ndarray
     """Faraday depth array (rad/m^2)"""
+    phi2s: np.ndarray
+    """Double-size Faraday depth array for the RMSF (rad/m^2)"""
 
 
 def do_rmsynth_planes_old(
@@ -161,11 +168,10 @@ def do_rmsynth_planes_old(
 # -----------------------------------------------------------------------------#
 def get_rmsf_planes_old(
     lambdaSqArr_m2,
-    phiArr_radm2,
+    phi2Arr_radm2,
     weightArr=None,
     mskArr=None,
     lam0Sq_m2=None,
-    double=True,
     fitRMSF=False,
     fitRMSFreal=False,
     nBits=32,
@@ -183,11 +189,10 @@ def get_rmsf_planes_old(
     lobe but can also use MPFIT to fit a Gaussian.
 
     lambdaSqArr_m2  ... vector of wavelength^2 values (assending freq order)
-    phiArr_radm2    ... vector of trial Faraday depth values
+    phi2Arr_radm2   ... vector of RMSF Faraday depth values
     weightArr       ... vector of weights, default [None] is no weighting
     maskArr         ... cube of mask values used to shape return cube [None]
     lam0Sq_m2       ... force a reference lambda^2 value (def=calculate) [None]
-    double          ... pad the Faraday depth to double-size [True]
     fitRMSF         ... fit the main lobe of the RMSF with a Gaussian [False]
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
@@ -200,14 +205,8 @@ def get_rmsf_planes_old(
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
 
-    # For cleaning the RMSF should extend by 1/2 on each side in phi-space
-    if double:
-        nPhi = phiArr_radm2.shape[0]
-        nExt = np.ceil(nPhi / 2.0)
-        resampIndxArr = np.arange(2.0 * nExt + nPhi) - nExt
-        phi2Arr = extrap(resampIndxArr, np.arange(nPhi, dtype="int"), phiArr_radm2)
-    else:
-        phi2Arr = phiArr_radm2
+    # The (double-size) RMSF axis is supplied by the caller
+    phi2Arr = phi2Arr_radm2
 
     # Set the weight array
     if weightArr is None:
@@ -369,7 +368,8 @@ def make_fake_data() -> FakeData:
     stokes_u = quArr.imag
     weights = np.ones_like(freq)
     lsq_0 = np.average(lsq, weights=weights)
-    phis = np.linspace(-500, 500, 10_000)
+    # Both axes come from the same step size, as in the RM-Tools scripts
+    phis, phi2s = make_phi_axes(phiMax_radm2=500.0, dPhi_radm2=0.1)
 
     return FakeData(
         freq=freq,
@@ -380,6 +380,7 @@ def make_fake_data() -> FakeData:
         weights=weights,
         lsq_0=lsq_0,
         phis=phis,
+        phi2s=phi2s,
     )
 
 
@@ -428,7 +429,7 @@ def test_rmsf():
         tick = time()
         RMSFcube, phi2Arr, fwhmRMSFArr, statArr, _ = get_rmsf_planes(
             lambdaSqArr_m2=fake_data.lsq,
-            phiArr_radm2=fake_data.phis,
+            phi2Arr_radm2=fake_data.phi2s,
             weightArr=fake_data.weights,
             lam0Sq_m2=fake_data.lsq_0,
             eps=eps,
@@ -436,10 +437,13 @@ def test_rmsf():
         tock = time()
         logger.info(f"Time taken for NUFFT: {(tock - tick)*1000:0.2f} ms")
 
+        # The RMSF axis is supplied by the caller and returned unchanged
+        assert np.array_equal(phi2Arr, fake_data.phi2s)
+
         tick = time()
         RMSFcube_old, phi2Arr_old, fwhmRMSFArr_old, statArr_old = get_rmsf_planes_old(
             lambdaSqArr_m2=fake_data.lsq,
-            phiArr_radm2=fake_data.phis,
+            phi2Arr_radm2=fake_data.phi2s,
             weightArr=fake_data.weights,
             lam0Sq_m2=fake_data.lsq_0,
         )

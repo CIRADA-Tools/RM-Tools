@@ -294,7 +294,8 @@ def get_rmsf_planes(
     lobe but can also use MPFIT to fit a Gaussian.
 
     lambdaSqArr_m2  ... vector of wavelength^2 values (assending freq order)
-    phi2Arr_radm2    ... vector of RMSF Faraday depth values
+    phi2Arr_radm2   ... vector of RMSF Faraday depth values (defined by user,
+                         preferably using the make_phi_axes function)
     weightArr       ... vector of weights, default [None] is no weighting
     maskArr         ... cube of mask values used to shape return cube [None]
     lam0Sq_m2       ... force a reference lambda^2 value (def=calculate) [None]
