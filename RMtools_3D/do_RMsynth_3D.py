@@ -45,7 +45,7 @@ import numpy as np
 from astropy.constants import c as speed_of_light
 
 from RMutils.util_misc import interp_images, remove_header_third_fourth_axis
-from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes
+from RMutils.util_RM import do_rmsynth_planes, get_rmsf_planes, make_phi_axes
 
 if sys.version_info.major == 2:
     print("RM-tools will no longer run with Python 2! Please use Python 3.")
@@ -138,13 +138,10 @@ def run_rmsynth(
 
     # Default data types
     dtFloat = "float" + str(nBits)
-    dtComplex = "complex" + str(2 * nBits)
 
     lambdaSqArr_m2 = np.power(speed_of_light.value / freqArr_Hz, 2.0)
 
-    dFreq_Hz = np.nanmin(np.abs(np.diff(freqArr_Hz)))
     lambdaSqRange_m2 = np.nanmax(lambdaSqArr_m2) - np.nanmin(lambdaSqArr_m2)
-    dLambdaSqMin_m2 = np.nanmin(np.abs(np.diff(lambdaSqArr_m2)))
     dLambdaSqMax_m2 = np.nanmax(np.abs(np.diff(lambdaSqArr_m2)))
 
     # Set the Faraday depth range
@@ -160,16 +157,13 @@ def run_rmsynth(
             phiMax_radm2, fwhmRMSF_radm2 * 10.0
         )  # Force the minimum phiMax to 10 FWHM
 
-    # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2))) * 2 + 1
-    startPhi_radm2 = -(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    stopPhi_radm2 = +(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, int(nChanRM))
-    phiArr_radm2 = phiArr_radm2.astype(dtFloat)
+    # Faraday depth axes. Zero always centred on middle channel.
+    # The FDF and RMSF axes are both built from the same step size.
+    phiArr_radm2, phi2Arr_radm2 = make_phi_axes(phiMax_radm2, dPhi_radm2, dtype=dtFloat)
     if verbose:
         log(
             "PhiArr = %.2f to %.2f by %.2f (%d chans)."
-            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), nChanRM)
+            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), phiArr_radm2.size)
         )
 
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
@@ -211,11 +205,10 @@ def run_rmsynth(
     if not not_rmsf:
         RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = get_rmsf_planes(
             lambdaSqArr_m2=lambdaSqArr_m2,
-            phiArr_radm2=phiArr_radm2,
+            phi2Arr_radm2=phi2Arr_radm2,
             weightArr=weightArr,
             mskArr=~np.isfinite(dataQ),
             lam0Sq_m2=lam0Sq_m2,
-            double=True,
             fitRMSF=fitRMSF or super_resolution,
             fitRMSFreal=super_resolution,
             nBits=32,
@@ -251,9 +244,16 @@ def run_rmsynth(
         FDFcube *= Ifreq0Arr
 
     if not_rmsf:  # only RMsynth
-        dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
+        dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2, dPhi_radm2]
     elif not_rmsynth:  # only RMSF
-        dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2]
+        dataArr = [
+            RMSFcube,
+            phi2Arr_radm2,
+            fwhmRMSFCube,
+            fitStatArr,
+            lam0Sq_m2,
+            dPhi_radm2,
+        ]
     else:  # both have been computed
         dataArr = [
             FDFcube,
@@ -264,6 +264,7 @@ def run_rmsynth(
             fitStatArr,
             lam0Sq_m2,
             lambdaSqArr_m2,
+            dPhi_radm2,
         ]
 
     return dataArr
@@ -288,11 +289,11 @@ def writefits(
     Args:
       dataArr (list): FDF and/or RMSF information
         if not_rmsf: # only RMsynth
-            dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2]
+            dataArr = [FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2, dPhi_radm2]
         elif not_rmsynth: # only RMSF
-            dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2]
+            dataArr = [RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2, dPhi_radm2]
         else: # both
-            dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2]
+            dataArr = [FDFcube, phiArr_radm2, RMSFcube, phi2Arr_radm2, fwhmRMSFCube,fitStatArr, lam0Sq_m2, lambdaSqArr_m2, dPhi_radm2]
 
         headtemplate: FITS header template
 
@@ -338,11 +339,13 @@ def writefits(
         sys.exit()
 
     if not_rmsf:
-        FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2 = dataArr
+        FDFcube, phiArr_radm2, lam0Sq_m2, lambdaSqArr_m2, dPhi_radm2 = dataArr
         if verbose:
             log("Saving the dirty FDF and ancillary FITS files.")
     elif not_rmsynth:
-        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2 = dataArr
+        RMSFcube, phi2Arr_radm2, fwhmRMSFCube, fitStatArr, lam0Sq_m2, dPhi_radm2 = (
+            dataArr
+        )
         if verbose:
             log("Saving the RMSF and ancillary FITS files.")
     else:
@@ -355,13 +358,13 @@ def writefits(
             fitStatArr,
             lam0Sq_m2,
             lambdaSqArr_m2,
+            dPhi_radm2,
         ) = dataArr
         if verbose:
             log("Saving the dirty FDF, RMSF and ancillary FITS files.")
 
     # Default data typess
     dtFloat = "float" + str(nBits)
-    dtComplex = "complex" + str(2 * nBits)
 
     # Make a copy of the Q header and alter frequency-axis as Faraday depth
     header = headtemplate.copy()
@@ -408,7 +411,7 @@ def writefits(
     if not not_rmsynth:
         header["NAXIS" + str(freq_axis)] = phiArr_radm2.size
         header["CDELT" + str(freq_axis)] = (
-            np.diff(phiArr_radm2)[0],
+            dPhi_radm2,
             "[rad/m^2] Coordinate increment at reference point",
         )
         header["CRPIX" + str(freq_axis)] = phiArr_radm2.size // 2 + 1
@@ -484,7 +487,7 @@ def writefits(
         # Header for outputs that are RMSF
         header["NAXIS" + str(freq_axis)] = phi2Arr_radm2.size
         header["CDELT" + str(freq_axis)] = (
-            np.diff(phi2Arr_radm2)[0],
+            dPhi_radm2,
             "[rad/m^2] Coordinate increment at reference point",
         )
         header["CRPIX" + str(freq_axis)] = phi2Arr_radm2.size // 2 + 1

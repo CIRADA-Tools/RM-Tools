@@ -63,6 +63,7 @@ from RMutils.util_RM import (
     calc_parabola_vertex,
     extrap,
     fit_rmsf,
+    make_phi_axes,
     measure_qu_complexity,
 )
 
@@ -493,12 +494,11 @@ def bwdepol_plot_rmsf_fdf_fig(
 def bwdepol_get_rmsf_planes(
     freqArr_Hz,
     widths_Hz,
-    phiArr_radm2,
+    phi2Arr_radm2,
     peak_rm,
     weightArr=None,
     mskArr=None,
     lam0Sq_m2=None,
-    double=True,
     fitRMSF=True,
     fitRMSFreal=False,
     nBits=64,
@@ -515,17 +515,16 @@ def bwdepol_get_rmsf_planes(
     time. By default the routine returns the analytical width of the RMSF main
     lobe but can also use MPFIT to fit a Gaussian.
 
-    This has been modified from the convientual RMtools_1D version for bwdepol
+    This has been modified from the conventional RMtools_1D version for bwdepol
 
 
     Parameters
     ----------
     freqArr_Hz      ... vector of frequency values
-    phiArr_radm2    ... vector of trial Faraday depth values
+    phi2Arr_radm2   ... vector of RMSF Faraday depth values
     weightArr       ... vector of weights, default [None] is no weighting
     maskArr         ... cube of mask values used to shape return cube [None]
     lam0Sq_m2       ... force a reference lambda^2 value (def=calculate) [None]
-    double          ... pad the Faraday depth to double-size [True]
     fitRMSF         ... fit the main lobe of the RMSF with a Gaussian [False]
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [64]
@@ -552,15 +551,6 @@ def bwdepol_get_rmsf_planes(
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
-
-    # For cleaning the RMSF should extend by 1/2 on each side in phi-space
-    if double:
-        nPhi = phiArr_radm2.shape[0]
-        nExt = np.ceil(nPhi / 2.0)
-        resampIndxArr = np.arange(2.0 * nExt + nPhi) - nExt
-        phi2Arr = extrap(resampIndxArr, np.arange(nPhi, dtype="int"), phiArr_radm2)
-    else:
-        phi2Arr = phiArr_radm2
 
     # Set the weight array
     if weightArr is None:
@@ -598,7 +588,7 @@ def bwdepol_get_rmsf_planes(
     nX = mskArr.shape[-1]
     nY = mskArr.shape[-2]
     nPix = nX * nY
-    nPhi = phi2Arr.shape[0]
+    nPhi = phi2Arr_radm2.shape[0]
     RMSFcube = np.ones((nPhi, nY, nX), dtype=dtComplex)
 
     # If full planes are flagged then set corresponding weights to zero
@@ -630,7 +620,7 @@ def bwdepol_get_rmsf_planes(
         freqArr_Hz,
         RMSF_data[1],
         RMSF_data[2],
-        phiArr_radm2,
+        phi2Arr_radm2,
         widths_Hz=widths_Hz,
         weightArr=weightArr,
         lam0Sq_m2=lam0Sq_m2,
@@ -643,7 +633,7 @@ def bwdepol_get_rmsf_planes(
     if fitRMSF:
         if verbose:
             log("Fitting Gaussian to the main lobe.")
-        mp = fit_rmsf(phi2Arr, np.abs(RMSFArr) / np.max(np.abs(RMSFArr)))
+        mp = fit_rmsf(phi2Arr_radm2, np.abs(RMSFArr) / np.max(np.abs(RMSFArr)))
         if mp is None or mp.status < 1:
             pass
             log("Err: failed to fit the RMSF.")
@@ -662,7 +652,7 @@ def bwdepol_get_rmsf_planes(
     statArr = np.squeeze(statArr)
     RMSFcube = RMSFcube.reshape(-1)
 
-    return RMSFcube, phi2Arr, fwhmRMSFArr, statArr
+    return RMSFcube, phi2Arr_radm2, fwhmRMSFArr, statArr
 
 
 # -----------------------------------------------------------------------------#
@@ -1065,8 +1055,6 @@ def run_adjoint_rmsynth(
         IArr = np.ones_like(QArr)
         dIArr = np.zeros_like(QArr)
 
-    # Convert to GHz for convenience
-    freqArr_GHz = freqArr_Hz / 1e9
     dQUArr = (dQArr + dUArr) / 2.0
 
     # Fit the Stokes I spectrum and create the fractional spectra
@@ -1147,16 +1135,13 @@ def run_adjoint_rmsynth(
         phiMax_radm2 = m.sqrt(3.0) / dLambdaSqMax_m2
         phiMax_radm2 = max(phiMax_radm2, 600.0)  # Force the minimum phiMax
 
-    # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0)
-    startPhi_radm2 = -(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    stopPhi_radm2 = +(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
-    phiArr_radm2 = phiArr_radm2.astype(dtFloat)
+    # Faraday depth sampling. Zero always centred on middle channel.
+    # The FDF and RMSF axes are both built from the same step size.
+    phiArr_radm2, phi2Arr_radm2 = make_phi_axes(phiMax_radm2, dPhi_radm2, dtype=dtFloat)
     if verbose:
         log(
             "PhiArr = %.2f to %.2f by %.2f (%d chans)."
-            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), nChanRM)
+            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), phiArr_radm2.size)
         )
 
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
@@ -1197,11 +1182,10 @@ def run_adjoint_rmsynth(
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr = bwdepol_get_rmsf_planes(
         freqArr_Hz=freqArr_Hz,
         widths_Hz=widths_Hz,
-        phiArr_radm2=phiArr_radm2,
+        phi2Arr_radm2=phi2Arr_radm2,
         weightArr=weightArr,
         mskArr=~np.isfinite(qArr),
         lam0Sq_m2=lam0Sq_m2,
-        double=True,
         fitRMSF=fitRMSF,
         fitRMSFreal=False,
         nBits=nBits,

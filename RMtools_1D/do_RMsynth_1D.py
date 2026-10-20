@@ -61,6 +61,7 @@ from RMutils.util_plotTk import (
 from RMutils.util_RM import (
     do_rmsynth_planes,
     get_rmsf_planes,
+    make_phi_axes,
     measure_FDF_parms,
     measure_qu_complexity,
 )
@@ -278,15 +279,13 @@ def run_rmsynth(
         )  # Force the minimum phiMax to 10 FWHM
 
     # Faraday depth sampling. Zero always centred on middle channel
-    nChanRM = int(round(abs((phiMax_radm2 - 0.0) / dPhi_radm2)) * 2.0 + 1.0)
-    startPhi_radm2 = -(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    stopPhi_radm2 = +(nChanRM - 1.0) * dPhi_radm2 / 2.0
-    phiArr_radm2 = np.linspace(startPhi_radm2, stopPhi_radm2, nChanRM)
-    phiArr_radm2 = phiArr_radm2.astype(dtFloat)
+    # The FDF and RMSF axes are both built from the same step size.
+    phiArr_radm2, phi2Arr_radm2 = make_phi_axes(phiMax_radm2, dPhi_radm2, dtype=dtFloat)
+
     if verbose:
         log(
             "PhiArr = %.2f to %.2f by %.2f (%d chans)."
-            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), nChanRM)
+            % (phiArr_radm2[0], phiArr_radm2[-1], float(dPhi_radm2), phiArr_radm2.size)
         )
 
     # Calculate the weighting as 1/sigma^2 or all 1s (uniform)
@@ -315,11 +314,10 @@ def run_rmsynth(
     # Calculate the Rotation Measure Spread Function
     RMSFArr, phi2Arr_radm2, fwhmRMSFArr, fitStatArr, _ = get_rmsf_planes(
         lambdaSqArr_m2=lambdaSqArr_m2,
-        phiArr_radm2=phiArr_radm2,
+        phi2Arr_radm2=phi2Arr_radm2,
         weightArr=weightArr,
         mskArr=~np.isfinite(qArr),
         lam0Sq_m2=lam0Sq_m2,
-        double=True,
         fitRMSF=fitRMSF or super_resolution,
         fitRMSFreal=super_resolution,
         nBits=nBits,

@@ -12,6 +12,7 @@
 # CONTENTS:                                                                   #
 #                                                                             #
 #  do_rmsynth_planes   ... perform RM-synthesis on Q & U data cubes           #
+#  make_phi_axes       ... build the FDF and (double-size) RMSF phi axes      #
 #  get_rmsf_planes     ... calculate the RMSF for a cube of data              #
 #  do_rmclean_hogbom   ... perform Hogbom RM-clean on a dirty FDF             #
 #  fits_make_lin_axis  ... create an array of absica values for a lin axis    #
@@ -226,6 +227,34 @@ def do_rmsynth_planes(
 
 
 # -----------------------------------------------------------------------------#
+def make_phi_axes(phiMax_radm2, dPhi_radm2, dtype="float64"):
+    """Build the Faraday depth axes for the FDF and for the double-size RMSF.
+
+    Both axes are generated from the same step size, as integer multiples of
+    dPhi_radm2 counted from zero, so they are guaranteed to share the same
+    sample positions (the RMSF axis is not extrapolated from the FDF axis).
+    The same step size should be used for FITS CDELT keywords.
+
+    The FDF axis is symmetric about zero with an odd number of samples. The
+    RMSF axis extends it by ceil(N/2) samples on each side, so that
+    phi2Arr[nPad + i] == phiArr[i] with nPad = (len(phi2Arr) - len(phiArr)) / 2,
+    as assumed by RM-clean.
+
+    phiMax_radm2    ... largest Faraday depth sampled in the FDF [rad/m^2]
+    dPhi_radm2      ... Faraday depth step size [rad/m^2]
+    dtype           ... output data type; the axes are constructed in float64
+                        and cast only at the end ["float64"]
+
+    Returns (phiArr_radm2, phi2Arr_radm2).
+    """
+    nPhi = int(round(abs(phiMax_radm2 / dPhi_radm2))) * 2 + 1
+    nPhi2 = nPhi * 2 + 1
+    phiArr = dPhi_radm2 * (np.arange(nPhi) - nPhi // 2)
+    phi2Arr = dPhi_radm2 * (np.arange(nPhi2) - nPhi2 // 2)
+    return phiArr.astype(dtype), phi2Arr.astype(dtype)
+
+
+# -----------------------------------------------------------------------------#
 class RMSFResults(NamedTuple):
     """Results of the RMSF calculation"""
 
@@ -243,11 +272,10 @@ class RMSFResults(NamedTuple):
 
 def get_rmsf_planes(
     lambdaSqArr_m2,
-    phiArr_radm2,
+    phi2Arr_radm2,
     weightArr=None,
     mskArr=None,
     lam0Sq_m2=None,
-    double=True,
     fitRMSF=False,
     fitRMSFreal=False,
     nBits=32,
@@ -266,11 +294,10 @@ def get_rmsf_planes(
     lobe but can also use MPFIT to fit a Gaussian.
 
     lambdaSqArr_m2  ... vector of wavelength^2 values (assending freq order)
-    phiArr_radm2    ... vector of trial Faraday depth values
+    phi2Arr_radm2    ... vector of RMSF Faraday depth values
     weightArr       ... vector of weights, default [None] is no weighting
     maskArr         ... cube of mask values used to shape return cube [None]
     lam0Sq_m2       ... force a reference lambda^2 value (def=calculate) [None]
-    double          ... pad the Faraday depth to double-size [True]
     fitRMSF         ... fit the main lobe of the RMSF with a Gaussian [False]
     fitRMSFreal     ... fit RMSF.real, rather than abs(RMSF) [False]
     nBits           ... precision of data arrays [32]
@@ -283,15 +310,6 @@ def get_rmsf_planes(
     # Default data types
     dtFloat = "float" + str(nBits)
     dtComplex = "complex" + str(2 * nBits)
-
-    # For cleaning the RMSF should extend by 1/2 on each side in phi-space
-    if double:
-        nPhi = phiArr_radm2.shape[0]
-        nExt = np.ceil(nPhi / 2.0)
-        resampIndxArr = np.arange(2.0 * nExt + nPhi) - nExt
-        phi2Arr = extrap(resampIndxArr, np.arange(nPhi, dtype="int"), phiArr_radm2)
-    else:
-        phi2Arr = phiArr_radm2
 
     # Set the weight array
     if weightArr is None:
@@ -365,7 +383,7 @@ def get_rmsf_planes(
             log("Calculating 1D RMSF and replicating along X & Y axes.")
 
         # Calculate the RMSF
-        a = (-2.0 * 1j * phi2Arr).astype(dtComplex)
+        a = (-2.0 * 1j * phi2Arr_radm2).astype(dtComplex)
         b = lambdaSqArr_m2 - lam0Sq_m2
         RMSFArr = K * np.sum(weightArr * np.exp(np.outer(a, b)), 1)
 
@@ -374,7 +392,9 @@ def get_rmsf_planes(
         if fitRMSF:
             if verbose:
                 log("Fitting Gaussian to the main lobe.")
-            mp = fit_rmsf(phi2Arr, RMSFArr.real if fitRMSFreal else np.abs(RMSFArr))
+            mp = fit_rmsf(
+                phi2Arr_radm2, RMSFArr.real if fitRMSFreal else np.abs(RMSFArr)
+            )
             if mp is None or mp.status < 1:
                 log("Err: failed to fit the RMSF.")
                 log("     Defaulting to analytical value.")
@@ -403,7 +423,7 @@ def get_rmsf_planes(
             finufft.nufft1d3(
                 x=a,
                 c=np.ascontiguousarray(weightCube.T),
-                s=(phi2Arr[::-1] * 2).astype(a.dtype),
+                s=(phi2Arr_radm2[::-1] * 2).astype(a.dtype),
                 eps=eps,
             )
             * KArr[..., None]
@@ -426,9 +446,9 @@ def get_rmsf_planes(
             for i in trange(nPix, desc="Fitting RMSF by pixel", disable=not verbose):
                 k += 1
                 if fitRMSFreal:
-                    mp = fit_rmsf(phi2Arr, RMSFcube[:, i].real)
+                    mp = fit_rmsf(phi2Arr_radm2, RMSFcube[:, i].real)
                 else:
-                    mp = fit_rmsf(phi2Arr, np.abs(RMSFcube[:, i]))
+                    mp = fit_rmsf(phi2Arr_radm2, np.abs(RMSFcube[:, i]))
                 if not (mp is None or mp.status < 1):
                     fwhmRMSFArr[i] = mp.params[2]
                     statArr[i] = mp.status
@@ -448,7 +468,7 @@ def get_rmsf_planes(
 
     return RMSFResults(
         RMSFcube=RMSFcube,
-        phi2Arr=phi2Arr,
+        phi2Arr=phi2Arr_radm2,
         fwhmRMSFArr=fwhmRMSFArr,
         statArr=statArr,
         lam0Sq_m2=lam0Sq_m2,
