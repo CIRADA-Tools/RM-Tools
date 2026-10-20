@@ -4,6 +4,8 @@ Current repository:
     -Changed main RMSF calculation functions (get_rmsf_planes, bwdepol_get_rmsf_planes) so they take the RMSF Phi array instead of FDF Phi array
     -In RMsynth3D, the Faraday depth step size is now an output of the run_rmsynth function, and taken as an input to the write_fits function.
     -These changes break backward compatability, so they force a minor version increment (1.4 -> 1.5).
+-Split QU-fitting test into a separate file, since it takes a while to run and I got annoyed waiting for it while testing RM synthesis changes.
+
 
 1.4.11:
 -Fixed QU fitting using Stokes Q errors instead of U errors when evaluating log_likelihood.
