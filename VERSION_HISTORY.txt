@@ -1,11 +1,15 @@
 Current repository:
+
+1.5.0:
 -Fixed error where phiArr would end up one element too short because of rounding error (#89). Credit to Celia Merino for finding the problem.
 -overhauled how RMSF Phi array is computed, to fix minor discreprencies between FDF and RMSF Phi arrays (Claude assisted) (Fixes #178)
     -Changed main RMSF calculation functions (get_rmsf_planes, bwdepol_get_rmsf_planes) so they take the RMSF Phi array instead of FDF Phi array
     -In RMsynth3D, the Faraday depth step size is now an output of the run_rmsynth function, and taken as an input to the write_fits function.
     -These changes break backward compatability, so they force a minor version increment (1.4 -> 1.5).
 -Split QU-fitting test into a separate file, since it takes a while to run and I got annoyed waiting for it while testing RM synthesis changes.
-
+-Updated version requirements -- dropped the numpy < 2 requirement which was due to older versions of bilby
+    -Python 3.8 and 3.9 are NOT SUPPORTED any more, due to being past end-of-life and having problems with finding compatible versions of dependencies. Default installers produce issues with astropy or bilby. If you can find a working combination of dependencies on those Python versions, all the power to you.
+    -Python 3.13 and 3.14 now part of testing.
 
 1.4.11:
 -Fixed QU fitting using Stokes Q errors instead of U errors when evaluating log_likelihood.
